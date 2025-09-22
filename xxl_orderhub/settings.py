@@ -55,6 +55,7 @@ MIDDLEWARE = [
     'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',  # Включаем CSRF обратно
+    'orders.csrf_middleware.EnsureCSRFCookieMiddleware',  # Принудительная установка CSRF cookie
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'orders.message_middleware.MessageCleanupMiddleware',  # Очистка сообщений
@@ -246,11 +247,14 @@ SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=False, cast=bool
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_AGE = 3600  # 1 hour
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_COOKIE_DOMAIN = None  # Позволяет работать с разными портами
 
 # CSRF Security
 CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=False, cast=bool)
 CSRF_COOKIE_HTTPONLY = False
 CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_DOMAIN = None  # Позволяет работать с разными портами
+CSRF_USE_SESSIONS = False  # Используем cookies, не сессии
 CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='http://192.168.0.100:8280,http://localhost:8280', cast=Csv())
 
 # File Upload Security
