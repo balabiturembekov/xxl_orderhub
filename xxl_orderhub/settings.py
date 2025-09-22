@@ -55,6 +55,7 @@ MIDDLEWARE = [
     'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',  # Включаем CSRF
+    'orders.csrf_middleware.EnsureCSRFCookieMiddleware',  # Принудительная установка CSRF cookie
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'orders.message_middleware.MessageCleanupMiddleware',  # Очистка сообщений
@@ -244,6 +245,9 @@ CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='http://192.168.0.
 CSRF_COOKIE_SECURE = False  # Для HTTP
 CSRF_COOKIE_HTTPONLY = False  # Для AJAX
 CSRF_COOKIE_SAMESITE = 'Lax'  # Для работы с разными портами
+CSRF_COOKIE_DOMAIN = None  # Позволяет работать с разными портами
+CSRF_USE_SESSIONS = False  # Используем cookies, не сессии
+CSRF_COOKIE_NAME = 'csrftoken'  # Явно указываем имя cookie
 
 # File Upload Security
 FILE_UPLOAD_MAX_MEMORY_SIZE = config('FILE_UPLOAD_MAX_MEMORY_SIZE', default=10485760, cast=int)  # 10MB

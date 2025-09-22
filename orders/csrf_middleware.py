@@ -11,7 +11,7 @@ class EnsureCSRFCookieMiddleware(MiddlewareMixin):
     """
     
     def process_response(self, request, response):
-        # Устанавливаем CSRF cookie для всех GET запросов
-        if request.method == 'GET' and not request.COOKIES.get('csrftoken'):
+        # Устанавливаем CSRF cookie для всех запросов, если его нет
+        if not request.COOKIES.get('csrftoken'):
             get_token(request)
         return response

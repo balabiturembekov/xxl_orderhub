@@ -478,6 +478,18 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     
+    <!-- Принудительная установка CSRF cookie -->
+    <script>
+        // Устанавливаем CSRF cookie при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (csrfToken && !document.cookie.includes('csrftoken=')) {
+                // Принудительно устанавливаем cookie
+                document.cookie = 'csrftoken=' + csrfToken.value + '; path=/; SameSite=Lax';
+            }
+        });
+    </script>
+    
     <script>
         // Автоматическое скрытие сообщений через 5 секунд
         document.addEventListener('DOMContentLoaded', function() {
