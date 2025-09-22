@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Загрузить инвойс" %} - {{ order.title }} - XXL OrderHub{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Главная" %}</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'order_list' %}">{% trans "Заказы" %}</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'order_detail' order.pk %}">{{ order.title }}</a></li>
+                <li class="breadcrumb-item active">{% trans "Загрузить инвойс" %}</li>
+            </ol>
+        </nav>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">{% trans "Загрузить инвойс" %}</h3>
+            </div>
+            <div class="card-body">
+                <!-- Информация о заказе -->
+                <div class="alert alert-info">
+                    <h6>{% trans "Информация о заказе:" %}</h6>
+                    <p class="mb-1"><strong>{% trans "Название:" %}</strong> {{ order.title }}</p>
+                    <p class="mb-1"><strong>{% trans "Фабрика:" %}</strong> {{ order.factory.name }}</p>
+                    <p class="mb-0"><strong>{% trans "Статус:" %}</strong> {{ order.get_status_display }}</p>
+                </div>
+
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label for="{{ form.invoice_file.id_for_label }}" class="form-label">
+                            {% trans "PDF файл инвойса" %} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.invoice_file }}
+                        {% if form.invoice_file.errors %}
+                            <div class="text-danger">
+                                {% for error in form.invoice_file.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">
+                            {% trans "Загрузите PDF файл с инвойсом от фабрики" %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.comments.id_for_label }}" class="form-label">
+                            {% trans "Комментарии к инвойсу" %}
+                        </label>
+                        {{ form.comments }}
+                        {% if form.comments.errors %}
+                            <div class="text-danger">
+                                {% for error in form.comments.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">
+                            {% trans "Дополнительная информация об инвойсе (необязательно)" %}
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'order_detail' order.pk %}" class="btn btn-outline-secondary me-md-2">
+                            {% trans "Отмена" %}
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            📋 {% trans "Загрузить инвойс" %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Инструкции -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">{% trans "Инструкции" %}</h5>
+            </div>
+            <div class="card-body">
+                <ol>
+                    <li>{% trans "Получите PDF инвойс от фабрики по email" %}</li>
+                    <li>{% trans "Скачайте файл на компьютер" %}</li>
+                    <li>{% trans "Загрузите PDF файл в форму выше" %}</li>
+                    <li>{% trans "Добавьте комментарии при необходимости" %}</li>
+                    <li>{% trans "Нажмите 'Загрузить инвойс'" %}</li>
+                </ol>
+                
+                <div class="alert alert-warning">
+                    <strong>{% trans "Важно:" %}</strong> 
+                    {% trans "После загрузки инвойса статус заказа изменится на 'Инвойс получен'. Вы сможете скачать файл в любое время." %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

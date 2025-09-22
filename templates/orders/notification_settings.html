@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load widget_tweaks %}
+
+{% block title %}Настройки уведомлений - XXL OrderHub{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-bell"></i> {% trans "Настройки уведомлений" %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5>{% trans "Общие настройки" %}</h5>
+                                
+                                <div class="form-check mb-3">
+                                    {{ form.email_notifications|add_class:"form-check-input" }}
+                                    <label class="form-check-label" for="{{ form.email_notifications.id_for_label }}">
+                                        {{ form.email_notifications.label }}
+                                    </label>
+                                    <div class="form-text">{{ form.email_notifications.help_text }}</div>
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    <label for="{{ form.reminder_frequency.id_for_label }}" class="form-label">
+                                        {{ form.reminder_frequency.label }}
+                                    </label>
+                                    {{ form.reminder_frequency|add_class:"form-control" }}
+                                    <div class="form-text">{{ form.reminder_frequency.help_text }}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <h5>{% trans "Типы уведомлений" %}</h5>
+                                
+                                <div class="form-check mb-3">
+                                    {{ form.notify_order_sent|add_class:"form-check-input" }}
+                                    <label class="form-check-label" for="{{ form.notify_order_sent.id_for_label }}">
+                                        {{ form.notify_order_sent.label }}
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check mb-3">
+                                    {{ form.notify_invoice_received|add_class:"form-check-input" }}
+                                    <label class="form-check-label" for="{{ form.notify_invoice_received.id_for_label }}">
+                                        {{ form.notify_invoice_received.label }}
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check mb-3">
+                                    {{ form.notify_uploaded_reminder|add_class:"form-check-input" }}
+                                    <label class="form-check-label" for="{{ form.notify_uploaded_reminder.id_for_label }}">
+                                        {{ form.notify_uploaded_reminder.label }}
+                                    </label>
+                                    <div class="form-text">{{ form.notify_uploaded_reminder.help_text }}</div>
+                                </div>
+                                
+                                <div class="form-check mb-3">
+                                    {{ form.notify_sent_reminder|add_class:"form-check-input" }}
+                                    <label class="form-check-label" for="{{ form.notify_sent_reminder.id_for_label }}">
+                                        {{ form.notify_sent_reminder.label }}
+                                    </label>
+                                    <div class="form-text">{{ form.notify_sent_reminder.help_text }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> {% trans "Сохранить настройки" %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Тестирование уведомлений -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-paper-plane"></i> {% trans "Тестирование уведомлений" %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        {% trans "Отправить тестовое уведомление на ваш email для проверки работы системы." %}
+                    </p>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>{% trans "Текущий email:" %}</strong> {{ user.email|default:"Не указан" }}
+                        {% if not user.email %}
+                        <br><small class="text-warning">
+                            {% trans "Для получения уведомлений необходимо указать email в профиле." %}
+                        </small>
+                        {% endif %}
+                    </div>
+                    
+                    {% if user.email %}
+                    <form method="post" action="{% url 'test_notification' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-primary">
+                            <i class="fas fa-paper-plane"></i> {% trans "Отправить тестовое уведомление" %}
+                        </button>
+                    </form>
+                    {% else %}
+                    <a href="{% url 'admin:auth_user_change' user.id %}" class="btn btn-outline-warning">
+                        <i class="fas fa-user-edit"></i> {% trans "Указать email в профиле" %}
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Информация о системе -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle"></i> {% trans "Информация о системе" %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>{% trans "Типы уведомлений:" %}</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success"></i> {% trans "Отправка заказа на фабрику" %}</li>
+                                <li><i class="fas fa-check text-success"></i> {% trans "Получение инвойса от фабрики" %}</li>
+                                <li><i class="fas fa-check text-success"></i> {% trans "Напоминания о неотправленных заказах" %}</li>
+                                <li><i class="fas fa-check text-success"></i> {% trans "Напоминания о заказах без инвойсов" %}</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>{% trans "Частота напоминаний:" %}</h6>
+                            <p class="text-muted">
+                                {% trans "Напоминания отправляются автоматически в зависимости от настроенной частоты (по умолчанию каждые 7 дней)." %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

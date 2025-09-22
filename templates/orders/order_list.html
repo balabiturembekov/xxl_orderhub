@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Список заказов" %} - XXL OrderHub{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>{% trans "Мои заказы" %}</h2>
+            <a href="{% url 'create_order' %}" class="btn btn-primary">
+                ➕ {% trans "Создать заказ" %}
+            </a>
+        </div>
+
+        <!-- Фильтры -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="id_search" class="form-label">{% trans "Поиск" %}</label>
+                        <input type="text" class="form-control" id="id_search" name="search" 
+                               value="{{ request.GET.search }}" placeholder="{% trans 'По названию, описанию или фабрике' %}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="id_status" class="form-label">{% trans "Статус" %}</label>
+                        <select class="form-select" id="id_status" name="status">
+                            <option value="">{% trans "Все статусы" %}</option>
+                            {% for value, label in status_choices %}
+                            <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="id_factory" class="form-label">{% trans "Фабрика" %}</label>
+                        <select class="form-select" id="id_factory" name="factory">
+                            <option value="">{% trans "Все фабрики" %}</option>
+                            {% for factory in factories %}
+                            <option value="{{ factory.id }}" {% if request.GET.factory == factory.id|stringformat:"s" %}selected{% endif %}>
+                                {{ factory.name }} ({{ factory.country.name }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-outline-primary">{% trans "Фильтровать" %}</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Список заказов -->
+        {% if orders %}
+        <div class="row">
+            {% for order in orders %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">{{ order.title|truncatechars:30 }}</h6>
+                        <span class="badge bg-{% if order.status == 'uploaded' %}warning{% elif order.status == 'sent' %}info{% elif order.status == 'invoice_received' %}success{% elif order.status == 'completed' %}dark{% else %}secondary{% endif %}">
+                            {{ order.get_status_display }}
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">
+                            <strong>{% trans "Фабрика:" %}</strong> {{ order.factory.name }}<br>
+                            <strong>{% trans "Страна:" %}</strong> {{ order.factory.country.name }}<br>
+                            <strong>{% trans "Дата загрузки:" %}</strong> {{ order.uploaded_at|date:"d.m.Y H:i" }}
+                        </p>
+                        
+                        {% if order.description %}
+                        <p class="card-text">
+                            <small class="text-muted">{{ order.description|truncatechars:100 }}</small>
+                        </p>
+                        {% endif %}
+                        
+                        <!-- Индикаторы времени -->
+                        {% if order.status == 'uploaded' and order.days_since_upload >= 7 %}
+                        <div class="alert alert-warning alert-sm py-2 mb-2">
+                            <small>⚠️ {% trans "Загружен" %} {{ order.days_since_upload }} {% trans "дней назад" %}</small>
+                        </div>
+                        {% elif order.status == 'sent' and order.days_since_sent and order.days_since_sent >= 7 %}
+                        <div class="alert alert-warning alert-sm py-2 mb-2">
+                            <small>⚠️ {% trans "Отправлен" %} {{ order.days_since_sent }} {% trans "дней назад" %}</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="card-footer">
+                        <div class="btn-group w-100" role="group">
+                            <a href="{% url 'order_detail' order.pk %}" class="btn btn-outline-primary btn-sm">
+                                👁️ {% trans "Просмотр" %}
+                            </a>
+                            {% if order.excel_file %}
+                            <a href="{% url 'preview_file_modal' order.pk 'excel' %}" class="btn btn-outline-info btn-sm" target="_blank">
+                                👁️ Excel
+                            </a>
+                            <a href="{% url 'download_file' order.pk 'excel' %}" class="btn btn-outline-success btn-sm">
+                                📄 Excel
+                            </a>
+                            {% endif %}
+                            {% if order.invoice_file %}
+                            <a href="{% url 'preview_file_modal' order.pk 'invoice' %}" class="btn btn-outline-info btn-sm" target="_blank">
+                                👁️ PDF
+                            </a>
+                            <a href="{% url 'download_file' order.pk 'invoice' %}" class="btn btn-outline-success btn-sm">
+                                📋 PDF
+                            </a>
+                            {% endif %}
+                            {% if order.status == 'sent' or order.status == 'invoice_received' %}
+                            <a href="{% url 'upload_invoice' order.pk %}" class="btn btn-outline-warning btn-sm">
+                                📋 {% trans "Инвойс" %}
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Пагинация -->
+        {% if is_paginated %}
+        <nav aria-label="{% trans 'Навигация по страницам' %}">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.factory %}&factory={{ request.GET.factory }}{% endif %}">
+                        {% trans "Первая" %}
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.factory %}&factory={{ request.GET.factory }}{% endif %}">
+                        {% trans "Предыдущая" %}
+                    </a>
+                </li>
+                {% endif %}
+
+                <li class="page-item active">
+                    <span class="page-link">
+                        {% trans "Страница" %} {{ page_obj.number }} {% trans "из" %} {{ page_obj.paginator.num_pages }}
+                    </span>
+                </li>
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.factory %}&factory={{ request.GET.factory }}{% endif %}">
+                        {% trans "Следующая" %}
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.factory %}&factory={{ request.GET.factory }}{% endif %}">
+                        {% trans "Последняя" %}
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        {% else %}
+        <div class="text-center py-5">
+            <div class="mb-4">
+                <i class="fas fa-clipboard-list fa-3x text-muted"></i>
+            </div>
+            <h4 class="text-muted">{% trans "Заказы не найдены" %}</h4>
+            <p class="text-muted">{% trans "У вас пока нет заказов или они не соответствуют выбранным фильтрам." %}</p>
+            <a href="{% url 'create_order' %}" class="btn btn-primary">
+                ➕ {% trans "Создать первый заказ" %}
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

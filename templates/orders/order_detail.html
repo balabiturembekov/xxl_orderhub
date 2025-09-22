@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{{ order.title }} - XXL OrderHub{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Главная" %}</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'order_list' %}">{% trans "Заказы" %}</a></li>
+                <li class="breadcrumb-item active">{{ order.title }}</li>
+            </ol>
+        </nav>
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>{{ order.title }}</h2>
+            <div>
+                <span class="badge bg-{% if order.status == 'uploaded' %}warning{% elif order.status == 'sent' %}info{% elif order.status == 'invoice_received' %}success{% elif order.status == 'completed' %}dark{% else %}secondary{% endif %} fs-6">
+                    {{ order.get_status_display }}
+                </span>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Основная информация -->
+            <div class="col-md-8">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">{% trans "Информация о заказе" %}</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>{% trans "Название:" %}</strong> {{ order.title }}</p>
+                                <p><strong>{% trans "Фабрика:" %}</strong> {{ order.factory.name }}</p>
+                                <p><strong>{% trans "Страна:" %}</strong> {{ order.factory.country.name }}</p>
+                                <p><strong>{% trans "Email фабрики:" %}</strong> 
+                                    <a href="mailto:{{ order.factory.email }}">{{ order.factory.email }}</a>
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>{% trans "Статус:" %}</strong> {{ order.get_status_display }}</p>
+                                <p><strong>{% trans "Дата загрузки:" %}</strong> {{ order.uploaded_at|date:"d.m.Y H:i" }}</p>
+                                {% if order.sent_at %}
+                                <p><strong>{% trans "Дата отправки:" %}</strong> {{ order.sent_at|date:"d.m.Y H:i" }}</p>
+                                {% endif %}
+                                {% if order.invoice_received_at %}
+                                <p><strong>{% trans "Дата получения инвойса:" %}</strong> {{ order.invoice_received_at|date:"d.m.Y H:i" }}</p>
+                                {% endif %}
+                                {% if order.completed_at %}
+                                <p><strong>{% trans "Дата завершения:" %}</strong> {{ order.completed_at|date:"d.m.Y H:i" }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {% if order.description %}
+                        <div class="mt-3">
+                            <strong>{% trans "Описание:" %}</strong>
+                            <p class="mt-2">{{ order.description|linebreaks }}</p>
+                        </div>
+                        {% endif %}
+
+                        {% if order.comments %}
+                        <div class="mt-3">
+                            <strong>{% trans "Комментарии:" %}</strong>
+                            <p class="mt-2">{{ order.comments|linebreaks }}</p>
+                        </div>
+                        {% endif %}
+
+                        {% if order.factory_comments %}
+                        <div class="mt-3">
+                            <strong>{% trans "Комментарии фабрики:" %}</strong>
+                            <p class="mt-2">{{ order.factory_comments|linebreaks }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Файлы -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">{% trans "Файлы" %}</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>{% trans "Excel файл заказа" %}</h6>
+                                {% if order.excel_file %}
+                                <p class="text-success">✅ {% trans "Файл загружен" %}</p>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'preview_file_modal' order.pk 'excel' %}" class="btn btn-outline-info btn-sm" target="_blank">
+                                        👁️ {% trans "Просмотр" %}
+                                    </a>
+                                    <a href="{% url 'download_file' order.pk 'excel' %}" class="btn btn-outline-success btn-sm">
+                                        📄 {% trans "Скачать" %}
+                                    </a>
+                                </div>
+                                {% else %}
+                                <p class="text-muted">❌ {% trans "Файл не загружен" %}</p>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <h6>{% trans "PDF файл инвойса" %}</h6>
+                                {% if order.invoice_file %}
+                                <p class="text-success">✅ {% trans "Инвойс получен" %}</p>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'preview_file_modal' order.pk 'invoice' %}" class="btn btn-outline-info btn-sm" target="_blank">
+                                        👁️ {% trans "Просмотр" %}
+                                    </a>
+                                    <a href="{% url 'download_file' order.pk 'invoice' %}" class="btn btn-outline-success btn-sm">
+                                        📋 {% trans "Скачать" %}
+                                    </a>
+                                    <a href="{% url 'upload_invoice' order.pk %}" class="btn btn-outline-warning btn-sm">
+                                        🔄 {% trans "Обновить" %}
+                                    </a>
+                                </div>
+                                {% else %}
+                                <p class="text-muted">❌ {% trans "Инвойс не получен" %}</p>
+                                {% if order.status == 'sent' or order.status == 'invoice_received' %}
+                                <a href="{% url 'upload_invoice' order.pk %}" class="btn btn-success btn-sm">
+                                    📋 {% trans "Загрузить инвойс" %}
+                                </a>
+                                {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Действия -->
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">{% trans "Действия" %}</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if order.status == 'uploaded' %}
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'send_order' order.pk %}" class="btn btn-primary">
+                                📧 {% trans "Отправить на фабрику" %}
+                            </a>
+                        </div>
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                {% trans "Заказ загружен" %} {{ order.days_since_upload }} {% trans "дней назад" %}
+                                {% if order.days_since_upload >= 7 %}
+                                <br><span class="text-warning">⚠️ {% trans "Рекомендуется отправить" %}</span>
+                                {% endif %}
+                                <br><span class="text-info">ℹ️ {% trans "Сначала отправьте заказ на фабрику, затем прикрепите инвойс" %}</span>
+                            </small>
+                        </div>
+                        {% elif order.status == 'sent' %}
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'upload_invoice' order.pk %}" class="btn btn-success">
+                                📋 {% trans "Загрузить инвойс" %}
+                            </a>
+                        </div>
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                {% trans "Отправлен" %} {{ order.days_since_sent }} {% trans "дней назад" %}
+                                {% if order.days_since_sent and order.days_since_sent >= 7 %}
+                                <br><span class="text-warning">⚠️ {% trans "Ожидается инвойс" %}</span>
+                                {% endif %}
+                            </small>
+                        </div>
+                        {% elif order.status == 'invoice_received' %}
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'upload_invoice' order.pk %}" class="btn btn-outline-success">
+                                📋 {% trans "Обновить инвойс" %}
+                            </a>
+                        </div>
+                        <div class="mt-3">
+                            <small class="text-success">
+                                ✅ {% trans "Инвойс получен" %}
+                            </small>
+                        </div>
+                        {% elif order.status == 'completed' %}
+                        <div class="mt-3">
+                            <small class="text-success">
+                                ✅ {% trans "Заказ завершен" %}
+                            </small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Контакты фабрики -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">{% trans "Контакты фабрики" %}</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>{% trans "Название:" %}</strong> {{ order.factory.name }}</p>
+                        <p><strong>{% trans "Email:" %}</strong> 
+                            <a href="mailto:{{ order.factory.email }}">{{ order.factory.email }}</a>
+                        </p>
+                        {% if order.factory.contact_person %}
+                        <p><strong>{% trans "Контактное лицо:" %}</strong> {{ order.factory.contact_person }}</p>
+                        {% endif %}
+                        {% if order.factory.phone %}
+                        <p><strong>{% trans "Телефон:" %}</strong> {{ order.factory.phone }}</p>
+                        {% endif %}
+                        {% if order.factory.address %}
+                        <p><strong>{% trans "Адрес:" %}</strong> {{ order.factory.address }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Действия с заказом -->
+        <div class="mt-4">
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{% url 'order_list' %}" class="btn btn-outline-secondary">
+                    ← {% trans "Назад к списку" %}
+                </a>
+                
+                {% if order.status == 'uploaded' %}
+                <a href="{% url 'send_order' order.pk %}" class="btn btn-primary">
+                    📤 {% trans "Отправить на фабрику" %}
+                </a>
+                {% elif order.status == 'sent' %}
+                <a href="{% url 'upload_invoice' order.pk %}" class="btn btn-warning">
+                    📋 {% trans "Загрузить инвойс" %}
+                </a>
+                {% elif order.status == 'invoice_received' %}
+                <a href="{% url 'complete_order' order.pk %}" class="btn btn-success">
+                    ✅ {% trans "Завершить заказ" %}
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

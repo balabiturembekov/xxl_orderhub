@@ -1,0 +1,409 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Создать заказ" %} - XXL OrderHub{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Главная" %}</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'order_list' %}">{% trans "Заказы" %}</a></li>
+                <li class="breadcrumb-item active">{% trans "Создать заказ" %}</li>
+            </ol>
+        </nav>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">{% trans "Создать новый заказ" %}</h3>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label for="{{ form.title.id_for_label }}" class="form-label">
+                                    {% trans "Название заказа" %} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.title }}
+                                {% if form.title.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.title.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label for="{{ form.description.id_for_label }}" class="form-label">
+                                    {% trans "Описание заказа" %}
+                                </label>
+                                {{ form.description }}
+                                {% if form.description.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.description.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label for="{{ form.factory.id_for_label }}" class="form-label">
+                                    {% trans "Фабрика" %} <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    {{ form.factory }}
+                                    <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addFactoryModal">
+                                        <i class="bi bi-plus-circle"></i> {% trans "Добавить фабрику" %}
+                                    </button>
+                                </div>
+                                {% if form.factory.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.factory.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    {% trans "Выберите фабрику, на которую будет отправлен заказ" %}
+                                    <a href="{% url 'factory_list' %}" target="_blank" class="ms-2">
+                                        <i class="bi bi-gear"></i> {% trans "Управление фабриками" %}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label for="{{ form.excel_file.id_for_label }}" class="form-label">
+                                    {% trans "Excel файл заказа" %} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.excel_file }}
+                                {% if form.excel_file.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.excel_file.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    {% trans "Загрузите Excel файл с деталями заказа (.xlsx или .xls)" %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label for="{{ form.comments.id_for_label }}" class="form-label">
+                                    {% trans "Комментарии" %}
+                                </label>
+                                {{ form.comments }}
+                                {% if form.comments.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.comments.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    {% trans "Дополнительная информация о заказе (необязательно)" %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <a href="{% url 'order_list' %}" class="btn btn-outline-secondary me-md-2">
+                                    {% trans "Отмена" %}
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    {% trans "Создать заказ" %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Информация о процессе -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">{% trans "Что происходит после создания заказа?" %}</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <div class="mb-2">1️⃣</div>
+                            <h6>{% trans "Заказ создан" %}</h6>
+                            <p class="text-muted small">{% trans "Файл загружен, заказ готов к отправке" %}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <div class="mb-2">2️⃣</div>
+                            <h6>{% trans "Отправка на фабрику" %}</h6>
+                            <p class="text-muted small">{% trans "Excel файл отправляется на email фабрики" %}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <div class="mb-2">3️⃣</div>
+                            <h6>{% trans "Получение инвойса" %}</h6>
+                            <p class="text-muted small">{% trans "Фабрика присылает PDF инвойс, который вы загружаете в систему" %}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для добавления страны -->
+<div class="modal fade" id="addCountryModal" tabindex="-1" aria-labelledby="addCountryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addCountryModalLabel">{% trans "Добавить страну" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addCountryForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="country_name" class="form-label">{% trans "Название страны" %} *</label>
+                        <input type="text" class="form-control" id="country_name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="country_code" class="form-label">{% trans "Код страны" %} *</label>
+                        <input type="text" class="form-control" id="country_code" name="code" maxlength="3" required>
+                        <div class="form-text">{% trans "Например: RU, US, DE" %}</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Отмена" %}</button>
+                    <button type="submit" class="btn btn-primary">{% trans "Добавить" %}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для добавления фабрики -->
+<div class="modal fade" id="addFactoryModal" tabindex="-1" aria-labelledby="addFactoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addFactoryModalLabel">{% trans "Добавить фабрику" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addFactoryForm">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="factory_name" class="form-label">{% trans "Название фабрики" %} *</label>
+                                <input type="text" class="form-control" id="factory_name" name="name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="factory_country" class="form-label">{% trans "Страна" %} *</label>
+                                <div class="input-group">
+                                    <select class="form-select" id="factory_country" name="country" required>
+                                        <option value="">{% trans "Выберите страну" %}</option>
+                                    </select>
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#addCountryModal">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="factory_email" class="form-label">{% trans "Email для отправки заказов" %} *</label>
+                        <input type="email" class="form-control" id="factory_email" name="email" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="factory_contact" class="form-label">{% trans "Контактное лицо" %}</label>
+                                <input type="text" class="form-control" id="factory_contact" name="contact_person">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="factory_phone" class="form-label">{% trans "Телефон" %}</label>
+                                <input type="text" class="form-control" id="factory_phone" name="phone">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="factory_address" class="form-label">{% trans "Адрес" %}</label>
+                        <textarea class="form-control" id="factory_address" name="address" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="factory_active" name="is_active" checked>
+                            <label class="form-check-label" for="factory_active">
+                                {% trans "Фабрика активна" %}
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Отмена" %}</button>
+                    <button type="submit" class="btn btn-primary">{% trans "Добавить" %}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Загружаем страны при открытии модального окна фабрики
+    document.getElementById('addFactoryModal').addEventListener('show.bs.modal', function() {
+        loadCountries();
+    });
+    
+    // Обработка добавления страны
+    document.getElementById('addCountryForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        addCountry();
+    });
+    
+    // Обработка добавления фабрики
+    document.getElementById('addFactoryForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        addFactory();
+    });
+    
+    // Обработка добавления страны из модального окна фабрики
+    document.getElementById('addCountryModal').addEventListener('hidden.bs.modal', function() {
+        loadCountries();
+    });
+});
+
+function loadCountries() {
+    fetch('{% url "get_countries" %}')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('factory_country');
+            select.innerHTML = '<option value="">{% trans "Выберите страну" %}</option>';
+            data.countries.forEach(country => {
+                const option = document.createElement('option');
+                option.value = country.id;
+                option.textContent = country.name;
+                select.appendChild(option);
+            });
+        });
+}
+
+function addCountry() {
+    const formData = new FormData(document.getElementById('addCountryForm'));
+    
+    fetch('{% url "create_country_ajax" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Закрываем модальное окно
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addCountryModal'));
+            modal.hide();
+            
+            // Очищаем форму
+            document.getElementById('addCountryForm').reset();
+            
+            // Показываем сообщение об успехе
+            showAlert('Страна успешно добавлена!', 'success');
+            
+            // Обновляем список стран в модальном окне фабрики
+            loadCountries();
+        } else {
+            showAlert('Ошибка при добавлении страны: ' + JSON.stringify(data.errors), 'danger');
+        }
+    });
+}
+
+function addFactory() {
+    const formData = new FormData(document.getElementById('addFactoryForm'));
+    
+    fetch('{% url "create_factory_ajax" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Закрываем модальное окно
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addFactoryModal'));
+            modal.hide();
+            
+            // Очищаем форму
+            document.getElementById('addFactoryForm').reset();
+            
+            // Показываем сообщение об успехе
+            showAlert('Фабрика успешно добавлена!', 'success');
+            
+            // Обновляем список фабрик в форме заказа
+            location.reload();
+        } else {
+            showAlert('Ошибка при добавлении фабрики: ' + JSON.stringify(data.errors), 'danger');
+        }
+    });
+}
+
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Вставляем alert в начало контента
+    const content = document.querySelector('.main-content');
+    content.insertBefore(alertDiv, content.firstChild);
+    
+    // Автоматически скрываем через 5 секунд
+    setTimeout(() => {
+        const bsAlert = new bootstrap.Alert(alertDiv);
+        bsAlert.close();
+    }, 5000);
+}
+</script>
+{% endblock %}

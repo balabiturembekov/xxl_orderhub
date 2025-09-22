@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Управление странами" %} - XXL OrderHub{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>{% trans "Управление странами" %}</h2>
+            <a href="{% url 'country_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> {% trans "Добавить страну" %}
+            </a>
+        </div>
+
+        {% if countries %}
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>{% trans "Название" %}</th>
+                                    <th>{% trans "Код" %}</th>
+                                    <th>{% trans "Дата создания" %}</th>
+                                    <th>{% trans "Фабрики" %}</th>
+                                    <th>{% trans "Действия" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for country in countries %}
+                                <tr>
+                                    <td>{{ country.name }}</td>
+                                    <td><span class="badge bg-secondary">{{ country.code }}</span></td>
+                                    <td>{{ country.created_at|date:"d.m.Y" }}</td>
+                                    <td>
+                                        <span class="badge bg-info">
+                                            {{ country.factory_set.count }} {% trans "фабрик" %}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'country_edit' country.pk %}" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-pencil"></i> {% trans "Редактировать" %}
+                                            </a>
+                                            <a href="{% url 'country_delete' country.pk %}" class="btn btn-sm btn-outline-danger">
+                                                <i class="bi bi-trash"></i> {% trans "Удалить" %}
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            {% if is_paginated %}
+                <nav aria-label="{% trans 'Страницы стран' %}">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1">{% trans "Первая" %}</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">{% trans "Предыдущая" %}</a>
+                            </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">
+                                {% trans "Страница" %} {{ page_obj.number }} {% trans "из" %} {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">{% trans "Следующая" %}</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">{% trans "Последняя" %}</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="alert alert-info text-center">
+                <h4>{% trans "Страны не найдены" %}</h4>
+                <p>{% trans "Начните с добавления первой страны." %}</p>
+                <a href="{% url 'country_create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> {% trans "Добавить страну" %}
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

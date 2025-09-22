@@ -1,0 +1,243 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+
+{% block title %}Главная - XXL OrderHub{% endblock %}
+
+{% block content %}
+{% if user.is_authenticated %}
+<!-- Приветственный блок -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="jumbotron bg-gradient-primary text-white p-4 rounded">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="display-6 mb-2">{% trans "Добро пожаловать" %}, {{ user.username }}!</h1>
+                    <p class="lead mb-0">{% trans "Система управления заказами для вашего бизнеса." %}</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="d-grid gap-2 d-md-block">
+                        <a href="{% url 'create_order' %}" class="btn btn-light btn-lg">
+                            ➕ {% trans "Создать заказ" %}
+                        </a>
+                        <a href="{% url 'order_list' %}" class="btn btn-outline-light btn-lg">
+                            📋 {% trans "Все заказы" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Основные метрики -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ total_orders }}</h4>
+                        <p class="card-text">{% trans "Всего заказов" %}</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-shopping-cart fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ uploaded_orders }}</h4>
+                        <p class="card-text">{% trans "Загружено" %}</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-upload fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ sent_orders }}</h4>
+                        <p class="card-text">{% trans "Отправлено" %}</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-paper-plane fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ completed_orders }}</h4>
+                        <p class="card-text">{% trans "Завершено" %}</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Виджеты -->
+<div class="row">
+    <!-- Заказы, требующие внимания -->
+    {% if urgent_orders %}
+    <div class="col-md-6 mb-4">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">⚠️ {% trans "Заказы, требующие внимания" %}</h5>
+            </div>
+            <div class="card-body">
+                {% for order in urgent_orders %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <strong>{{ order.title }}</strong>
+                        <br><small class="text-muted">{{ order.factory.name }}</small>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-warning">{{ order.days_since_upload }} {% trans "дней" %}</span>
+                        <br><a href="{% url 'order_detail' order.pk %}" class="btn btn-sm btn-outline-primary">{% trans "Просмотр" %}</a>
+                    </div>
+                </div>
+                {% if not forloop.last %}<hr>{% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Топ фабрик -->
+    {% if factory_stats %}
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">🏭 {% trans "Топ фабрик" %}</h5>
+            </div>
+            <div class="card-body">
+                {% for factory in factory_stats %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <strong>{{ factory.name }}</strong>
+                        <br><small class="text-muted">{{ factory.country.name }}</small>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-primary">{{ factory.total_orders }} {% trans "заказов" %}</span>
+                        {% if factory.active_orders > 0 %}
+                        <br><small class="text-success">{{ factory.active_orders }} {% trans "активных" %}</small>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if not forloop.last %}<hr>{% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Статистика по странам -->
+    {% if country_stats %}
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">🌍 {% trans "Статистика по странам" %}</h5>
+            </div>
+            <div class="card-body">
+                {% for country in country_stats %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <strong>{{ country.name }}</strong>
+                        <br><small class="text-muted">{{ country.total_factories }} {% trans "фабрик" %}</small>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-info">{{ country.total_orders }} {% trans "заказов" %}</span>
+                    </div>
+                </div>
+                {% if not forloop.last %}<hr>{% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Последние заказы -->
+    {% if recent_orders %}
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">📋 {% trans "Последние заказы" %}</h5>
+            </div>
+            <div class="card-body">
+                {% for order in recent_orders %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <strong>{{ order.title }}</strong>
+                        <br><small class="text-muted">{{ order.factory__name }}</small>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-{% if order.status == 'uploaded' %}warning{% elif order.status == 'sent' %}info{% elif order.status == 'completed' %}success{% else %}secondary{% endif %}">
+                            {% if order.status == 'uploaded' %}{% trans "Загружен" %}
+                            {% elif order.status == 'sent' %}{% trans "Отправлен" %}
+                            {% elif order.status == 'invoice_received' %}{% trans "Инвойс получен" %}
+                            {% elif order.status == 'completed' %}{% trans "Завершен" %}
+                            {% elif order.status == 'cancelled' %}{% trans "Отменен" %}
+                            {% else %}{{ order.status }}{% endif %}
+                        </span>
+                        <br><a href="{% url 'order_detail' order.id %}" class="btn btn-sm btn-outline-primary">{% trans "Просмотр" %}</a>
+                    </div>
+                </div>
+                {% if not forloop.last %}<hr>{% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Предупреждения -->
+{% if overdue_orders > 0 %}
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-warning" role="alert">
+            <h4 class="alert-heading">⚠️ {% trans "Внимание!" %}</h4>
+            <p>{% trans "У вас есть" %} <strong>{{ overdue_orders }}</strong> {% trans "просроченных заказов, требующих внимания." %}</p>
+            <hr>
+            <p class="mb-0">
+                <a href="{% url 'order_list' %}?status=uploaded" class="btn btn-warning">{% trans "Просмотреть просроченные заказы" %}</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% else %}
+<!-- Неавторизованный пользователь -->
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="jumbotron bg-light p-5 rounded text-center">
+            <h1 class="display-4">{% trans "Добро пожаловать в XXL OrderHub!" %}</h1>
+            <p class="lead">{% trans "Система управления заказами для вашего бизнеса." %}</p>
+            <hr class="my-4">
+            <p>{% trans "Для начала работы необходимо войти в систему или зарегистрироваться." %}</p>
+            <a class="btn btn-primary btn-lg" href="{% url 'login' %}" role="button">{% trans "Войти" %}</a>
+            <a class="btn btn-outline-primary btn-lg" href="{% url 'signup' %}" role="button">{% trans "Регистрация" %}</a>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

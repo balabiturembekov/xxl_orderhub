@@ -1,0 +1,315 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load widget_tweaks %}
+
+{% block title %}Уведомления - XXL OrderHub{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Главная" %}</a></li>
+                    <li class="breadcrumb-item active">{% trans "Уведомления" %}</li>
+                </ol>
+            </nav>
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2>
+                        <i class="fas fa-bell me-2"></i>{% trans "Уведомления" %}
+                    </h2>
+                    <p class="text-muted mb-0">
+                        {% trans "Всего" %}: {{ total_count }} | 
+                        {% trans "Непрочитанных" %}: <span class="text-danger fw-bold">{{ unread_count }}</span>
+                    </p>
+                </div>
+                <div>
+                    <a href="{% url 'notification_settings' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-cog me-1"></i>{% trans "Настройки" %}
+                    </a>
+                </div>
+            </div>
+
+            <!-- Фильтры -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-filter me-2"></i>{% trans "Фильтры и поиск" %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if form %}
+                    <form method="get" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="{{ form.search.id_for_label }}" class="form-label">{% trans "Поиск" %}</label>
+                            {{ form.search|add_class:"form-control" }}
+                        </div>
+                        <div class="col-md-2">
+                            <label for="{{ form.notification_type.id_for_label }}" class="form-label">{% trans "Тип" %}</label>
+                            {{ form.notification_type|add_class:"form-select" }}
+                        </div>
+                        <div class="col-md-2">
+                            <label for="{{ form.status.id_for_label }}" class="form-label">{% trans "Статус" %}</label>
+                            {{ form.status|add_class:"form-select" }}
+                        </div>
+                        <div class="col-md-2">
+                            <label for="{{ form.date_from.id_for_label }}" class="form-label">{% trans "С даты" %}</label>
+                            {{ form.date_from|add_class:"form-control" }}
+                        </div>
+                        <div class="col-md-2">
+                            <label for="{{ form.date_to.id_for_label }}" class="form-label">{% trans "По дату" %}</label>
+                            {{ form.date_to|add_class:"form-control" }}
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search me-1"></i>{% trans "Применить фильтры" %}
+                            </button>
+                            <a href="{% url 'notification_list' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-1"></i>{% trans "Сбросить" %}
+                            </a>
+                            {% if unread_count > 0 %}
+                            <button type="button" class="btn btn-success" id="mark-all-read-btn">
+                                <i class="fas fa-check-double me-1"></i>{% trans "Отметить все как прочитанные" %}
+                            </button>
+                            {% endif %}
+                        </div>
+                    </form>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Форма фильтрации недоступна. Обратитесь к администратору.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if notifications %}
+                <div class="row">
+                    {% for notification in notifications %}
+                    <div class="col-12 mb-3">
+                        <div class="card notification-card {% if not notification.is_read %}notification-unread{% endif %} 
+                                    notification-{{ notification.notification_type }} h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <!-- Заголовок с иконкой типа -->
+                                        <div class="d-flex align-items-center mb-2">
+                                            <div class="notification-icon me-3">
+                                                {% if notification.notification_type == 'order_uploaded' %}
+                                                    <i class="fas fa-upload text-primary"></i>
+                                                {% elif notification.notification_type == 'order_sent' %}
+                                                    <i class="fas fa-paper-plane text-info"></i>
+                                                {% elif notification.notification_type == 'invoice_received' %}
+                                                    <i class="fas fa-file-invoice text-success"></i>
+                                                {% elif notification.notification_type == 'order_completed' %}
+                                                    <i class="fas fa-check-circle text-dark"></i>
+                                                {% elif notification.notification_type == 'uploaded_reminder' %}
+                                                    <i class="fas fa-exclamation-triangle text-warning"></i>
+                                                {% elif notification.notification_type == 'sent_reminder' %}
+                                                    <i class="fas fa-clock text-warning"></i>
+                                                {% else %}
+                                                    <i class="fas fa-bell text-secondary"></i>
+                                                {% endif %}
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <h5 class="card-title mb-1">{{ notification.title }}</h5>
+                                                <div class="d-flex align-items-center">
+                                                    <span class="badge notification-type-badge me-2">
+                                                        {% if notification.notification_type == 'order_uploaded' %}
+                                                            {% trans "Загрузка заказа" %}
+                                                        {% elif notification.notification_type == 'order_sent' %}
+                                                            {% trans "Отправка заказа" %}
+                                                        {% elif notification.notification_type == 'invoice_received' %}
+                                                            {% trans "Получение инвойса" %}
+                                                        {% elif notification.notification_type == 'order_completed' %}
+                                                            {% trans "Завершение заказа" %}
+                                                        {% elif notification.notification_type == 'uploaded_reminder' %}
+                                                            {% trans "Напоминание" %}
+                                                        {% elif notification.notification_type == 'sent_reminder' %}
+                                                            {% trans "Напоминание" %}
+                                                        {% else %}
+                                                            {{ notification.notification_type }}
+                                                        {% endif %}
+                                                    </span>
+                                                    {% if not notification.is_read %}
+                                                    <span class="badge bg-primary">{% trans "Новое" %}</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Сообщение -->
+                                        <p class="card-text text-muted mb-3">{{ notification.message|linebreaks }}</p>
+                                        
+                                        <!-- Метаинформация -->
+                                        <div class="d-flex align-items-center text-muted small flex-wrap">
+                                            <div class="me-3">
+                                                <i class="fas fa-clock me-1"></i>
+                                                <span>{{ notification.created_at|date:"d.m.Y H:i" }}</span>
+                                            </div>
+                                            
+                                            {% if notification.order %}
+                                            <div class="me-3">
+                                                <i class="fas fa-shopping-bag me-1"></i>
+                                                <a href="{% url 'order_detail' notification.order.pk %}" class="text-decoration-none">
+                                                    {{ notification.order.title }}
+                                                </a>
+                                            </div>
+                                            {% endif %}
+                                            
+                                            <div class="ms-auto">
+                                                {% if not notification.is_read %}
+                                                <button class="btn btn-sm btn-outline-primary mark-read-btn" 
+                                                        data-notification-id="{{ notification.pk }}"
+                                                        title="{% trans 'Пометить как прочитанное' %}">
+                                                    <i class="fas fa-check me-1"></i>{% trans "Прочитано" %}
+                                                </button>
+                                                {% else %}
+                                                <span class="text-success">
+                                                    <i class="fas fa-check-circle me-1"></i>{% trans "Прочитано" %}
+                                                </span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Пагинация -->
+                {% if notifications.has_other_pages %}
+                <nav aria-label="{% trans 'Навигация по уведомлениям' %}">
+                    <ul class="pagination justify-content-center">
+                        {% if notifications.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1">{% trans "Первая" %}</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ notifications.previous_page_number }}">{% trans "Предыдущая" %}</a>
+                        </li>
+                        {% endif %}
+                        
+                        <li class="page-item active">
+                            <span class="page-link">
+                                {% trans "Страница" %} {{ notifications.number }} {% trans "из" %} {{ notifications.paginator.num_pages }}
+                            </span>
+                        </li>
+                        
+                        {% if notifications.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ notifications.next_page_number }}">{% trans "Следующая" %}</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ notifications.paginator.num_pages }}">{% trans "Последняя" %}</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+                
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">{% trans "Нет уведомлений" %}</h4>
+                    <p class="text-muted">{% trans "У вас пока нет уведомлений. Они появятся здесь при изменении статуса заказов." %}</p>
+                    <a href="{% url 'create_order' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>{% trans "Создать заказ" %}
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Обработка кнопки "Пометить как прочитанное"
+    document.querySelectorAll('.mark-read-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const notificationId = this.dataset.notificationId;
+            const card = this.closest('.card');
+            
+            fetch(`/notifications/${notificationId}/read/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    markNotificationAsRead(card, this);
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+            });
+        });
+    });
+    
+    // Обработка кнопки "Отметить все как прочитанные"
+    const markAllReadBtn = document.getElementById('mark-all-read-btn');
+    if (markAllReadBtn) {
+        markAllReadBtn.addEventListener('click', function() {
+            if (confirm('{% trans "Отметить все уведомления как прочитанные?" %}')) {
+                // Находим все непрочитанные уведомления
+                const unreadCards = document.querySelectorAll('.notification-unread');
+                const unreadButtons = document.querySelectorAll('.mark-read-btn');
+                
+                // Отправляем запросы для каждого непрочитанного уведомления
+                const promises = Array.from(unreadButtons).map(btn => {
+                    const notificationId = btn.dataset.notificationId;
+                    return fetch(`/notifications/${notificationId}/read/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                            'Content-Type': 'application/json',
+                        },
+                    });
+                });
+                
+                Promise.all(promises).then(() => {
+                    // Обновляем UI для всех уведомлений
+                    unreadCards.forEach(card => {
+                        const btn = card.querySelector('.mark-read-btn');
+                        if (btn) {
+                            markNotificationAsRead(card, btn);
+                        }
+                    });
+                    
+                    // Обновляем счетчик
+                    location.reload();
+                }).catch(error => {
+                    console.error('Ошибка при массовом обновлении:', error);
+                });
+            }
+        });
+    }
+    
+    function markNotificationAsRead(card, button) {
+        // Убираем badge "Новое"
+        const badge = card.querySelector('.badge.bg-primary');
+        if (badge) {
+            badge.remove();
+        }
+        
+        // Меняем кнопку на галочку
+        button.innerHTML = '<i class="fas fa-check-circle me-1"></i>{% trans "Прочитано" %}';
+        button.classList.remove('btn-outline-primary', 'mark-read-btn');
+        button.classList.add('text-success');
+        button.disabled = true;
+        
+        // Убираем классы непрочитанного
+        card.classList.remove('notification-unread', 'border-primary');
+        card.style.backgroundColor = '';
+    }
+});
+</script>
+{% endblock %}

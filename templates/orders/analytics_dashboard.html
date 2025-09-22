@@ -1,0 +1,349 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Аналитика и отчеты" %} - XXL OrderHub{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>📊 {% trans "Аналитика и отчеты" %}</h2>
+            <div>
+                <a href="{% url 'analytics_export' %}?type=overview&date_from={{ date_range.from }}&date_to={{ date_range.to }}" 
+                   class="btn btn-outline-success btn-sm me-2">
+                    📄 {% trans "Экспорт в Excel" %}
+                </a>
+                <a href="{% url 'order_list' %}" class="btn btn-outline-primary btn-sm">
+                    📋 {% trans "К заказам" %}
+                </a>
+            </div>
+        </div>
+
+        <!-- Фильтры -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="date_from" class="form-label">{% trans "Дата с" %}</label>
+                        <input type="date" class="form-control" id="date_from" name="date_from" 
+                               value="{{ date_range.from }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="date_to" class="form-label">{% trans "Дата по" %}</label>
+                        <input type="date" class="form-control" id="date_to" name="date_to" 
+                               value="{{ date_range.to }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">{% trans "Применить фильтр" %}</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- KPI метрики -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title text-primary">{{ kpi_metrics.total_orders }}</h5>
+                        <p class="card-text">{% trans "Всего заказов" %}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title text-success">{{ kpi_metrics.completion_rate }}%</h5>
+                        <p class="card-text">{% trans "Завершено" %}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title text-info">{{ kpi_metrics.invoice_rate }}%</h5>
+                        <p class="card-text">{% trans "С инвойсами" %}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title text-warning">{{ kpi_metrics.avg_processing_time }}</h5>
+                        <p class="card-text">{% trans "Среднее время (дни)" %}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Общая статистика -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">{% trans "Статистика по статусам" %}</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="statusChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Статистика по фабрикам -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">{% trans "Топ фабрик по заказам" %}</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="factoryChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Временные ряды -->
+            <div class="col-md-8 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">{% trans "Динамика заказов" %}</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="timeSeriesChart" width="600" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Просроченные заказы -->
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">{% trans "Просроченные заказы" %}</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if overdue_orders %}
+                        <div class="list-group">
+                            {% for order in overdue_orders|slice:":5" %}
+                            <a href="{% url 'order_detail' order.pk %}" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ order.title|truncatechars:20 }}</h6>
+                                    <small>{{ order.days_since_upload|default:order.days_since_sent }} {% trans "дней" %}</small>
+                                </div>
+                                <p class="mb-1">{{ order.factory.name }}</p>
+                                <small class="text-warning">⚠️ {% trans "Требует внимания" %}</small>
+                            </a>
+                            {% endfor %}
+                        </div>
+                        {% if overdue_orders|length > 5 %}
+                        <div class="text-center mt-2">
+                            <small class="text-muted">{% trans "И еще" %} {{ overdue_orders|length|add:"-5" }} {% trans "заказов" %}</small>
+                        </div>
+                        {% endif %}
+                        {% else %}
+                        <div class="text-center text-muted">
+                            <i class="fas fa-check-circle fa-3x mb-3"></i>
+                            <p>{% trans "Просроченных заказов нет" %}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Детальная статистика -->
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">{% trans "Статистика по фабрикам" %}</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if factory_stats %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>{% trans "Фабрика" %}</th>
+                                        <th>{% trans "Заказы" %}</th>
+                                        <th>{% trans "Завершено" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for factory in factory_stats|slice:":10" %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ factory.factory__name }}</strong><br>
+                                            <small class="text-muted">{{ factory.factory__country__name }}</small>
+                                        </td>
+                                        <td>{{ factory.total_orders }}</td>
+                                        <td>
+                                            <span class="badge bg-success">{{ factory.completed_orders }}</span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center text-muted">
+                            <p>{% trans "Нет данных за выбранный период" %}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">{% trans "Статистика по странам" %}</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if country_stats %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>{% trans "Страна" %}</th>
+                                        <th>{% trans "Заказы" %}</th>
+                                        <th>{% trans "Фабрики" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for country in country_stats %}
+                                    <tr>
+                                        <td><strong>{{ country.factory__country__name }}</strong></td>
+                                        <td>{{ country.total_orders }}</td>
+                                        <td>{{ country.total_factories }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center text-muted">
+                            <p>{% trans "Нет данных за выбранный период" %}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+// Данные для графиков
+const statusData = {
+    labels: ['{% trans "Загружено" %}', '{% trans "Отправлено" %}', '{% trans "Инвойс получен" %}', '{% trans "Завершено" %}', '{% trans "Отменено" %}'],
+    datasets: [{
+        data: [{{ overview.uploaded }}, {{ overview.sent }}, {{ overview.invoice_received }}, {{ overview.completed }}, {{ overview.cancelled }}],
+        backgroundColor: ['#ffc107', '#17a2b8', '#28a745', '#6f42c1', '#dc3545'],
+        borderWidth: 1
+    }]
+};
+
+const factoryData = {
+    labels: [
+        {% for factory in factory_stats|slice:":5" %}
+        '{{ factory.factory__name|truncatechars:15 }}',
+        {% endfor %}
+    ],
+    datasets: [{
+        label: '{% trans "Количество заказов" %}',
+        data: [
+            {% for factory in factory_stats|slice:":5" %}
+            {{ factory.total_orders }},
+            {% endfor %}
+        ],
+        backgroundColor: '#007bff',
+        borderColor: '#0056b3',
+        borderWidth: 1
+    }]
+};
+
+// График статусов
+const statusCtx = document.getElementById('statusChart').getContext('2d');
+new Chart(statusCtx, {
+    type: 'doughnut',
+    data: statusData,
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// График фабрик
+const factoryCtx = document.getElementById('factoryChart').getContext('2d');
+new Chart(factoryCtx, {
+    type: 'bar',
+    data: factoryData,
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        },
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+
+// График временных рядов
+const timeSeriesCtx = document.getElementById('timeSeriesChart').getContext('2d');
+new Chart(timeSeriesCtx, {
+    type: 'line',
+    data: {
+        labels: [
+            {% for item in time_series %}
+            '{{ item.period|date:"d.m" }}',
+            {% endfor %}
+        ],
+        datasets: [{
+            label: '{% trans "Всего заказов" %}',
+            data: [
+                {% for item in time_series %}
+                {{ item.total_orders }},
+                {% endfor %}
+            ],
+            borderColor: '#007bff',
+            backgroundColor: 'rgba(0, 123, 255, 0.1)',
+            tension: 0.1
+        }, {
+            label: '{% trans "Завершено" %}',
+            data: [
+                {% for item in time_series %}
+                {{ item.completed_orders }},
+                {% endfor %}
+            ],
+            borderColor: '#28a745',
+            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+            tension: 0.1
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}Завершение заказа - XXL OrderHub{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Главная" %}</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'order_list' %}">{% trans "Заказы" %}</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'order_detail' order.pk %}">{{ order.title }}</a></li>
+                <li class="breadcrumb-item active">{% trans "Завершение заказа" %}</li>
+            </ol>
+        </nav>
+
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="mb-0">
+                    <i class="fas fa-exclamation-triangle"></i> {% trans "Подтверждение завершения заказа" %}
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h5>{% trans "Вы уверены, что хотите завершить этот заказ?" %}</h5>
+                    <p class="mb-0">{% trans "После завершения заказ будет помечен как выполненный и больше не будет участвовать в напоминаниях." %}</p>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="mb-0">{% trans "Информация о заказе" %}</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>{% trans "Название:" %}</strong> {{ order.title }}</p>
+                                <p><strong>{% trans "Фабрика:" %}</strong> {{ order.factory.name }}</p>
+                                <p><strong>{% trans "Страна:" %}</strong> {{ order.factory.country.name }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>{% trans "Статус:" %}</strong> 
+                                    <span class="badge bg-success">{{ order.get_status_display }}</span>
+                                </p>
+                                <p><strong>{% trans "Дата загрузки:" %}</strong> {{ order.uploaded_at|date:"d.m.Y H:i" }}</p>
+                                {% if order.sent_at %}
+                                <p><strong>{% trans "Дата отправки:" %}</strong> {{ order.sent_at|date:"d.m.Y H:i" }}</p>
+                                {% endif %}
+                                {% if order.invoice_received_at %}
+                                <p><strong>{% trans "Дата получения инвойса:" %}</strong> {{ order.invoice_received_at|date:"d.m.Y H:i" }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-info-circle"></i> {% trans "Важно:" %}</h6>
+                    <ul class="mb-0">
+                        <li>{% trans "Заказ можно завершить только после получения инвойса от фабрики" %}</li>
+                        <li>{% trans "После завершения статус заказа изменится на 'Завершен'" %}</li>
+                        <li>{% trans "Завершенные заказы не участвуют в системе напоминаний" %}</li>
+                        <li>{% trans "Это действие нельзя отменить" %}</li>
+                    </ul>
+                </div>
+
+                <form method="post" class="d-inline">
+                    {% csrf_token %}
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'order_detail' order.pk %}" class="btn btn-outline-secondary me-md-2">
+                            <i class="fas fa-arrow-left"></i> {% trans "Отмена" %}
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-check-circle"></i> {% trans "Да, завершить заказ" %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

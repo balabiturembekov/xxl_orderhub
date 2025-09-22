@@ -1,0 +1,132 @@
+# Russian translations for XXL OrderHub
+# Copyright (C) 2025 XXL OrderHub
+# This file is distributed under the same license as the XXL OrderHub package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: XXL OrderHub 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-09-19 09:23+0000\n"
+"PO-Revision-Date: 2025-09-19 09:23+0000\n"
+"Last-Translator: \n"
+"Language-Team: Russian\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || "
+"(n%100>=11 && n%100<=14)? 2 : 3);\n"
+#: templates/base.html:30
+msgid "Привет"
+msgstr "Привет"
+
+#: templates/base.html:34
+msgid "Выйти"
+msgstr "Выйти"
+
+#: templates/base.html:38 templates/orders/home.html:32
+#: templates/registration/login.html:55 templates/registration/signup.html:74
+msgid "Войти"
+msgstr "Войти"
+
+#: templates/base.html:39 templates/orders/home.html:33
+#: templates/registration/signup.html:4 templates/registration/signup.html:11
+msgid "Регистрация"
+msgstr "Регистрация"
+
+#: templates/orders/home.html:11
+msgid "Добро пожаловать в XXL OrderHub!"
+msgstr "Добро пожаловать в XXL OrderHub!"
+
+#: templates/orders/home.html:12
+msgid "Система управления заказами для вашего бизнеса."
+msgstr "Система управления заказами для вашего бизнеса."
+
+#: templates/orders/home.html:16
+msgid "Вы вошли как:"
+msgstr "Вы вошли как:"
+
+#: templates/orders/home.html:18
+msgid "Дата регистрации:"
+msgstr "Дата регистрации:"
+
+#: templates/orders/home.html:21
+msgid "Доступные действия: (В Разработке)"
+msgstr "Доступные действия: (В Разработке)"
+
+#: templates/orders/home.html:23
+msgid "Просмотр заказов(В Разработке)"
+msgstr "Просмотр заказов(В Разработке)"
+
+#: templates/orders/home.html:24
+msgid "Создание нового заказа(В Разработке)"
+msgstr "Создание нового заказа(В Разработке)"
+
+#: templates/orders/home.html:25
+msgid "Управление профилем(В Разработке)"
+msgstr "Управление профилем(В Разработке)"
+
+#: templates/orders/home.html:26
+msgid "Аналитика и отчеты(В Разработке)"
+msgstr "Аналитика и отчеты(В Разработке)"
+
+#: templates/orders/home.html:31
+msgid "Для начала работы необходимо войти в систему или зарегистрироваться."
+msgstr "Для начала работы необходимо войти в систему или зарегистрироваться."
+
+#: templates/registration/login.html:4
+msgid "Вход"
+msgstr "Вход"
+
+#: templates/registration/login.html:11
+msgid "Вход в систему"
+msgstr "Вход в систему"
+
+#: templates/registration/login.html:24 templates/registration/signup.html:24
+msgid "Имя пользователя"
+msgstr "Имя пользователя"
+
+#: templates/registration/login.html:36 templates/registration/signup.html:39
+msgid "Пароль"
+msgstr "Пароль"
+
+#: templates/registration/login.html:50
+msgid "Запомнить меня"
+msgstr "Запомнить меня"
+
+#: templates/registration/login.html:60
+msgid "Нет аккаунта?"
+msgstr "Нет аккаунта?"
+
+#: templates/registration/login.html:60 templates/registration/signup.html:69
+msgid "Зарегистрироваться"
+msgstr "Зарегистрироваться"
+
+#: templates/registration/login.html:61
+msgid "Забыли пароль?"
+msgstr "Забыли пароль?"
+
+#: templates/registration/signup.html:54
+msgid "Подтверждение пароля"
+msgstr "Подтверждение пароля"
+
+#: templates/registration/signup.html:74
+msgid "Уже есть аккаунт?"
+msgstr "Уже есть аккаунт?"
+
+#: xxl_orderhub/settings.py:119
+msgid "Русский"
+msgstr "Русский"
+
+#: xxl_orderhub/settings.py:120
+msgid "Deutsch"
+msgstr "Deutsch"
+
+#: templates/base.html:135
+msgid "Выйти из системы"
+msgstr "Выйти из системы"
+
+#: templates/base.html:147
+msgid "Выберите язык"
+msgstr "Выберите язык"

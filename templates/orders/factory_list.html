@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Управление фабриками" %} - XXL OrderHub{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>{% trans "Управление фабриками" %}</h2>
+            <a href="{% url 'factory_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> {% trans "Добавить фабрику" %}
+            </a>
+        </div>
+
+        {% if factories %}
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>{% trans "Название" %}</th>
+                                    <th>{% trans "Страна" %}</th>
+                                    <th>{% trans "Email" %}</th>
+                                    <th>{% trans "Контактное лицо" %}</th>
+                                    <th>{% trans "Статус" %}</th>
+                                    <th>{% trans "Заказы" %}</th>
+                                    <th>{% trans "Действия" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for factory in factories %}
+                                <tr>
+                                    <td>{{ factory.name }}</td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ factory.country.name }}</span>
+                                    </td>
+                                    <td>{{ factory.email }}</td>
+                                    <td>{{ factory.contact_person|default:"—" }}</td>
+                                    <td>
+                                        {% if factory.is_active %}
+                                            <span class="badge bg-success">{% trans "Активна" %}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{% trans "Неактивна" %}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">
+                                            {{ factory.order_set.count }} {% trans "заказов" %}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'factory_edit' factory.pk %}" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-pencil"></i> {% trans "Редактировать" %}
+                                            </a>
+                                            <a href="{% url 'factory_delete' factory.pk %}" class="btn btn-sm btn-outline-danger">
+                                                <i class="bi bi-trash"></i> {% trans "Удалить" %}
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            {% if is_paginated %}
+                <nav aria-label="{% trans 'Страницы фабрик' %}">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1">{% trans "Первая" %}</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">{% trans "Предыдущая" %}</a>
+                            </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">
+                                {% trans "Страница" %} {{ page_obj.number }} {% trans "из" %} {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">{% trans "Следующая" %}</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">{% trans "Последняя" %}</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="alert alert-info text-center">
+                <h4>{% trans "Фабрики не найдены" %}</h4>
+                <p>{% trans "Начните с добавления первой фабрики." %}</p>
+                <a href="{% url 'factory_create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> {% trans "Добавить фабрику" %}
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

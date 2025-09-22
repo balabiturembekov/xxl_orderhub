@@ -1,0 +1,135 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: xxl_orderhub
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # Убираем внешний порт - доступ только внутри Docker сети
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - xxl_orderhub_network
+
+  # Redis Cache & Message Broker
+  redis:
+    image: redis:7-alpine
+    # Убираем внешний порт - доступ только внутри Docker сети
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - xxl_orderhub_network
+
+  # Django Web Application
+  web:
+    build: .
+    # Убираем внешний порт - доступ только через nginx
+    env_file:
+      - docker.env
+    volumes:
+      - ./media:/app/media
+      - ./logs:/app/logs
+      - static_files:/app/static
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             cp -r /app/staticfiles/. /app/static/ &&
+             python manage.py setup_celery_beat &&
+             python manage.py runserver 0.0.0.0:8000"
+    networks:
+      - xxl_orderhub_network
+
+  # Celery Worker
+  worker:
+    build: .
+    env_file:
+      - docker.env
+    volumes:
+      - ./media:/app/media
+      - ./logs:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A xxl_orderhub worker --loglevel=info
+    networks:
+      - xxl_orderhub_network
+
+  # Celery Beat Scheduler
+  beat:
+    build: .
+    env_file:
+      - docker.env
+    volumes:
+      - ./media:/app/media
+      - ./logs:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py setup_celery_beat &&
+             celery -A xxl_orderhub beat --loglevel=info"
+    networks:
+      - xxl_orderhub_network
+
+  # Flower - Celery Monitoring
+  flower:
+    build: .
+    # Убираем внешний порт - доступ только через nginx
+    env_file:
+      - docker.env
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      - redis
+      - worker
+    command: celery -A xxl_orderhub flower --port=5555 --broker=redis://redis:6379/0 --basic_auth=admin:admin123
+    networks:
+      - xxl_orderhub_network
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: xxl_orderhub_nginx
+    ports:
+      - "8280:80"  # 👉 только этот порт наружу
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./media:/app/media:ro  # Только для чтения
+      - static_files:/app/static:ro  # Только для чтения
+    depends_on:
+      - web
+      - flower
+    networks:
+      - xxl_orderhub_network
+
+networks:
+  xxl_orderhub_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  static_files:
