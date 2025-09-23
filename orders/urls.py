@@ -20,7 +20,10 @@ urlpatterns = [
     path("orders/create/", views.create_order, name="create_order"),
     path("orders/<int:pk>/", views.OrderDetailView.as_view(), name="order_detail"),
     path("orders/<int:pk>/send/", views.send_order, name="send_order"),
+    path("orders/<int:pk>/send-execute/", views.send_order_execute, name="send_order_execute"),
     path("orders/<int:pk>/upload-invoice/", views.upload_invoice, name="upload_invoice"),
+    path("orders/<int:pk>/upload-invoice-execute/", views.upload_invoice_execute, name="upload_invoice_execute"),
+    path("orders/<int:pk>/complete/", views.complete_order, name="complete_order"),
     path("orders/<int:pk>/download/<str:file_type>/", views.download_file, name="download_file"),
     
     # AJAX endpoints
@@ -34,6 +37,12 @@ urlpatterns = [
     
     # Аналитика
     path("analytics/", views.AnalyticsDashboardView.as_view(), name="analytics_dashboard"),
+    
+    # Подтверждения
+    path("confirmations/", views.confirmation_list, name="confirmation_list"),
+    path("confirmations/<int:pk>/", views.confirmation_detail, name="confirmation_detail"),
+    path("confirmations/<int:pk>/approve/", views.confirmation_approve, name="confirmation_approve"),
+    path("confirmations/<int:pk>/reject/", views.confirmation_reject, name="confirmation_reject"),
     path("analytics/export/", views.analytics_export, name="analytics_export"),
     path("api/analytics/", views.analytics_api, name="analytics_api"),
     

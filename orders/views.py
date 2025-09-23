@@ -13,8 +13,9 @@ from django.core.mail import EmailMessage
 from django.conf import settings
 from django.utils import timezone
 from django.core.cache import cache
+from django.db.models import Q
 from datetime import datetime
-from .models import Factory, Order, Notification, NotificationSettings, Country
+from .models import Factory, Order, Notification, NotificationSettings, Country, OrderConfirmation, OrderAuditLog
 from .forms import OrderForm, InvoiceUploadForm, CountryForm, FactoryForm, NotificationSettingsForm, NotificationFilterForm
 from .file_preview import generate_file_preview
 from .tasks import send_order_notification
@@ -222,13 +223,57 @@ def create_order(request):
 
 @login_required
 def send_order(request, pk):
+    """Показ страницы подтверждения отправки заказа"""
     order = get_object_or_404(Order, pk=pk, employee=request.user)
     
     if order.status != 'uploaded':
         messages.error(request, 'Заказ уже отправлен или имеет другой статус!')
         return redirect('order_detail', pk=pk)
     
+    # Проверяем, есть ли активное подтверждение
+    active_confirmation = OrderConfirmation.objects.filter(
+        order=order,
+        action='send_order',
+        status='pending',
+        expires_at__gt=timezone.now()
+    ).first()
+    
+    if active_confirmation:
+        messages.warning(request, 'У вас уже есть активное подтверждение для отправки этого заказа.')
+        return redirect('confirmation_detail', pk=active_confirmation.pk)
+    
+    return render(request, 'orders/send_order_confirm.html', {
+        'order': order
+    })
+
+
+@login_required
+def send_order_execute(request, pk):
+    """Выполнение отправки заказа после подтверждения"""
+    order = get_object_or_404(Order, pk=pk, employee=request.user)
+    
+    if order.status != 'uploaded':
+        messages.error(request, 'Заказ уже отправлен или имеет другой статус!')
+        return redirect('order_detail', pk=pk)
+    
+    if request.method != 'POST':
+        return redirect('send_order', pk=pk)
+    
     try:
+        # Создаем запись подтверждения
+        confirmation = OrderConfirmation.objects.create(
+            order=order,
+            action='send_order',
+            requested_by=request.user,
+            confirmation_data={
+                'factory_email': order.factory.email,
+                'factory_name': order.factory.name,
+                'order_title': order.title,
+                'order_description': order.description,
+                'excel_file_name': order.excel_file.name if order.excel_file else None,
+            }
+        )
+        
         # Отправка email с Excel файлом
         subject = f'Заказ на производство: {order.title}'
         message = f'''
@@ -263,11 +308,23 @@ def send_order(request, pk):
         # Обновляем статус заказа
         order.mark_as_sent()
         
+        # Подтверждаем операцию
+        confirmation.confirm(request.user, "Заказ успешно отправлен на фабрику")
+        
+        # Создаем запись аудита
+        OrderAuditLog.objects.create(
+            order=order,
+            action='order_sent',
+            user=request.user,
+            details=f'Заказ отправлен на фабрику {order.factory.name}',
+            old_status='uploaded',
+            new_status='sent'
+        )
+        
         # Отправляем уведомление о отправке заказа
         try:
             send_order_notification.delay(order.id, 'order_sent')
         except Exception as e:
-            # В случае ошибки с Celery, просто логируем
             print(f"Ошибка отправки уведомления: {e}")
         
         messages.success(request, f'Заказ успешно отправлен на фабрику {order.factory.name}!')
@@ -280,6 +337,7 @@ def send_order(request, pk):
 
 @login_required
 def upload_invoice(request, pk):
+    """Показ страницы подтверждения загрузки инвойса"""
     order = get_object_or_404(Order, pk=pk, employee=request.user)
     
     # Проверяем, что заказ отправлен (можно прикреплять инвойс только после отправки)
@@ -287,28 +345,88 @@ def upload_invoice(request, pk):
         messages.error(request, 'Инвойс можно прикрепить только после отправки заказа на фабрику!')
         return redirect('order_detail', pk=pk)
     
-    if request.method == 'POST':
-        form = InvoiceUploadForm(request.POST, request.FILES)
-        if form.is_valid():
+    # Проверяем, есть ли активное подтверждение
+    active_confirmation = OrderConfirmation.objects.filter(
+        order=order,
+        action='upload_invoice',
+        status='pending',
+        expires_at__gt=timezone.now()
+    ).first()
+    
+    if active_confirmation:
+        messages.warning(request, 'У вас уже есть активное подтверждение для загрузки инвойса этого заказа.')
+        return redirect('confirmation_detail', pk=active_confirmation.pk)
+    
+    form = InvoiceUploadForm()
+    return render(request, 'orders/upload_invoice_confirm.html', {
+        'form': form,
+        'order': order
+    })
+
+
+@login_required
+def upload_invoice_execute(request, pk):
+    """Выполнение загрузки инвойса после подтверждения"""
+    order = get_object_or_404(Order, pk=pk, employee=request.user)
+    
+    # Проверяем, что заказ отправлен (можно прикреплять инвойс только после отправки)
+    if order.status not in ['sent', 'invoice_received']:
+        messages.error(request, 'Инвойс можно прикрепить только после отправки заказа на фабрику!')
+        return redirect('order_detail', pk=pk)
+    
+    if request.method != 'POST':
+        return redirect('upload_invoice', pk=pk)
+    
+    form = InvoiceUploadForm(request.POST, request.FILES)
+    if form.is_valid():
+        try:
             invoice_file = form.cleaned_data['invoice_file']
+            old_status = order.status
+            
+            # Создаем запись подтверждения
+            confirmation = OrderConfirmation.objects.create(
+                order=order,
+                action='upload_invoice',
+                requested_by=request.user,
+                confirmation_data={
+                    'invoice_file_name': invoice_file.name,
+                    'invoice_file_size': invoice_file.size,
+                    'order_title': order.title,
+                    'factory_name': order.factory.name,
+                }
+            )
+            
+            # Обновляем статус заказа
             order.mark_invoice_received(invoice_file)
+            
+            # Подтверждаем операцию
+            confirmation.confirm(request.user, f"Инвойс {invoice_file.name} успешно загружен")
+            
+            # Создаем запись аудита
+            OrderAuditLog.objects.create(
+                order=order,
+                action='invoice_uploaded',
+                user=request.user,
+                details=f'Загружен инвойс: {invoice_file.name}',
+                old_status=old_status,
+                new_status='invoice_received'
+            )
             
             # Отправляем уведомление о получении инвойса
             try:
                 send_order_notification.delay(order.id, 'invoice_received')
             except Exception as e:
-                # В случае ошибки с Celery, просто логируем
                 print(f"Ошибка отправки уведомления: {e}")
             
             messages.success(request, 'Инвойс успешно прикреплен к заказу!')
-            return redirect('order_detail', pk=pk)
+            
+        except Exception as e:
+            messages.error(request, f'Ошибка при загрузке инвойса: {str(e)}')
     else:
-        form = InvoiceUploadForm()
+        messages.error(request, 'Ошибка в форме загрузки инвойса!')
+        return redirect('upload_invoice', pk=pk)
     
-    return render(request, 'orders/upload_invoice.html', {
-        'form': form,
-        'order': order
-    })
+    return redirect('order_detail', pk=pk)
 
 
 @login_required
@@ -873,7 +991,7 @@ def test_notification(request):
 
 @login_required
 def complete_order(request, pk):
-    """Завершение заказа"""
+    """Завершение заказа с подтверждением"""
     order = get_object_or_404(Order, pk=pk, employee=request.user)
     
     # Проверяем, что заказ можно завершить
@@ -881,21 +999,167 @@ def complete_order(request, pk):
         messages.error(request, 'Заказ можно завершить только после получения инвойса!')
         return redirect('order_detail', pk=pk)
     
+    # Проверяем, есть ли активное подтверждение
+    active_confirmation = OrderConfirmation.objects.filter(
+        order=order,
+        action='complete_order',
+        status='pending',
+        expires_at__gt=timezone.now()
+    ).first()
+    
+    if active_confirmation:
+        messages.warning(request, 'У вас уже есть активное подтверждение для завершения этого заказа.')
+        return redirect('confirmation_detail', pk=active_confirmation.pk)
+    
     if request.method == 'POST':
-        # Завершаем заказ
-        order.mark_as_completed()
-        
-        # Отправляем уведомление о завершении
         try:
-            send_order_notification.delay(order.id, 'order_completed')
+            # Создаем запись подтверждения
+            confirmation = OrderConfirmation.objects.create(
+                order=order,
+                action='complete_order',
+                requested_by=request.user,
+                confirmation_data={
+                    'order_title': order.title,
+                    'factory_name': order.factory.name,
+                    'completion_reason': request.POST.get('completion_reason', ''),
+                }
+            )
+            
+            # Завершаем заказ
+            order.mark_as_completed()
+            
+            # Подтверждаем операцию
+            confirmation.confirm(request.user, "Заказ успешно завершен")
+            
+            # Создаем запись аудита
+            OrderAuditLog.objects.create(
+                order=order,
+                action='order_completed',
+                user=request.user,
+                details='Заказ завершен пользователем',
+                old_status='invoice_received',
+                new_status='completed'
+            )
+            
+            # Отправляем уведомление о завершении
+            try:
+                send_order_notification.delay(order.id, 'order_completed')
+            except Exception as e:
+                print(f"Ошибка отправки уведомления: {e}")
+            
+            messages.success(request, f'Заказ "{order.title}" успешно завершен!')
+            
         except Exception as e:
-            print(f"Ошибка отправки уведомления: {e}")
+            messages.error(request, f'Ошибка при завершении заказа: {str(e)}')
         
-        messages.success(request, f'Заказ "{order.title}" успешно завершен!')
         return redirect('order_detail', pk=pk)
     
     return render(request, 'orders/complete_order_confirm.html', {
         'order': order
+    })
+
+
+# ===== УПРАВЛЕНИЕ ПОДТВЕРЖДЕНИЯМИ =====
+
+@login_required
+def confirmation_list(request):
+    """Список подтверждений пользователя"""
+    confirmations = OrderConfirmation.objects.filter(
+        order__employee=request.user
+    ).select_related('order', 'requested_by', 'confirmed_by').order_by('-requested_at')
+    
+    # Фильтрация по статусу
+    status_filter = request.GET.get('status')
+    if status_filter:
+        confirmations = confirmations.filter(status=status_filter)
+    
+    # Пагинация
+    from django.core.paginator import Paginator
+    paginator = Paginator(confirmations, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'orders/confirmation_list.html', {
+        'page_obj': page_obj,
+        'status_choices': OrderConfirmation._meta.get_field('status').choices,
+        'status_filter': status_filter,
+    })
+
+
+@login_required
+def confirmation_detail(request, pk):
+    """Детальная страница подтверждения"""
+    confirmation = get_object_or_404(OrderConfirmation, pk=pk, order__employee=request.user)
+    
+    return render(request, 'orders/confirmation_detail.html', {
+        'confirmation': confirmation,
+    })
+
+
+@login_required
+def confirmation_approve(request, pk):
+    """Подтверждение операции"""
+    confirmation = get_object_or_404(OrderConfirmation, pk=pk, order__employee=request.user)
+    
+    if confirmation.status != 'pending':
+        messages.error(request, 'Это подтверждение уже обработано!')
+        return redirect('confirmation_detail', pk=pk)
+    
+    if confirmation.is_expired():
+        messages.error(request, 'Срок подтверждения истек!')
+        return redirect('confirmation_detail', pk=pk)
+    
+    if request.method == 'POST':
+        comments = request.POST.get('comments', '')
+        
+        try:
+            # Выполняем соответствующее действие
+            if confirmation.action == 'send_order':
+                # Логика отправки уже выполнена в send_order_execute
+                pass
+            elif confirmation.action == 'upload_invoice':
+                # Логика загрузки уже выполнена в upload_invoice_execute
+                pass
+            elif confirmation.action == 'complete_order':
+                # Логика завершения уже выполнена в complete_order
+                pass
+            
+            confirmation.confirm(request.user, comments)
+            messages.success(request, 'Операция успешно подтверждена!')
+            
+        except Exception as e:
+            messages.error(request, f'Ошибка при подтверждении: {str(e)}')
+        
+        return redirect('confirmation_detail', pk=pk)
+    
+    return render(request, 'orders/confirmation_approve.html', {
+        'confirmation': confirmation,
+    })
+
+
+@login_required
+def confirmation_reject(request, pk):
+    """Отклонение операции"""
+    confirmation = get_object_or_404(OrderConfirmation, pk=pk, order__employee=request.user)
+    
+    if confirmation.status != 'pending':
+        messages.error(request, 'Это подтверждение уже обработано!')
+        return redirect('confirmation_detail', pk=pk)
+    
+    if request.method == 'POST':
+        reason = request.POST.get('reason', '')
+        
+        try:
+            confirmation.reject(request.user, reason)
+            messages.success(request, 'Операция отклонена!')
+            
+        except Exception as e:
+            messages.error(request, f'Ошибка при отклонении: {str(e)}')
+        
+        return redirect('confirmation_detail', pk=pk)
+    
+    return render(request, 'orders/confirmation_reject.html', {
+        'confirmation': confirmation,
     })
 
 

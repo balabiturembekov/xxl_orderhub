@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Подтверждения операций" %} - XXL OrderHub{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-shield-alt"></i> {% trans "Подтверждения операций" %}</h2>
+            <a href="{% url 'order_list' %}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> {% trans "Назад к заказам" %}
+            </a>
+        </div>
+
+        <!-- Фильтры -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="id_status" class="form-label">{% trans "Статус" %}</label>
+                        <select class="form-select" id="id_status" name="status">
+                            <option value="">{% trans "Все статусы" %}</option>
+                            {% for value, label in status_choices %}
+                            <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-outline-primary">{% trans "Фильтровать" %}</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Список подтверждений -->
+        {% if page_obj %}
+        <div class="row">
+            {% for confirmation in page_obj %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">
+                            {% if confirmation.action == 'send_order' %}
+                                <i class="fas fa-paper-plane text-primary"></i>
+                            {% elif confirmation.action == 'upload_invoice' %}
+                                <i class="fas fa-file-invoice text-success"></i>
+                            {% elif confirmation.action == 'complete_order' %}
+                                <i class="fas fa-check-circle text-dark"></i>
+                            {% else %}
+                                <i class="fas fa-cog text-secondary"></i>
+                            {% endif %}
+                            {{ confirmation.get_action_display }}
+                        </h6>
+                        <span class="badge bg-{% if confirmation.status == 'pending' %}warning{% elif confirmation.status == 'confirmed' %}success{% elif confirmation.status == 'rejected' %}danger{% else %}secondary{% endif %}">
+                            {{ confirmation.get_status_display }}
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">
+                            <strong>{% trans "Заказ:" %}</strong> {{ confirmation.order.title }}<br>
+                            <strong>{% trans "Фабрика:" %}</strong> {{ confirmation.order.factory.name }}<br>
+                            <strong>{% trans "Запрошено:" %}</strong> {{ confirmation.requested_at|date:"d.m.Y H:i" }}
+                        </p>
+                        
+                        {% if confirmation.status == 'pending' %}
+                        <div class="alert alert-warning alert-sm py-2 mb-2">
+                            <small>
+                                <i class="fas fa-clock"></i> 
+                                {% trans "Истекает" %} {{ confirmation.expires_at|date:"d.m.Y H:i" }}
+                            </small>
+                        </div>
+                        {% elif confirmation.status == 'confirmed' and confirmation.confirmed_at %}
+                        <div class="alert alert-success alert-sm py-2 mb-2">
+                            <small>
+                                <i class="fas fa-check"></i> 
+                                {% trans "Подтверждено" %} {{ confirmation.confirmed_at|date:"d.m.Y H:i" }}
+                            </small>
+                        </div>
+                        {% elif confirmation.status == 'rejected' and confirmation.confirmed_at %}
+                        <div class="alert alert-danger alert-sm py-2 mb-2">
+                            <small>
+                                <i class="fas fa-times"></i> 
+                                {% trans "Отклонено" %} {{ confirmation.confirmed_at|date:"d.m.Y H:i" }}
+                            </small>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="card-footer">
+                        <div class="btn-group w-100" role="group">
+                            <a href="{% url 'confirmation_detail' confirmation.pk %}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-eye"></i> {% trans "Просмотр" %}
+                            </a>
+                            <a href="{% url 'order_detail' confirmation.order.pk %}" class="btn btn-outline-info btn-sm">
+                                <i class="fas fa-shopping-cart"></i> {% trans "Заказ" %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Пагинация -->
+        {% if page_obj.has_other_pages %}
+        <nav aria-label="{% trans 'Навигация по страницам' %}">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                        {% trans "Первая" %}
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                        {% trans "Предыдущая" %}
+                    </a>
+                </li>
+                {% endif %}
+
+                <li class="page-item active">
+                    <span class="page-link">
+                        {% trans "Страница" %} {{ page_obj.number }} {% trans "из" %} {{ page_obj.paginator.num_pages }}
+                    </span>
+                </li>
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                        {% trans "Следующая" %}
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                        {% trans "Последняя" %}
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        {% else %}
+        <div class="text-center py-5">
+            <div class="mb-4">
+                <i class="fas fa-shield-alt fa-3x text-muted"></i>
+            </div>
+            <h4 class="text-muted">{% trans "Подтверждения не найдены" %}</h4>
+            <p class="text-muted">{% trans "У вас пока нет подтверждений операций или они не соответствуют выбранным фильтрам." %}</p>
+            <a href="{% url 'order_list' %}" class="btn btn-primary">
+                <i class="fas fa-shopping-cart"></i> {% trans "Перейти к заказам" %}
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
