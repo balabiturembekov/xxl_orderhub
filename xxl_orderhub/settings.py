@@ -29,7 +29,7 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-i+1p%&$$l%5iks9x@1b!k
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,testserver,192.168.0.100,web,worker,beat,flower', cast=Csv())
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,testserver,192.168.0.100,web,worker,beat,flower,orderhub.automatonsoft.de', cast=Csv())
 
 
 # Application definition
@@ -241,7 +241,7 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_COOKIE_DOMAIN = None  # Позволяет работать с разными портами
 
 # CSRF Security
-CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='http://192.168.0.100:8280,http://localhost:8280', cast=Csv())
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='http://192.168.0.100:8280,http://localhost:8280,https://orderhub.automatonsoft.de', cast=Csv())
 CSRF_COOKIE_SECURE = False  # Для HTTP
 CSRF_COOKIE_HTTPONLY = False  # Для AJAX
 CSRF_COOKIE_SAMESITE = 'Lax'  # Для работы с разными портами
