@@ -314,11 +314,12 @@ def send_order_execute(request, pk):
         # Создаем запись аудита
         OrderAuditLog.objects.create(
             order=order,
-            action='order_sent',
+            action='sent',
             user=request.user,
-            details=f'Заказ отправлен на фабрику {order.factory.name}',
-            old_status='uploaded',
-            new_status='sent'
+            old_value='uploaded',
+            new_value='sent',
+            field_name='status',
+            comments=f'Заказ отправлен на фабрику {order.factory.name}'
         )
         
         # Отправляем уведомление о отправке заказа
@@ -405,11 +406,12 @@ def upload_invoice_execute(request, pk):
             # Создаем запись аудита
             OrderAuditLog.objects.create(
                 order=order,
-                action='invoice_uploaded',
+                action='file_uploaded',
                 user=request.user,
-                details=f'Загружен инвойс: {invoice_file.name}',
-                old_status=old_status,
-                new_status='invoice_received'
+                old_value=old_status,
+                new_value='invoice_received',
+                field_name='status',
+                comments=f'Загружен инвойс: {invoice_file.name}'
             )
             
             # Отправляем уведомление о получении инвойса
@@ -1034,11 +1036,12 @@ def complete_order(request, pk):
             # Создаем запись аудита
             OrderAuditLog.objects.create(
                 order=order,
-                action='order_completed',
+                action='completed',
                 user=request.user,
-                details='Заказ завершен пользователем',
-                old_status='invoice_received',
-                new_status='completed'
+                old_value='invoice_received',
+                new_value='completed',
+                field_name='status',
+                comments='Заказ завершен пользователем'
             )
             
             # Отправляем уведомление о завершении
