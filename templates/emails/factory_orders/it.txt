@@ -1,0 +1,19 @@
+XXL OrderHub - Ordine di produzione
+
+Buongiorno!
+
+Vi preghiamo di trovare il file allegato con l'ordine di produzione.
+
+DETTAGLI DELL'ORDINE:
+=====================
+Nome: {{ order.title }}
+Descrizione: {{ order.description }}
+Data dell'ordine: {{ order.uploaded_at|date:"d.m.Y H:i" }}
+
+Vi preghiamo di confermare la ricezione e di inviare la fattura in risposta.
+
+Cordiali saluti,
+{{ order.employee.get_full_name|default:order.employee.username }}
+
+---
+Questo è un messaggio automatico dal sistema XXL OrderHub

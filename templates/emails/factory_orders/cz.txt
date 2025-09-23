@@ -1,0 +1,19 @@
+XXL OrderHub - Výrobní objednávka
+
+Dobrý den!
+
+Prosíme o nalezení přiloženého souboru s výrobní objednávkou.
+
+PODROBNOSTI OBJEDNÁVKY:
+========================
+Název: {{ order.title }}
+Popis: {{ order.description }}
+Datum objednávky: {{ order.uploaded_at|date:"d.m.Y H:i" }}
+
+Prosíme o potvrzení přijetí a zaslání faktury v odpovědi.
+
+S pozdravem,
+{{ order.employee.get_full_name|default:order.employee.username }}
+
+---
+Toto je automatická zpráva ze systému XXL OrderHub

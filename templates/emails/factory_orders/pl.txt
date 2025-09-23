@@ -1,0 +1,19 @@
+XXL OrderHub - Zamówienie produkcyjne
+
+Dzień dobry!
+
+Prosimy o znalezienie załączonego pliku z zamówieniem produkcyjnym.
+
+SZCZEGÓŁY ZAMÓWIENIA:
+=====================
+Nazwa: {{ order.title }}
+Opis: {{ order.description }}
+Data zamówienia: {{ order.uploaded_at|date:"d.m.Y H:i" }}
+
+Prosimy o potwierdzenie otrzymania i przesłanie faktury w odpowiedzi.
+
+Z poważaniem,
+{{ order.employee.get_full_name|default:order.employee.username }}
+
+---
+To jest automatyczna wiadomość z systemu XXL OrderHub

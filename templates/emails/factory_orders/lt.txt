@@ -1,0 +1,19 @@
+XXL OrderHub - Gamybos užsakymas
+
+Labas!
+
+Prašome rasti priedą su gamybos užsakymu.
+
+UŽSAKYMO DETALĖS:
+=================
+Pavadinimas: {{ order.title }}
+Aprašymas: {{ order.description }}
+Užsakymo data: {{ order.uploaded_at|date:"d.m.Y H:i" }}
+
+Prašome patvirtinti gavimą ir atsiųsti sąskaitą atsakyme.
+
+Pagarbiai,
+{{ order.employee.get_full_name|default:order.employee.username }}
+
+---
+Tai automatinis pranešimas iš XXL OrderHub sistemos

@@ -11,6 +11,7 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.core.mail import EmailMessage
 from django.conf import settings
+from django.template.loader import render_to_string
 from django.utils import timezone
 from django.core.cache import cache
 from django.db.models import Q
@@ -293,32 +294,42 @@ def send_order_execute(request, pk):
             }
         )
         
-        # Отправка email с Excel файлом
-        subject = f'Заказ на производство: {order.title}'
-        message = f'''
-        Добрый день!
+        # Определяем язык по стране фабрики
+        from .email_utils import get_language_by_country_code, get_email_subject, get_email_template_paths
         
-        Пожалуйста, найдите прикрепленный файл с заказом на производство.
+        country_code = order.factory.country.code
+        language_code = get_language_by_country_code(country_code)
         
-        Детали заказа:
-        - Название: {order.title}
-        - Описание: {order.description}
-        - Дата заказа: {order.uploaded_at.strftime("%d.%m.%Y %H:%M")}
+        # Получаем пути к шаблонам
+        html_template_path, txt_template_path = get_email_template_paths(language_code)
         
-        Пожалуйста, подтвердите получение и пришлите инвойс в ответном письме.
+        # Формируем заголовок письма
+        subject_prefix = get_email_subject(language_code)
+        subject = f'{subject_prefix}: {order.title}'
         
-        С уважением,
-        {order.employee.get_full_name() or order.employee.username}
-        '''
+        # Рендерим HTML шаблон
+        html_message = render_to_string(html_template_path, {
+            'order': order,
+            'factory': order.factory,
+            'employee': order.employee,
+        })
+        
+        # Рендерим текстовый шаблон
+        text_message = render_to_string(txt_template_path, {
+            'order': order,
+            'factory': order.factory,
+            'employee': order.employee,
+        })
         
         email = EmailMessage(
             subject=subject,
-            body=message,
+            body=text_message,
             from_email=settings.DEFAULT_FROM_EMAIL,
             to=[order.factory.email],
         )
         email.content_subtype = "html"  # Указываем HTML контент
         email.encoding = 'utf-8'  # Явно указываем кодировку
+        email.attach_alternative(html_message, "text/html")
         
         # Прикрепляем Excel файл
         if order.excel_file:

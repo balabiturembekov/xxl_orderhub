@@ -1,0 +1,19 @@
+XXL OrderHub - Produktionsauftrag
+
+Guten Tag!
+
+Bitte finden Sie die angehängte Datei mit dem Produktionsauftrag.
+
+AUFTRAGSDETAILS:
+================
+Name: {{ order.title }}
+Beschreibung: {{ order.description }}
+Auftragsdatum: {{ order.uploaded_at|date:"d.m.Y H:i" }}
+
+Bitte bestätigen Sie den Empfang und senden Sie die Rechnung als Antwort.
+
+Mit freundlichen Grüßen,
+{{ order.employee.get_full_name|default:order.employee.username }}
+
+---
+Dies ist eine automatische Nachricht vom XXL OrderHub System

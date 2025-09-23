@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zamówienie produkcyjne: {{ order.title }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+        }
+        .content {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 0 0 10px 10px;
+        }
+        .order-info {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>XXL OrderHub</h1>
+        <h2>Zamówienie produkcyjne</h2>
+    </div>
+    
+    <div class="content">
+        <p>Dzień dobry!</p>
+        
+        <p>Prosimy o znalezienie załączonego pliku z zamówieniem produkcyjnym.</p>
+        
+        <div class="order-info">
+            <h3>Szczegóły zamówienia:</h3>
+            <p><strong>Nazwa:</strong> {{ order.title }}</p>
+            <p><strong>Opis:</strong> {{ order.description }}</p>
+            <p><strong>Data zamówienia:</strong> {{ order.uploaded_at|date:"d.m.Y H:i" }}</p>
+        </div>
+        
+        <p>Prosimy o potwierdzenie otrzymania i przesłanie faktury w odpowiedzi.</p>
+        
+        <p>Z poważaniem,<br>
+        {{ order.employee.get_full_name|default:order.employee.username }}</p>
+    </div>
+    
+    <div class="footer">
+        <p>To jest automatyczna wiadomość z systemu XXL OrderHub</p>
+    </div>
+</body>
+</html>

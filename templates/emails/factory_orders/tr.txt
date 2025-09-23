@@ -1,0 +1,19 @@
+XXL OrderHub - Üretim Siparişi
+
+Merhaba!
+
+Lütfen üretim siparişi ile birlikte ekli dosyayı bulun.
+
+SİPARİŞ DETAYLARI:
+==================
+Ad: {{ order.title }}
+Açıklama: {{ order.description }}
+Sipariş tarihi: {{ order.uploaded_at|date:"d.m.Y H:i" }}
+
+Lütfen teslim alındığını onaylayın ve yanıt olarak fatura gönderin.
+
+Saygılarımızla,
+{{ order.employee.get_full_name|default:order.employee.username }}
+
+---
+Bu, XXL OrderHub sisteminden otomatik bir mesajdır

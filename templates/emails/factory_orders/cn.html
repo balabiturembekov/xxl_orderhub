@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生产订单: {{ order.title }}</title>
+    <style>
+        body {
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+        }
+        .content {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 0 0 10px 10px;
+        }
+        .order-info {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>XXL OrderHub</h1>
+        <h2>生产订单</h2>
+    </div>
+    
+    <div class="content">
+        <p>您好！</p>
+        
+        <p>请查看附件中的生产订单文件。</p>
+        
+        <div class="order-info">
+            <h3>订单详情：</h3>
+            <p><strong>名称：</strong> {{ order.title }}</p>
+            <p><strong>描述：</strong> {{ order.description }}</p>
+            <p><strong>订单日期：</strong> {{ order.uploaded_at|date:"Y年m月d日 H:i" }}</p>
+        </div>
+        
+        <p>请确认收到并回复发票。</p>
+        
+        <p>此致敬礼，<br>
+        {{ order.employee.get_full_name|default:order.employee.username }}</p>
+    </div>
+    
+    <div class="footer">
+        <p>这是来自XXL OrderHub系统的自动消息</p>
+    </div>
+</body>
+</html>

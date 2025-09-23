@@ -1,0 +1,19 @@
+XXL OrderHub - 生产订单
+
+您好！
+
+请查看附件中的生产订单文件。
+
+订单详情：
+==========
+名称：{{ order.title }}
+描述：{{ order.description }}
+订单日期：{{ order.uploaded_at|date:"Y年m月d日 H:i" }}
+
+请确认收到并回复发票。
+
+此致敬礼，
+{{ order.employee.get_full_name|default:order.employee.username }}
+
+---
+这是来自XXL OrderHub系统的自动消息
