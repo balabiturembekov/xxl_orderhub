@@ -1,0 +1,3026 @@
+[
+  {
+    "model": "orders.manufacturer",
+    "pk": 1,
+    "fields": {
+      "name": "Accad_Italy_(IT)",
+      "email_address": "info@accaduedesign.it",
+      "phone_number": "+39072190981"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 2,
+    "fields": {
+      "name": "accadueodesign_(IT)",
+      "email_address": "info@accaduedesign.it",
+      "phone_number": "+39072190981"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 3,
+    "fields": {
+      "name": "Afenza_Furniture_(TR)",
+      "email_address": "afenzamobilya@gmail.com",
+      "phone_number": "+90507999051"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 4,
+    "fields": {
+      "name": "AKER_(TR) 20.12.24",
+      "email_address": "info@akerbilardo.com.tr",
+      "phone_number": "+902322575961"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 5,
+    "fields": {
+      "name": "Akmoy_(TR)",
+      "email_address": "akmoykoltuk@gmail.com",
+      "phone_number": "+905525161612"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 6,
+    "fields": {
+      "name": "Akyollife_(TR)",
+      "email_address": "export1@akyollife.com.tr",
+      "phone_number": "+905382465537"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 7,
+    "fields": {
+      "name": "Alcelik_(TR)",
+      "email_address": "al_celikmobilya@hotmail.com",
+      "phone_number": "+905385829460"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 8,
+    "fields": {
+      "name": "ALDI_Mobilya_(TR) 19.12.24",
+      "email_address": "info@aldimobilya.com",
+      "phone_number": "+905418102440"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 9,
+    "fields": {
+      "name": "Alfitalia_2022_(IT)",
+      "email_address": "info@felis.it",
+      "phone_number": "+390434737052"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 11,
+    "fields": {
+      "name": "Alikotuk_(TR)",
+      "email_address": "info@alitekoltuk.com",
+      "phone_number": "+905447158494"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 12,
+    "fields": {
+      "name": "Alite_(TR)",
+      "email_address": "info@alitekoltuk.com",
+      "phone_number": "+905447158494"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 13,
+    "fields": {
+      "name": "ALITE_NEW_(TR) 19.12.24",
+      "email_address": "info@alitekoltuk.com",
+      "phone_number": "+905447158494"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 14,
+    "fields": {
+      "name": "Alonex_(TR) 30.10.24",
+      "email_address": "alonexmobilya@gmail.com",
+      "phone_number": "+905396406656"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 15,
+    "fields": {
+      "name": "Alpha-Matratzen_(TR) 20.12.24",
+      "email_address": "info@alphabeddingco.com",
+      "phone_number": "+905364522355"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 16,
+    "fields": {
+      "name": "Alpino_(TR)",
+      "email_address": "export4@alpino.com.tr",
+      "phone_number": "+905360164303"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 17,
+    "fields": {
+      "name": "Amazon_(TR)",
+      "email_address": "dekoreparkmobilya@gmail.com",
+      "phone_number": "+905300656104"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 18,
+    "fields": {
+      "name": "AMAZON_GARDEN_(TR) 20.12.24",
+      "email_address": "bycangarden@gmail.com",
+      "phone_number": "+905468033050"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 19,
+    "fields": {
+      "name": "Aneta_(TR) 27.11.24",
+      "email_address": "tasarimaneta@hotmail.com",
+      "phone_number": "+905050598971"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 20,
+    "fields": {
+      "name": "Anje_(TR)",
+      "email_address": "export@anje.com.tr",
+      "phone_number": "+905331943988"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 21,
+    "fields": {
+      "name": "Anzahome_(TR)",
+      "email_address": "info@anzahomeinegol.com",
+      "phone_number": "+905346644058"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 22,
+    "fields": {
+      "name": "Arkos_Meble_(PL)",
+      "email_address": "ola@arkos-meble.pl",
+      "phone_number": "+48609123303"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 23,
+    "fields": {
+      "name": "ARLafe mobilya_(TR)",
+      "email_address": "export@arimobilya.com.tr",
+      "phone_number": "+905334122418"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 24,
+    "fields": {
+      "name": "ARLafe mobilya_(TR) 19.12.24",
+      "email_address": "export@arimobilya.com.tr",
+      "phone_number": "+905334122418"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 25,
+    "fields": {
+      "name": "Armesse_Home_(TR)",
+      "email_address": "muhasebe@evokmobilya.com",
+      "phone_number": "+905524529916"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 26,
+    "fields": {
+      "name": "ARMESSE_HOME_(TR) 20.12.24",
+      "email_address": "muhasebe@evokmobilya.com",
+      "phone_number": "+905524529916"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 27,
+    "fields": {
+      "name": "Arnisa_(TR) 19.12.24",
+      "email_address": "info@arnisa.com.tr",
+      "phone_number": "+905353464357"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 28,
+    "fields": {
+      "name": "arredoclassic_(IT)",
+      "email_address": "m.mazzanti@arredoclassic.com",
+      "phone_number": "+390721497244"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 29,
+    "fields": {
+      "name": "Artem_(TR)_18.12.2024",
+      "email_address": "info@artem.com.tr",
+      "phone_number": "+905528777636"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 30,
+    "fields": {
+      "name": "Arwen_Sofa_(TR)",
+      "email_address": "export@arwensofa.com",
+      "phone_number": "+905447679379"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 31,
+    "fields": {
+      "name": "ASARA_(TR) 27.11.24",
+      "email_address": "info@assara.com.tr",
+      "phone_number": "+905392663930"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 32,
+    "fields": {
+      "name": "ASM_(PL)",
+      "email_address": "pmalicka@asm-meble.pl",
+      "phone_number": ""
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 33,
+    "fields": {
+      "name": "Asoda_(TR)",
+      "email_address": "kemal@activedesignsofa.com",
+      "phone_number": "+905350241483"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 34,
+    "fields": {
+      "name": "Assara_(TR)",
+      "email_address": "muhasebe@guldiker.com",
+      "phone_number": "+905392663930"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 35,
+    "fields": {
+      "name": "AT_Home_(TR)_18.12.2024",
+      "email_address": "athome@athomefurniture.com.tr",
+      "phone_number": "+903522907290"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 36,
+    "fields": {
+      "name": "Ati_Concept_(TR)",
+      "email_address": "aticonceptfurniture@gmail.com",
+      "phone_number": "+905056660606"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 37,
+    "fields": {
+      "name": "AZARDI_(PL)",
+      "email_address": "biuro@azardi.art",
+      "phone_number": ""
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 38,
+    "fields": {
+      "name": "Be_Model_2022_(TR)",
+      "email_address": "info@modeltasarim.com.tr",
+      "phone_number": "+905444351126"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 39,
+    "fields": {
+      "name": "Bedingart_(TR)",
+      "email_address": "bedingart0000@gmail.com",
+      "phone_number": "+905550162299"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 40,
+    "fields": {
+      "name": "BEKA_CHAIRS_(TR)",
+      "email_address": "bekachairsandalye@gmail.com",
+      "phone_number": "+905414376516"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 41,
+    "fields": {
+      "name": "Bella_Divani_(TR) 27.11.24",
+      "email_address": "belladivanisofa@gmail.com",
+      "phone_number": "+905537873927"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 42,
+    "fields": {
+      "name": "Bellacaza_(TR)",
+      "email_address": "hracat@bellacasa.com.tr",
+      "phone_number": "+905071241926"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 43,
+    "fields": {
+      "name": "Bellavistacollection_(IT)",
+      "email_address": "customerservice@bellavistacollection.com",
+      "phone_number": "+39307265867"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 44,
+    "fields": {
+      "name": "Ben-Company-Italy_(IT)",
+      "email_address": "sergio@bencompany.it",
+      "phone_number": "+390721479242"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 45,
+    "fields": {
+      "name": "BENIXMEBLE_(PL)",
+      "email_address": "meble@benix.pl",
+      "phone_number": "+48627829116"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 46,
+    "fields": {
+      "name": "Bensimo_(TR)",
+      "email_address": "export@bensimo.com.tr",
+      "phone_number": "+905308217652"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 47,
+    "fields": {
+      "name": "BIAODI_(CN)",
+      "email_address": "zxgulf@hotmail.com",
+      "phone_number": "+8613710835433"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 48,
+    "fields": {
+      "name": "BIGE_AKBABA_(TR)",
+      "email_address": "abdul@bigea.com.tr",
+      "phone_number": "+905061273387"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 49,
+    "fields": {
+      "name": "Bigea_(TR) 19.12.24",
+      "email_address": "info@bigeakbaba.com",
+      "phone_number": "+905061273387"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 50,
+    "fields": {
+      "name": "BIOFIS_(TR)",
+      "email_address": "tasarim@biofis.com.tr",
+      "phone_number": "+905302226100"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 51,
+    "fields": {
+      "name": "Bizzotto_(IT)",
+      "email_address": "sales@bizzottoitalia.com",
+      "phone_number": "+390424580807"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 52,
+    "fields": {
+      "name": "Bloow_(TR) 20.12.24",
+      "email_address": "info@fmselit.com",
+      "phone_number": "+905307073548"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 53,
+    "fields": {
+      "name": "BOHEMIA-LEUCHTEN_(CZ)",
+      "email_address": "adela@elitebohemia.cz",
+      "phone_number": "+420728022342"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 54,
+    "fields": {
+      "name": "Boiserieitalia_(IT)",
+      "email_address": "info@boiserieitalia.com",
+      "phone_number": "+390317073031"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 55,
+    "fields": {
+      "name": "Bomonti_(TR)",
+      "email_address": "export1@bomontilife.com",
+      "phone_number": "+905556733254"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 56,
+    "fields": {
+      "name": "Bozok_(TR)",
+      "email_address": "bozokavangarde@gmail.com",
+      "phone_number": "+905366632898"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 57,
+    "fields": {
+      "name": "Brand_Home_(TR)",
+      "email_address": "serhattemiz16@gmail.com",
+      "phone_number": "+905435484312"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 58,
+    "fields": {
+      "name": "Brezza_(TR)",
+      "email_address": "Export@brezzasofa.com",
+      "phone_number": "+905013417577"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 59,
+    "fields": {
+      "name": "Brezza_(TR)_18.12.2024",
+      "email_address": "Export@brezzasofa.com",
+      "phone_number": "+905013417577"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 60,
+    "fields": {
+      "name": "Bubola_(IT)",
+      "email_address": "bubola@bubola.it",
+      "phone_number": "+39044294112"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 61,
+    "fields": {
+      "name": "Bürosit_(TR) 20.12.24",
+      "email_address": "info@burosit.com",
+      "phone_number": "+905434305632"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 62,
+    "fields": {
+      "name": "Bussy_(TR)",
+      "email_address": "Fatih@bussy.com.tr",
+      "phone_number": "+905324405414"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 63,
+    "fields": {
+      "name": "Caddehome_(TR)",
+      "email_address": "export@nisantasimobilya.com",
+      "phone_number": "+905367049882"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 64,
+    "fields": {
+      "name": "Caginofis_(TR)",
+      "email_address": "emel.karakurt@caginofis.com",
+      "phone_number": "+95516966500"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 65,
+    "fields": {
+      "name": "Caglayan_(TR)",
+      "email_address": "export@caglayanfurniture.com",
+      "phone_number": "+905342555071"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 66,
+    "fields": {
+      "name": "CANA_MOBILYA_(TR)",
+      "email_address": "info@canamobilya.com",
+      "phone_number": "+905398564550"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 67,
+    "fields": {
+      "name": "Carri_(CN)",
+      "email_address": "carri@qcfurniture.cn",
+      "phone_number": "+8615815931899"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 68,
+    "fields": {
+      "name": "Casa+39_(IT)",
+      "email_address": "casapiu39@casapiu39.it",
+      "phone_number": "+390434624377"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 69,
+    "fields": {
+      "name": "Casa+39_(IT) 19.12.24",
+      "email_address": "casapiu39@casapiu39.it",
+      "phone_number": "+390434624377"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 70,
+    "fields": {
+      "name": "Casamiasofa_(TR)",
+      "email_address": "casamiasofa@hotmail.com",
+      "phone_number": "+905448498916"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 71,
+    "fields": {
+      "name": "Casetto_(TR) 27.11.24",
+      "email_address": "info@casettosofa.com",
+      "phone_number": "+9055292274"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 72,
+    "fields": {
+      "name": "Cassemu_(TR)",
+      "email_address": "info@cassemu.com",
+      "phone_number": "+905322723316"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 73,
+    "fields": {
+      "name": "Caya-Design-Meble_(PL)",
+      "email_address": "info@cayadesign.com",
+      "phone_number": ""
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 74,
+    "fields": {
+      "name": "Classi_(TR)",
+      "email_address": "destek@classi.com.tr",
+      "phone_number": "+905370400551"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 75,
+    "fields": {
+      "name": "Claudio_Saucella_(IT)",
+      "email_address": "info@mobilisaoncella.it",
+      "phone_number": "+39042987303"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 76,
+    "fields": {
+      "name": "CoCo-Furniture_(CN)",
+      "email_address": "coco@longhaofurniture.com",
+      "phone_number": "+8613662923782"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 77,
+    "fields": {
+      "name": "Comad_(PL)",
+      "email_address": "a.maciejewski@comad.eu",
+      "phone_number": "+48724550557"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 78,
+    "fields": {
+      "name": "Cucciconcept_(TR)",
+      "email_address": "",
+      "phone_number": "+905326830359"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 79,
+    "fields": {
+      "name": "Dasell_(TR)",
+      "email_address": "muhasebe@dasellmobilya.com",
+      "phone_number": "+905457186055"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 80,
+    "fields": {
+      "name": "Davenza_(TR)",
+      "email_address": "davenzamobilya@gmail.com",
+      "phone_number": "+905424239890"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 81,
+    "fields": {
+      "name": "Defaico_(CN)_PAK",
+      "email_address": "fschidu@gmail.com",
+      "phone_number": "+8613790099691"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 82,
+    "fields": {
+      "name": "Dekorister_(TR) 19.12.24",
+      "email_address": "export@dekorister.com.tr",
+      "phone_number": "+905325099017"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 83,
+    "fields": {
+      "name": "Dengema_(TR)_18.12.2024",
+      "email_address": "info@dengema.com",
+      "phone_number": "+905496444476"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 84,
+    "fields": {
+      "name": "Dezaynluxuru_(TR)",
+      "email_address": "info@dizaynmodoko.com",
+      "phone_number": "+905348142408"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 85,
+    "fields": {
+      "name": "Didvani_(TR)",
+      "email_address": "info@didvani.com.tr",
+      "phone_number": "+905524727310"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 86,
+    "fields": {
+      "name": "Dimax_(TR) 19.12.24",
+      "email_address": "mersin@dimax.com.tr",
+      "phone_number": "+905416691987"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 87,
+    "fields": {
+      "name": "Dion_(TR)",
+      "email_address": "dion@dion.com.tr",
+      "phone_number": "+905369569208"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 88,
+    "fields": {
+      "name": "DMB-Office_(CN)",
+      "email_address": "sales2@gdjiadian.com",
+      "phone_number": "+8613308307340"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 89,
+    "fields": {
+      "name": "DOLMAR-MEBLE_(PL)",
+      "email_address": "eksport@dolmar.pl",
+      "phone_number": "+48627912821"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 90,
+    "fields": {
+      "name": "DOMARTSTYL_(PL)",
+      "email_address": "biuro@domartstyl.eu",
+      "phone_number": "+48882659700"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 91,
+    "fields": {
+      "name": "Dudi Bebek_(TR)",
+      "email_address": "dudibebek@gmail.com",
+      "phone_number": "+905414987133"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 92,
+    "fields": {
+      "name": "Duse_Sofa_(TR)",
+      "email_address": "info@dusesofa.com",
+      "phone_number": "+905539163661"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 93,
+    "fields": {
+      "name": "Efar Home_(TR) 12.19.24",
+      "email_address": "siparis@efarkoltuk.com",
+      "phone_number": "+905313572167"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 94,
+    "fields": {
+      "name": "Ekin_Bebek_(TR)",
+      "email_address": "info@ekinmobilya.com",
+      "phone_number": "+905497149669"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 95,
+    "fields": {
+      "name": "Elegansia_(TR)",
+      "email_address": "murat.celal@elagancefurniture.com",
+      "phone_number": "+905444887338"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 96,
+    "fields": {
+      "name": "ELIF_(TR)",
+      "email_address": "info@elifmobilya.com.tr",
+      "phone_number": "+903523220747"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 97,
+    "fields": {
+      "name": "Elitra_(TR)_18.12.2024",
+      "email_address": "siparis@elitra.com.tr",
+      "phone_number": "+905073079042"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 98,
+    "fields": {
+      "name": "ELTAP_(PL)",
+      "email_address": "paulina.paradysz@eltap.com",
+      "phone_number": "+48669668450"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 99,
+    "fields": {
+      "name": "EMKA_(PL)",
+      "email_address": "emka.zaw@wp.pl",
+      "phone_number": "+48889955856"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 100,
+    "fields": {
+      "name": "Epika_(TR)_18.12.2024",
+      "email_address": "info@epika.com.tr",
+      "phone_number": "+905425375311"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 101,
+    "fields": {
+      "name": "Epoxid-Furniture_(CN)",
+      "email_address": "rania_mao@foshanmebeli.com",
+      "phone_number": "+8618038670762"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 102,
+    "fields": {
+      "name": "Ergunkoltuk_(TR)",
+      "email_address": "siparis@ergunkoltuk.com",
+      "phone_number": "+905394634790"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 103,
+    "fields": {
+      "name": "EstroCollezioni_(IT)",
+      "email_address": "info@estrocollezioni.com",
+      "phone_number": "+390432523259"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 104,
+    "fields": {
+      "name": "Esved_(TR)",
+      "email_address": "mail@esvedmobilya.com",
+      "phone_number": "+905337056657"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 105,
+    "fields": {
+      "name": "ETC_(TR) 20.12.24",
+      "email_address": "",
+      "phone_number": "+903124469219"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 106,
+    "fields": {
+      "name": "Evdelux_(TR)",
+      "email_address": "info@pakkokoltuk.com",
+      "phone_number": "+905309642216"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 107,
+    "fields": {
+      "name": "EVERGO_(CN)",
+      "email_address": "sales@evergofurniture.com",
+      "phone_number": "+8613924883328"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 108,
+    "fields": {
+      "name": "Evla_(TR) 20.12.24",
+      "email_address": "info@evlafurniture.com",
+      "phone_number": "+905358715578"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 109,
+    "fields": {
+      "name": "Evsane_(TR) 20.12.24",
+      "email_address": "bursaevsanekoltuk@hotmail.com",
+      "phone_number": "+905300992561"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 110,
+    "fields": {
+      "name": "EWA_(TR)_18.12.2024",
+      "email_address": "info@evamobilya.com",
+      "phone_number": "+905326848568"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 111,
+    "fields": {
+      "name": "FABER_(IT)",
+      "email_address": "commerciale@fabermobili.com",
+      "phone_number": "+393515704702"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 112,
+    "fields": {
+      "name": "FABER_(IT) 19.12.24",
+      "email_address": "commerciale@fabermobili.com",
+      "phone_number": "+393515704702"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 113,
+    "fields": {
+      "name": "Family_Group_(TR)",
+      "email_address": "info@familygroup.com.tr",
+      "phone_number": "+905315753248"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 114,
+    "fields": {
+      "name": "FAZ-FIGUREN_(PL)",
+      "email_address": "biuro@faz.pl",
+      "phone_number": "+48683555671"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 115,
+    "fields": {
+      "name": "Flavory_(TR) 20.12.24",
+      "email_address": "info@favorisleep.com",
+      "phone_number": "+903525132522"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 116,
+    "fields": {
+      "name": "Frezza_(IT)",
+      "email_address": "info@frezza.com",
+      "phone_number": "+390423987601"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 117,
+    "fields": {
+      "name": "FSB_(TR)_18.12.2024",
+      "email_address": "info@fsbkoltuk.com",
+      "phone_number": "+905300427087"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 118,
+    "fields": {
+      "name": "Gabba_(TR)",
+      "email_address": "info@gabba.com.tr",
+      "phone_number": "+905497180240"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 119,
+    "fields": {
+      "name": "GALA_MEBLE_(PL)",
+      "email_address": "anna.pelc@galameble.pl",
+      "phone_number": "+48691843434"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 120,
+    "fields": {
+      "name": "Ganasi_(CN) 19.12.24",
+      "email_address": "ganasi001@ganasisofa.com",
+      "phone_number": "+8613424603748"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 121,
+    "fields": {
+      "name": "Gencecix_(TR)",
+      "email_address": "info@gencecix.com",
+      "phone_number": "+905439737853"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 122,
+    "fields": {
+      "name": "Gencecix.com_(TR) 19.12.24",
+      "email_address": "info@gencecix.com",
+      "phone_number": "+905458553798"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 123,
+    "fields": {
+      "name": "GIULIACASA_(IT)",
+      "email_address": "info@giuliacasa.com",
+      "phone_number": "+456908621"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 124,
+    "fields": {
+      "name": "Gorecki_Meble(PL)",
+      "email_address": "export@meblegorecki.com",
+      "phone_number": "+48793713205"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 125,
+    "fields": {
+      "name": "Greensons_(TR)",
+      "email_address": "greensonss60@gmail.com",
+      "phone_number": "+905533617116"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 126,
+    "fields": {
+      "name": "Gumus bebe_(TR) 30.10.24",
+      "email_address": "info@gumusbebe.com",
+      "phone_number": "+905301535638"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 127,
+    "fields": {
+      "name": "Gureler_(TR)",
+      "email_address": "info@gurelermobilya.com.tr",
+      "phone_number": "+905079951442"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 128,
+    "fields": {
+      "name": "Guzel_(TR)",
+      "email_address": "info@guzelevimkoltuk.com",
+      "phone_number": "+905433211213"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 129,
+    "fields": {
+      "name": "Hanting_(CN)",
+      "email_address": "zxgulf@hotmail.com",
+      "phone_number": "+8613710835433"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 130,
+    "fields": {
+      "name": "Hollywood_(TR)",
+      "email_address": "export@holywooddeco.com",
+      "phone_number": "+905312136631"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 131,
+    "fields": {
+      "name": "Idol_(TR)",
+      "email_address": "export7@idolmobilya.com",
+      "phone_number": "+905415174003"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 132,
+    "fields": {
+      "name": "INCI_(TR)",
+      "email_address": "incimodulermobilya@hotmail.com",
+      "phone_number": "+905389533519"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 133,
+    "fields": {
+      "name": "Indivani_(TR) 19.12.24",
+      "email_address": "export@indivani.com.tr",
+      "phone_number": "+905331362155"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 134,
+    "fields": {
+      "name": "Inegolumut_(TR)",
+      "email_address": "info@umutmobilya.com.tr",
+      "phone_number": "+905323562911"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 135,
+    "fields": {
+      "name": "Ineviya_(TR)",
+      "email_address": "info@ineviya.com",
+      "phone_number": "+905537134332"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 136,
+    "fields": {
+      "name": "Infavori_(TR)",
+      "email_address": "info@infavori.com",
+      "phone_number": "+905544249919"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 137,
+    "fields": {
+      "name": "Insedia_(TR)",
+      "email_address": "info@insediasandalve.com",
+      "phone_number": "+905301454903"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 138,
+    "fields": {
+      "name": "INSLEEP_(TR)",
+      "email_address": "care@insleep.in",
+      "phone_number": "+905346017241"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 139,
+    "fields": {
+      "name": "IS_SALON_(TR)",
+      "email_address": "issalonnobiliyum@gmail.com",
+      "phone_number": "+905431163419"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 140,
+    "fields": {
+      "name": "Iskemle_(TR)",
+      "email_address": "export@iskemle.com.tr",
+      "phone_number": "+905376586151"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 141,
+    "fields": {
+      "name": "Jafra-Meble_(PL)",
+      "email_address": "Patrycja.Twardowska@jafra.pl",
+      "phone_number": ""
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 142,
+    "fields": {
+      "name": "JXR_(CN)",
+      "email_address": "isabella@chicasa.cn",
+      "phone_number": "+8618924560644"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 143,
+    "fields": {
+      "name": "KADI_(CN)",
+      "email_address": "kristie@yssfurniture.com",
+      "phone_number": "+8613068600612"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 144,
+    "fields": {
+      "name": "Kaju_(TR) 20.12.24",
+      "email_address": "export@krdplast.com",
+      "phone_number": "+902247148858"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 145,
+    "fields": {
+      "name": "KAROLMEBLE_(PL)",
+      "email_address": "biuro@karolmeble.com",
+      "phone_number": "+48791451499"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 146,
+    "fields": {
+      "name": "Karyolochi_(TR)",
+      "email_address": "info@karyolachi.com",
+      "phone_number": "+905467153492"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 147,
+    "fields": {
+      "name": "Katmandu_(PL)",
+      "email_address": "expo@meblekatmandu.pl",
+      "phone_number": "+48790720588"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 148,
+    "fields": {
+      "name": "Katrekoltuk_(TR)",
+      "email_address": "info@katrekoltuk.com",
+      "phone_number": "+905550908875"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 149,
+    "fields": {
+      "name": "KEHO_(CN)",
+      "email_address": "sales01@kikfurniture.com",
+      "phone_number": "+8613047929769"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 150,
+    "fields": {
+      "name": "KF_Casa_(CN)",
+      "email_address": "zyw@kfacasa.com",
+      "phone_number": "+8618100262094"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 151,
+    "fields": {
+      "name": "KINASMEBLE_(PL)",
+      "email_address": "kinas.meble@gmail.com",
+      "phone_number": "+48661271365"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 152,
+    "fields": {
+      "name": "KIRPI_(TR)",
+      "email_address": "info@kirpikids.com.tr",
+      "phone_number": "+905447157954"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 153,
+    "fields": {
+      "name": "Konfull_(TR)",
+      "email_address": "export Silvest@konfull.com.tr",
+      "phone_number": "+905549826005"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 154,
+    "fields": {
+      "name": "Kopru_(TR) 19.12.24",
+      "email_address": "info@koprumobilya.com",
+      "phone_number": "+903523222019"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 155,
+    "fields": {
+      "name": "Koralturk_(TR) 20.12.24",
+      "email_address": "info@koralturk.com.tr",
+      "phone_number": "+902422581170"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 156,
+    "fields": {
+      "name": "Kristal_(TR)",
+      "email_address": "info@kristalmobilya.com.tr",
+      "phone_number": "+905414985690"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 157,
+    "fields": {
+      "name": "Kromev_(TR) 20.12.24",
+      "email_address": "export@kromdizayn.com.tr",
+      "phone_number": "+905321771316"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 158,
+    "fields": {
+      "name": "Kuka_Home_(TR)",
+      "email_address": "info@kukahome.com.tr",
+      "phone_number": "+905412026285"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 159,
+    "fields": {
+      "name": "KUKA_Home_(TR) 19.12.24",
+      "email_address": "info@kukahome.com.tr",
+      "phone_number": "+905412026285"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 160,
+    "fields": {
+      "name": "Kupa_Kids_(TR)",
+      "email_address": "info@kupagencodasi.com",
+      "phone_number": "+905412656721"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 161,
+    "fields": {
+      "name": "Kupon_(TR) 20.12.24",
+      "email_address": "info@kuponsandalye.com",
+      "phone_number": "+905333307566"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 162,
+    "fields": {
+      "name": "Ladivu_(TR)",
+      "email_address": "info@ladivu.com",
+      "phone_number": "+902247112220"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 163,
+    "fields": {
+      "name": "Larex_Doven_(TR)",
+      "email_address": "info@larexclusive.com.tr",
+      "phone_number": "+902247148111"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 164,
+    "fields": {
+      "name": "LAVERTO_(PL)",
+      "email_address": "export@laverto.pl",
+      "phone_number": "+48666644609"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 165,
+    "fields": {
+      "name": "Lavita_(TR)",
+      "email_address": "info@lavitasofa.com",
+      "phone_number": "+905467152124"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 166,
+    "fields": {
+      "name": "Legno_(TR)",
+      "email_address": "info@legnomobili.com.tr",
+      "phone_number": "+905013440616"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 167,
+    "fields": {
+      "name": "Lena_(TR)_18.12.2024",
+      "email_address": "adib.exp@hotmail.com",
+      "phone_number": "+905385027278"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 168,
+    "fields": {
+      "name": "Lenatees_(CN)",
+      "email_address": "rainsuiying@lenatees.com",
+      "phone_number": "+97172448022"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 169,
+    "fields": {
+      "name": "Lenova_(TR)",
+      "email_address": "mobiliyum@lenovamobilya.com",
+      "phone_number": "+905301390315"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 170,
+    "fields": {
+      "name": "Libercanmobilya_(TR)",
+      "email_address": "libercanmobilya@hotmail.com",
+      "phone_number": "+905306408061"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 171,
+    "fields": {
+      "name": "Lidya_(TR)",
+      "email_address": "info@lidyamobilya.com",
+      "phone_number": "+905322215530"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 172,
+    "fields": {
+      "name": "Lion_(TR)",
+      "email_address": "info@nclion.com.tr",
+      "phone_number": "+905327463229"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 173,
+    "fields": {
+      "name": "Lisa_Home_(TR)",
+      "email_address": "er_mob@hotmail.com",
+      "phone_number": "+905453533946"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 174,
+    "fields": {
+      "name": "Livello_(TR)",
+      "email_address": "info@livello.com.tr",
+      "phone_number": "+905414423442"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 175,
+    "fields": {
+      "name": "Lorenzi_(TR) 20.12.24",
+      "email_address": "serhan@evmoda.com",
+      "phone_number": "+905343971116"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 176,
+    "fields": {
+      "name": "Lowenss_(TR)",
+      "email_address": "export@lowenss.com",
+      "phone_number": "+905537855940"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 177,
+    "fields": {
+      "name": "Lucaahsap_(TR)",
+      "email_address": "info@lucaahsap.com",
+      "phone_number": "+905537115993"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 178,
+    "fields": {
+      "name": "LUCE GARDEN_(TR) 20.12.24",
+      "email_address": "hello@lucegarden.com",
+      "phone_number": "+905013697661"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 179,
+    "fields": {
+      "name": "Luvina_(TR)",
+      "email_address": "info@luvina.com.tr",
+      "phone_number": "+905050088807"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 180,
+    "fields": {
+      "name": "Luxe Life_(TR)",
+      "email_address": "info@luxelife.com.tr",
+      "phone_number": "+905433933883"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 181,
+    "fields": {
+      "name": "MADUCA_(TR) 20.12.24",
+      "email_address": "export@maduca.com.tr",
+      "phone_number": "+905427231085"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 182,
+    "fields": {
+      "name": "Majestyclassic_(TR)",
+      "email_address": "export@majestyclassic.com",
+      "phone_number": "+905332213356"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 183,
+    "fields": {
+      "name": "Mancogencodasi_(TR)",
+      "email_address": "info@mancogencodasi.com.tr",
+      "phone_number": "+903523220475"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 184,
+    "fields": {
+      "name": "Marzorati_(IT)",
+      "email_address": "info@marzorati.com",
+      "phone_number": "+39031780286"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 185,
+    "fields": {
+      "name": "Massa_Office_(TR) 20.12.24",
+      "email_address": "massaoffice@gmail.com",
+      "phone_number": "+905336087530"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 186,
+    "fields": {
+      "name": "Massage Bathtub_(CH) 19.12.24",
+      "email_address": "eric@roewebath.com",
+      "phone_number": "+8613929961124"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 187,
+    "fields": {
+      "name": "Massimo_(TR)",
+      "email_address": "info@massimomobilya.com",
+      "phone_number": "+905325532793"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 188,
+    "fields": {
+      "name": "MASSIVA_(TR)_18.12.2024",
+      "email_address": "info@massivahome.com",
+      "phone_number": "+905300114760"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 189,
+    "fields": {
+      "name": "MAX_FABRYKA_(PL)",
+      "email_address": "biuro@meble-max.com.pl",
+      "phone_number": "+507502706"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 190,
+    "fields": {
+      "name": "Mazur_(PL)",
+      "email_address": "order.verkauf@gmail.com",
+      "phone_number": "+48730300734"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 191,
+    "fields": {
+      "name": "Mazzini_(TR)",
+      "email_address": "info@mazzinifurniture.com",
+      "phone_number": "+905427910016"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 192,
+    "fields": {
+      "name": "Mebas_(PL)",
+      "email_address": "biuro@mebas.pl",
+      "phone_number": "+48627822801"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 193,
+    "fields": {
+      "name": "Meble_Guru_(PL)",
+      "email_address": "kinga.meblegruszka@gmail.com",
+      "phone_number": "+48531263002"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 194,
+    "fields": {
+      "name": "Meblo_Home_(TR)",
+      "email_address": "meblohome1@gmail.com",
+      "phone_number": "+905373049083"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 195,
+    "fields": {
+      "name": "MEDMO_(TR) 19.12.24",
+      "email_address": "info@medmo.com.tr",
+      "phone_number": "+905323983701"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 196,
+    "fields": {
+      "name": "MEFAN-Furniture_(CN)",
+      "email_address": "sales6@mefanfurniture.com",
+      "phone_number": ""
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 197,
+    "fields": {
+      "name": "MEFMOBILI_(TR)",
+      "email_address": "mefmobili@hotmail.com",
+      "phone_number": "+905323574841"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 198,
+    "fields": {
+      "name": "Megahome_(TR) 20.12.24",
+      "email_address": "megahomesiparis@gmail.com",
+      "phone_number": "+905422693202"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 199,
+    "fields": {
+      "name": "MerryFashion_(CN)",
+      "email_address": "zxgulf@hotmail.com",
+      "phone_number": "+8613710835433"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 200,
+    "fields": {
+      "name": "Messoni_(TR)",
+      "email_address": "export@caliform.furniture",
+      "phone_number": "+905335590779"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 201,
+    "fields": {
+      "name": "Metaliks_(TR)",
+      "email_address": "info@metaliks.com.tr",
+      "phone_number": "+902166411006"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 202,
+    "fields": {
+      "name": "M-FASHION_(CN)",
+      "email_address": "zxgulf@hotmail.com",
+      "phone_number": "+8613710835433"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 203,
+    "fields": {
+      "name": "MILANO-Furniture_(CN)",
+      "email_address": "milano5@modernmilano.com",
+      "phone_number": "+8615917022867"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 204,
+    "fields": {
+      "name": "MillHouse_(TR)_18.12.2024",
+      "email_address": "info@millhouse.com.tr",
+      "phone_number": "+903124993181"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 205,
+    "fields": {
+      "name": "Mlmeble_(PL)",
+      "email_address": "export4@mlmeble.pl",
+      "phone_number": "+48512475100"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 206,
+    "fields": {
+      "name": "Mobiant_(TR)_18.12.2024",
+      "email_address": "mobiantmobilya@hotmail.com",
+      "phone_number": "+905457110050"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 207,
+    "fields": {
+      "name": "MOBILIFICIO_AG_(IT)",
+      "email_address": "info@mobilificioag.it",
+      "phone_number": "+390721479016"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 208,
+    "fields": {
+      "name": "MOBILPIULUXURY_(IT)",
+      "email_address": "commercialearea1@mobilpiuluxury.com",
+      "phone_number": "+393668787896"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 209,
+    "fields": {
+      "name": "Modasel_(TR)",
+      "email_address": "modaselmobilya@hotmail.com",
+      "phone_number": "+905320639766"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 210,
+    "fields": {
+      "name": "Modelsan_(TR) 19.12.24",
+      "email_address": "info@modelsan.com",
+      "phone_number": "+903742439264"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 211,
+    "fields": {
+      "name": "Modis_(TR)",
+      "email_address": "burcu.alp@modisinteriors.com",
+      "phone_number": "+905539526413"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 212,
+    "fields": {
+      "name": "Mois_(TR)",
+      "email_address": "info@moismobilya.com",
+      "phone_number": "+905434849370"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 213,
+    "fields": {
+      "name": "Monett_Home_(TR)",
+      "email_address": "info@monett.com.tr",
+      "phone_number": "+905368864328"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 214,
+    "fields": {
+      "name": "Montro_(TR)_(MTR)",
+      "email_address": "export@montrofurniture.com",
+      "phone_number": "+905433269417"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 215,
+    "fields": {
+      "name": "Moreno_(TR)",
+      "email_address": "info@moreno.com.tr",
+      "phone_number": "+905526584095"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 216,
+    "fields": {
+      "name": "Mr.classic_(TR)",
+      "email_address": "info@mrclassic.com.tr",
+      "phone_number": "+905353583565"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 217,
+    "fields": {
+      "name": "Mumza_(TR)",
+      "email_address": "siparis@mumzahome.com.tr",
+      "phone_number": "+905466335038"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 218,
+    "fields": {
+      "name": "Myhas home_(TR) 19.12.24",
+      "email_address": "mehmetozturk@myhomehali.com",
+      "phone_number": "+905061273000"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 219,
+    "fields": {
+      "name": "Nar_(TR)",
+      "email_address": "siparisnarconcept@gmail.com",
+      "phone_number": "+905551980670"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 220,
+    "fields": {
+      "name": "NATAN_(PL)",
+      "email_address": "prabeton@gmail.com",
+      "phone_number": ""
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 221,
+    "fields": {
+      "name": "Needmobilya_(TR)",
+      "email_address": "neromobilya@gmail.com",
+      "phone_number": "+905389655972"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 222,
+    "fields": {
+      "name": "Neromobilya_(TR) 20.12.24",
+      "email_address": "neromobilya@gmail.com",
+      "phone_number": "+905327159757"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 223,
+    "fields": {
+      "name": "New Mood_(TR)",
+      "email_address": "info@newmood.com.tr",
+      "phone_number": "+905551946100"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 224,
+    "fields": {
+      "name": "Nexoff_(TR)",
+      "email_address": "info@nexoff.com",
+      "phone_number": "+905330512400"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 225,
+    "fields": {
+      "name": "Nills_(TR)",
+      "email_address": "info@nills.com.tr",
+      "phone_number": "+905467481377"
+    }
+  },
+  {
+    "model": "orders.manufacturer",
+    "pk": 226,
+    "fields": {
+      "name": "Noahs_(TR)_18.12.2024",
+      "email_address": "info@noahsdesign.com",
+      "phone_number": "+905303038991"
+    }
+  },
+  {
+"model": "orders.manufacturer",
+"pk": 227,
+"fields": {
+"name": "Nott_(TR)",
+"email_address": "satis@nott.com.tr",
+"phone_number": "+905491001094"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 228,
+"fields": {
+"name": "Novak_(TR) 19.12.24",
+"email_address": "info@novakmobilya.com",
+"phone_number": "+905073743590"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 229,
+"fields": {
+"name": "Novelle_(PL)",
+"email_address": "adrian.pelon@novelle.pl",
+"phone_number": "+48721300848"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 230,
+"fields": {
+"name": "Nucca_(TR)",
+"email_address": "nucca@nucca.com.tr",
+"phone_number": "+905442080102"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 231,
+"fields": {
+"name": "Nuri_Orhan_(TR) 19.12.24",
+"email_address": "info@nuriorhan.com.tr",
+"phone_number": "+905343870573"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 232,
+"fields": {
+"name": "Odessa_(TR) 19.12.24",
+"email_address": "export@odessa.furniture",
+"phone_number": "+905396511720"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 233,
+"fields": {
+"name": "Omide-home_(CN)",
+"email_address": "sales1@fshomedesigner.cn",
+"phone_number": "+8615820634847"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 234,
+"fields": {
+"name": "Onss_(TR)",
+"email_address": "info@onssmobilya.com",
+"phone_number": "+905433314305"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 235,
+"fields": {
+"name": "ORIX_(TR)",
+"email_address": "info@orix.com.tr",
+"phone_number": "+905333858779"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 236,
+"fields": {
+"name": "OZDE_(TR) 20.12.24",
+"email_address": "ozde@ozdemobilya.com",
+"phone_number": "+905322971405"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 237,
+"fields": {
+"name": "Oznil_(TR)",
+"email_address": "Info@oznilmobilya.com",
+"phone_number": "+902247185490"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 238,
+"fields": {
+"name": "Pacyga_(PL)",
+"email_address": "b2b@pacyga.pl",
+"phone_number": ""
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 239,
+"fields": {
+"name": "PAPELLA_(TR)18.12.2024",
+"email_address": "papella@papella.com.tr",
+"phone_number": "+903523220536"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 240,
+"fields": {
+"name": "PARRI(TR) 20.12.24",
+"email_address": "izmirsandalye@gmail.com",
+"phone_number": "+905541830203"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 241,
+"fields": {
+"name": "Pengpai_(CN)",
+"email_address": "sales6@pengpaifurniture.com",
+"phone_number": "+8618042842670"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 242,
+"fields": {
+"name": "Pianno_Vukka_(TR) 19.12.24",
+"email_address": "info@piannomobilya.com",
+"phone_number": "+905069138581"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 243,
+"fields": {
+"name": "Pier furniture_(TR)",
+"email_address": "info@piermobilya.com",
+"phone_number": "+905339582883"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 244,
+"fields": {
+"name": "PLASTICO_(PL)",
+"email_address": "plastico@plastico.pl",
+"phone_number": "+48792783693"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 245,
+"fields": {
+"name": "PPG-Furniture_(CN)",
+"email_address": "sales6@pengpaifurniture.com",
+"phone_number": "+8618042842670"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 246,
+"fields": {
+"name": "Prianera_(IT)",
+"email_address": "info@prianera.it",
+"phone_number": "+3905431716055"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 247,
+"fields": {
+"name": "Primos_(TR)",
+"email_address": "info@primossofa.com",
+"phone_number": ""
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 248,
+"fields": {
+"name": "Prowgim_(PL) 20.12.24",
+"email_address": "kinga.meblegruszka@gmail.com",
+"phone_number": "+48531263002"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 249,
+"fields": {
+"name": "Pyka-Meble_(PL)",
+"email_address": "meble@meble-pyka.pl",
+"phone_number": "+343536289"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 250,
+"fields": {
+"name": "QUARTO_(PL)",
+"email_address": "oferty@quarto24.eu",
+"phone_number": "+48504799158"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 251,
+"fields": {
+"name": "RAFIPOLO_(CN)",
+"email_address": "zxgulf@hotmail.com",
+"phone_number": "+8613710835433"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 252,
+"fields": {
+"name": "Raudi_(TR)",
+"email_address": "info@raudi.com.tr",
+"phone_number": "+905331437200"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 253,
+"fields": {
+"name": "RAV_(TR)",
+"email_address": "siparis@ravhome.com.tr",
+"phone_number": "+905304059598"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 254,
+"fields": {
+"name": "Razgat-Classic_(TR)",
+"email_address": "talha@ozrazgat.com.tr",
+"phone_number": "+905350882727"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 255,
+"fields": {
+"name": "RCSofa_(TR)",
+"email_address": "rc@rcsofa.com",
+"phone_number": "+905324598816"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 256,
+"fields": {
+"name": "Redof_(TR)18.12.2024",
+"email_address": "info@redof.com.tr",
+"phone_number": "+903523212843"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 257,
+"fields": {
+"name": "Regina(CN)",
+"email_address": "zxgulf@hotmail.com",
+"phone_number": "+8613710835433"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 258,
+"fields": {
+"name": "Ressa_(TR)18.12.2024",
+"email_address": "info@office232.com",
+"phone_number": "+905320127295"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 259,
+"fields": {
+"name": "Ris Masa(TR) 19.12.24",
+"email_address": "rismobilya@gmail.com",
+"phone_number": "+905312944316"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 260,
+"fields": {
+"name": "Rixxe_Home_(TR)",
+"email_address": "info@rixxehome.com",
+"phone_number": "+905348523629"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 261,
+"fields": {
+"name": "ROBERTOMEBLE_(PL)",
+"email_address": "biuro@robertomeble.pl",
+"phone_number": "+48880303220"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 262,
+"fields": {
+"name": "Rois_Furniture_(TR)",
+"email_address": "siparis@roismobilya.com",
+"phone_number": "+905342824477"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 263,
+"fields": {
+"name": "Roll_Furniture_(TR)",
+"email_address": "info@rollmobilya.com",
+"phone_number": "+905318876387"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 264,
+"fields": {
+"name": "ROPEZ_(PL)",
+"email_address": "ss@ropez.pl",
+"phone_number": "+48509953523"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 265,
+"fields": {
+"name": "Rotta_(TR)",
+"email_address": "rottakoltuk@hotmail.com",
+"phone_number": "+905335746554"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 266,
+"fields": {
+"name": "Saka_(TR)",
+"email_address": "info@sakamobilya.com.tr",
+"phone_number": "+905358855417"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 267,
+"fields": {
+"name": "Saloni_(TR)",
+"email_address": "info@saloni.de",
+"phone_number": "+905496061397"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 268,
+"fields": {
+"name": "Saltanat_(TR) 20.12.24",
+"email_address": "export@saltanat.com.tr",
+"phone_number": "+905318666669"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 269,
+"fields": {
+"name": "Sanatmobilya_(TR)",
+"email_address": "info@sanatmobilya.com",
+"phone_number": "+905378902817"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 270,
+"fields": {
+"name": "Sanna_(TR)",
+"email_address": "info@sannafurniture.com",
+"phone_number": "+905523810638"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 271,
+"fields": {
+"name": "Santra_(TR) 30.10.24",
+"email_address": "sales@santragroup.com",
+"phone_number": "+905496791661"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 272,
+"fields": {
+"name": "Sasmaz koltuk_(TR) 27.11.24",
+"email_address": "info@sasmazkoltuk.com",
+"phone_number": "+905367116857"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 273,
+"fields": {
+"name": "Sdesign_(TR)",
+"email_address": "info@sdesign.com.tr",
+"phone_number": "+905320686213"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 274,
+"fields": {
+"name": "Selective_Home_(TR)",
+"email_address": "export@selectivehome.com.tr",
+"phone_number": "+905442969889"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 275,
+"fields": {
+"name": "Selenga_(TR)",
+"email_address": "export@selengamobilya.com",
+"phone_number": "+905330173986"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 276,
+"fields": {
+"name": "SESA_(TR)",
+"email_address": "ikaya8811@gmail.com",
+"phone_number": "+905358792114"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 277,
+"fields": {
+"name": "Seskalar_(TR)(ssk)",
+"email_address": "info@seskalarmobilya.com",
+"phone_number": "+905319776365"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 278,
+"fields": {
+"name": "Seyran(TR) 20.12.24",
+"email_address": "export2@seyrankoltuk.com.tr",
+"phone_number": "+905559955280"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 279,
+"fields": {
+"name": "Siptarmobilya_(TR)",
+"email_address": "siptarmobilya@hotmail.com",
+"phone_number": "+905457114421"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 280,
+"fields": {
+"name": "SKORPION_(PL)",
+"email_address": "info@skorpionpoland.pl",
+"phone_number": ""
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 281,
+"fields": {
+"name": "Slims_(TR)",
+"email_address": "slims@slims.com.tr",
+"phone_number": "+903523221757"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 282,
+"fields": {
+"name": "SLIMS_(TR) 19.12.24",
+"email_address": "slims@slims.com.tr",
+"phone_number": "+903523221757"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 283,
+"fields": {
+"name": "Sofamasteri_(TR)",
+"email_address": "eyppamuk69@gmail.com",
+"phone_number": "+905425629692"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 284,
+"fields": {
+"name": "Stagra-Meble_(PL)",
+"email_address": "export2@stagrameble.pl",
+"phone_number": "+48662695732"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 285,
+"fields": {
+"name": "Stile_Elisa_(IT)",
+"email_address": "info@stileelisa.it",
+"phone_number": "+390457102370"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 286,
+"fields": {
+"name": "STOLWIT_(PL)",
+"email_address": "zamowienia@nefm.pl",
+"phone_number": "+48603800232"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 287,
+"fields": {
+"name": "STOR__(PL)",
+"email_address": "biuro@stor.pl",
+"phone_number": ""
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 288,
+"fields": {
+"name": "Strama_(PL) 20.12.24",
+"email_address": "a.wierzbicki@strama.net.pl",
+"phone_number": "+48602189691"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 289,
+"fields": {
+"name": "SUDE_(TR) 19.12.24",
+"email_address": "muhasebe@sudecollection.com",
+"phone_number": "+905447137149"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 290,
+"fields": {
+"name": "Sunray_Wasserwand_(CN)",
+"email_address": "a.wierzbicki@strama.net.pl",
+"phone_number": "+8613610013980"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 291,
+"fields": {
+"name": "T&H_(TR)",
+"email_address": "tvehdesign@gmail.com",
+"phone_number": "+905067770722"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 292,
+"fields": {
+"name": "TALLWALLBED_(CN)",
+"email_address": "sales3_wallbed@tallfurniture.net",
+"phone_number": "+8614737399826"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 293,
+"fields": {
+"name": "Taranko_(PL)18.12.2024",
+"email_address": "zamowienia@mebletaranko.pl",
+"phone_number": "+48897573750"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 294,
+"fields": {
+"name": "Tarik(TR)",
+"email_address": "export@tarikkaraca.com",
+"phone_number": "+905385176479"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 295,
+"fields": {
+"name": "Tarrocco_Vaccari_(IT)",
+"email_address": "commerciale@taroccovaccarigroup.it",
+"phone_number": ""
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 296,
+"fields": {
+"name": "TITI_(TR)",
+"email_address": "info@titi.com.tr",
+"phone_number": "+905435484312"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 297,
+"fields": {
+"name": "Togo_(TR)",
+"email_address": "info@togostyle.com",
+"phone_number": "+905435265046"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 298,
+"fields": {
+"name": "Tonza home_(TR)",
+"email_address": "info@tonza.com.tr",
+"phone_number": "+905342368469"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 299,
+"fields": {
+"name": "TopLine_(IT) 19.12.24",
+"email_address": "alex.toplinefurniture@gmail.com",
+"phone_number": "+390721471052"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 300,
+"fields": {
+"name": "Turguaz_(TR) 20.12.24",
+"email_address": "info@turkuazmobilya.com",
+"phone_number": "+95544249919"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 301,
+"fields": {
+"name": "Turkemen_(TR)",
+"email_address": "info@turkmenmobilya.com",
+"phone_number": "+905417957466"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 302,
+"fields": {
+"name": "Tusca_(TR)",
+"email_address": "info@tuscasofa.com",
+"phone_number": "+905369922868"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 303,
+"fields": {
+"name": "Twarde-Meble_(PL)",
+"email_address": "piaski@piaski.com.pl",
+"phone_number": "+48627814112"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 304,
+"fields": {
+"name": "Twins_(TR)",
+"email_address": "export@twinslife.com.tr",
+"phone_number": "+905321637214"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 305,
+"fields": {
+"name": "UYGUL_(TR) 20.12.24",
+"email_address": "info@uygul.com",
+"phone_number": "+902327990222"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 306,
+"fields": {
+"name": "vaccari-giovanni_(IT)",
+"email_address": "info@vaccaricavgiovanni.com",
+"phone_number": ""
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 307,
+"fields": {
+"name": "Vitaly_(TR) 20.12.24",
+"email_address": "info@vitaly.com.tr",
+"phone_number": "+905346710108"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 308,
+"fields": {
+"name": "Vivaldi_(TR)",
+"email_address": "sales@vivaldimobilya.com.tr",
+"phone_number": "+905414594291"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 309,
+"fields": {
+"name": "Vivanza_(TR)",
+"email_address": "info@vivanza.com.tr",
+"phone_number": "+905326248850"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 310,
+"fields": {
+"name": "VIZE_mobilya_(TR) 30.10.24",
+"email_address": "info@vizemobilya.com.tr",
+"phone_number": "+905332055766"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 311,
+"fields": {
+"name": "Welt_(PL)",
+"email_address": "weltgips@tlen.pl",
+"phone_number": "+48607763222"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 312,
+"fields": {
+"name": "WERSALMEBLE_(PL) (DELETE DONT TOUCH)",
+"email_address": "office57@wersal.pl",
+"phone_number": "+48739299507"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 313,
+"fields": {
+"name": "Windy_(TR)",
+"email_address": "info@windy.com.tr",
+"phone_number": "+905556249999"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 314,
+"fields": {
+"name": "Wisly_Home_(TR) 30.10.24",
+"email_address": "wislyhome@gmail.com",
+"phone_number": "+905062835293"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 315,
+"fields": {
+"name": "Woodface_(TR)18.12.2024",
+"email_address": "info@woodface.com.tr",
+"phone_number": "+905464892929"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 316,
+"fields": {
+"name": "Woodprofessional(LT)",
+"email_address": "kevin@woodprofessionals.lt",
+"phone_number": ""
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 317,
+"fields": {
+"name": "Woox_Sofa_(TR) 19.12.24",
+"email_address": "info@wooxsofa.com",
+"phone_number": "+905467185908"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 318,
+"fields": {
+"name": "Wossew_(TR)",
+"email_address": "info@wossew.com.tr",
+"phone_number": "+905491101049"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 319,
+"fields": {
+"name": "x_AKMOY_(TR)24.12.2024",
+"email_address": "info@akmoysofa.com",
+"phone_number": "+95525161612"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 320,
+"fields": {
+"name": "x_AMAZON(TR)16.01.2025",
+"email_address": "dekoreparkmobilya@gmail.com",
+"phone_number": "+905300656104"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 321,
+"fields": {
+"name": "x_ANTIK_GARDEN(TR)10.01.2025",
+"email_address": "info@antikgarden.com.tr",
+"phone_number": "+903683330400"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 322,
+"fields": {
+"name": "x_ARMESSE(TR)10.01.2025",
+"email_address": "info@armesse.com.tr",
+"phone_number": "+905524529916"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 323,
+"fields": {
+"name": "x_BASSI(TR)17.01.2025",
+"email_address": "meysam.jubein@bassi.com.tr",
+"phone_number": "+905527258962"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 324,
+"fields": {
+"name": "x_BENITO(TR)28.12.2024",
+"email_address": "benito.meble24@gmail.com",
+"phone_number": ""
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 325,
+"fields": {
+"name": "x_BIGEA(TR)28.12.2024",
+"email_address": "info@bigeakbaba.com",
+"phone_number": "+905559760643"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 326,
+"fields": {
+"name": "x_CELMO(TR)28.12.2024",
+"email_address": "info@celmomobilya.com",
+"phone_number": "+905412423566"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 327,
+"fields": {
+"name": "x_DEER(TR)16.01.2025",
+"email_address": "deer.furniture@outlook.com",
+"phone_number": "+905428208059"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 328,
+"fields": {
+"name": "x_DEKA(TR)16.01.2025",
+"email_address": "dekahome16@hotmail.com",
+"phone_number": "+905446501670"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 329,
+"fields": {
+"name": "x_DEKORISTAR(TR)28.12.2024",
+"email_address": "export@dekorister.com.tr",
+"phone_number": "+905325099017"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 330,
+"fields": {
+"name": "x_ELEGANCE(TR)28.12.2024",
+"email_address": "info@elegancefurniture.com",
+"phone_number": "+905345281450"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 331,
+"fields": {
+"name": "x_EVSANE(TR)16.01.2025",
+"email_address": "bursaevsanekoltuk@hotmail.com",
+"phone_number": "+902243414344"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 332,
+"fields": {
+"name": "x_FERMINA(TR)28.12.2024",
+"email_address": "siparis@ferminamobilya.com.tr",
+"phone_number": "+903523363435"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 333,
+"fields": {
+"name": "KOPIK(PL)",
+"email_address": "praticita.e.comfort@gmail.com",
+"phone_number": "+48733347877"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 334,
+"fields": {
+"name": "Nikita_test(PL)",
+"email_address": "nik.kanushin@mail.ru",
+"phone_number": "+77074959599"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 335,
+"fields": {
+"name": "Nikita_test(CN)",
+"email_address": "nik.kanushin@mail.ru",
+"phone_number": "+77074959599"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 336,
+"fields": {
+"name": "Nikita_test(TR)",
+"email_address": "nik.kanushin@mail.ru",
+"phone_number": "+77074959599"
+}
+},
+{
+"model": "orders.manufacturer",
+"pk": 337,
+"fields": {
+"name": "Nikita_test(IT)",
+"email_address": "nik.kanushin@mail.ru",
+"phone_number": "+77074959599"
+}
+}
+]
