@@ -179,15 +179,18 @@ class NotificationSettings(models.Model):
     # Настройки типов уведомлений
     notify_uploaded_reminder = models.BooleanField(
         default=True, 
-        verbose_name="Напоминания о неотправленных заказах"
+        verbose_name="Напоминания о неотправленных заказах",
+        help_text="Получать напоминания о заказах, которые загружены но не отправлены"
     )
     notify_sent_reminder = models.BooleanField(
         default=True, 
-        verbose_name="Напоминания о заказах без инвойса"
+        verbose_name="Напоминания о заказах без инвойса",
+        help_text="Получать напоминания о заказах, которые отправлены но инвойс не получен"
     )
     notify_invoice_received = models.BooleanField(
         default=True, 
-        verbose_name="Уведомления о получении инвойса"
+        verbose_name="Уведомления о получении инвойса",
+        help_text="Получать уведомления когда фабрика загружает инвойс"
     )
     
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")

@@ -42,18 +42,13 @@
                             <div class="col-md-6">
                                 <h5>{% trans "Типы уведомлений" %}</h5>
                                 
-                                <div class="form-check mb-3">
-                                    {{ form.notify_order_sent|add_class:"form-check-input" }}
-                                    <label class="form-check-label" for="{{ form.notify_order_sent.id_for_label }}">
-                                        {{ form.notify_order_sent.label }}
-                                    </label>
-                                </div>
                                 
                                 <div class="form-check mb-3">
                                     {{ form.notify_invoice_received|add_class:"form-check-input" }}
                                     <label class="form-check-label" for="{{ form.notify_invoice_received.id_for_label }}">
                                         {{ form.notify_invoice_received.label }}
                                     </label>
+                                    <div class="form-text">{{ form.notify_invoice_received.help_text }}</div>
                                 </div>
                                 
                                 <div class="form-check mb-3">
