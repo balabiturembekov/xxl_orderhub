@@ -7,6 +7,8 @@ RUN apt-get update && apt-get install -y \
     libmagic1 \
     libpq-dev \
     poppler-utils \
+    gettext \
+    gettext-base \
     && rm -rf /var/lib/apt/lists/*
 
 # Установка рабочей директории
