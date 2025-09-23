@@ -149,7 +149,7 @@ msgstr "Analytik"
 
 #: templates/base.html:444
 msgid "Дашборд"
-msgstr ""
+msgstr "Dashboard"
 
 #: templates/base.html:454
 #, fuzzy
@@ -159,7 +159,7 @@ msgstr "Benachrichtigungen"
 
 #: templates/base.html:462 templates/orders/notification_list.html:31
 msgid "Настройки"
-msgstr ""
+msgstr "Einstellungen"
 
 #: templates/orders/analytics_dashboard.html:4
 #: templates/orders/analytics_dashboard.html:10
@@ -307,13 +307,15 @@ msgstr "Passwort bestätigen"
 
 #: templates/orders/complete_order_confirm.html:26
 msgid "Вы уверены, что хотите завершить этот заказ?"
-msgstr ""
+msgstr "Sind Sie sicher, dass Sie diese Bestellung abschließen möchten?"
 
 #: templates/orders/complete_order_confirm.html:27
 msgid ""
 "После завершения заказ будет помечен как выполненный и больше не будет "
 "участвовать в напоминаниях."
 msgstr ""
+"Nach dem Abschluss wird die Bestellung als erledigt markiert und nimmt nicht "
+"mehr an Erinnerungen teil."
 
 #: templates/orders/complete_order_confirm.html:32
 #: templates/orders/confirmation_detail.html:96
@@ -321,7 +323,7 @@ msgstr ""
 #: templates/orders/send_order_confirm.html:41
 #: templates/orders/upload_invoice_confirm.html:41
 msgid "Информация о заказе"
-msgstr ""
+msgstr "Bestellinformationen"
 
 #: templates/orders/complete_order_confirm.html:37
 #: templates/orders/confirmation_detail.html:99
@@ -333,7 +335,7 @@ msgstr ""
 #: templates/orders/upload_invoice.html:26
 #: templates/orders/upload_invoice_confirm.html:44
 msgid "Название:"
-msgstr ""
+msgstr "Titel:"
 
 #: templates/orders/complete_order_confirm.html:38
 #: templates/orders/confirmation_detail.html:100
@@ -342,7 +344,7 @@ msgstr ""
 #: templates/orders/upload_invoice.html:27
 #: templates/orders/upload_invoice_confirm.html:45
 msgid "Фабрика:"
-msgstr ""
+msgstr "Fabrik:"
 
 #: templates/orders/complete_order_confirm.html:39
 #: templates/orders/confirmation_detail.html:101
@@ -351,7 +353,7 @@ msgstr ""
 #: templates/orders/send_order_confirm.html:63
 #: templates/orders/upload_invoice_confirm.html:46
 msgid "Страна:"
-msgstr ""
+msgstr "Land:"
 
 #: templates/orders/complete_order_confirm.html:42
 #: templates/orders/confirmation_detail.html:46
@@ -359,7 +361,7 @@ msgstr ""
 #: templates/orders/order_detail.html:44
 #: templates/orders/upload_invoice.html:28
 msgid "Статус:"
-msgstr ""
+msgstr "Status:"
 
 #: templates/orders/complete_order_confirm.html:45
 #: templates/orders/confirmation_detail.html:107
@@ -386,31 +388,31 @@ msgstr ""
 #: templates/orders/complete_order_confirm.html:58
 #: templates/orders/upload_invoice.html:101
 msgid "Важно:"
-msgstr ""
+msgstr "Wichtig:"
 
 #: templates/orders/complete_order_confirm.html:60
 msgid "Заказ можно завершить только после получения инвойса от фабрики"
-msgstr ""
+msgstr "Die Bestellung kann nur nach Erhalt der Rechnung von der Fabrik abgeschlossen werden"
 
 #: templates/orders/complete_order_confirm.html:61
 msgid "После завершения статус заказа изменится на 'Завершен'"
-msgstr ""
+msgstr "Nach dem Abschluss ändert sich der Bestellstatus zu 'Abgeschlossen'"
 
 #: templates/orders/complete_order_confirm.html:62
 msgid "Завершенные заказы не участвуют в системе напоминаний"
-msgstr ""
+msgstr "Abgeschlossene Bestellungen nehmen nicht am Erinnerungssystem teil"
 
 #: templates/orders/complete_order_confirm.html:63
 msgid "Это действие нельзя отменить"
-msgstr ""
+msgstr "Diese Aktion kann nicht rückgängig gemacht werden"
 
 #: templates/orders/complete_order_confirm.html:71
 msgid "Причина завершения (необязательно)"
-msgstr ""
+msgstr "Abschlussgrund (optional)"
 
 #: templates/orders/complete_order_confirm.html:73
 msgid "Укажите причину завершения заказа..."
-msgstr ""
+msgstr "Geben Sie den Grund für den Bestellabschluss an..."
 
 #: templates/orders/complete_order_confirm.html:78
 #: templates/orders/country_confirm_delete.html:30
@@ -422,7 +424,7 @@ msgstr ""
 #: templates/orders/upload_invoice.html:76
 #: templates/orders/upload_invoice_confirm.html:129
 msgid "Отмена"
-msgstr ""
+msgstr "Abbrechen"
 
 #: templates/orders/complete_order_confirm.html:81
 #, fuzzy
@@ -444,7 +446,7 @@ msgstr "Registrierungsdatum:"
 
 #: templates/orders/confirmation_detail.html:40
 msgid "Информация о подтверждении"
-msgstr ""
+msgstr "Bestätigungsinformationen"
 
 #: templates/orders/confirmation_detail.html:45
 #, fuzzy
@@ -461,11 +463,11 @@ msgstr "Abgeschlossen"
 
 #: templates/orders/confirmation_detail.html:48
 msgid "Истекает:"
-msgstr ""
+msgstr "Läuft ab:"
 
 #: templates/orders/confirmation_detail.html:51
 msgid "Запросил:"
-msgstr ""
+msgstr "Angefragt von:"
 
 #: templates/orders/confirmation_detail.html:53
 #, fuzzy
@@ -482,11 +484,11 @@ msgstr "Passwort bestätigen"
 #: templates/orders/confirmation_detail.html:63
 #: templates/orders/order_detail.html:67
 msgid "Комментарии:"
-msgstr ""
+msgstr "Kommentare:"
 
 #: templates/orders/confirmation_detail.html:70
 msgid "Причина отклонения:"
-msgstr ""
+msgstr "Ablehnungsgrund:"
 
 #: templates/orders/confirmation_detail.html:81
 #, fuzzy
@@ -514,7 +516,7 @@ msgstr "Passwort bestätigen"
 
 #: templates/orders/confirmation_detail.html:128
 msgid "Отклонить"
-msgstr ""
+msgstr "Ablehnen"
 
 #: templates/orders/confirmation_detail.html:136
 #, fuzzy
