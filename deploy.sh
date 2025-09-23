@@ -41,6 +41,26 @@ sleep 15
 echo "🔍 Проверяем статус сервисов..."
 docker-compose ps
 
+echo "📊 Настройка начальных данных..."
+# Проверяем, есть ли JSON файл с данными производителей
+if [ -f "manufacturer_fixture.json" ]; then
+    echo "📁 Копируем JSON файл в контейнер..."
+    docker cp manufacturer_fixture.json xxl_orderhub-web-1:/app/
+    
+    # Копируем команды управления если их нет
+    if ! docker-compose exec web test -f orders/management/commands/setup_initial_data.py; then
+        echo "📁 Копируем команды управления..."
+        docker cp orders/management/commands/setup_initial_data.py xxl_orderhub-web-1:/app/orders/management/commands/
+    fi
+    
+    echo "🏭 Загружаем данные производителей..."
+    docker-compose exec --user root web python manage.py setup_initial_data --clear
+    
+    echo "✅ Данные производителей загружены!"
+else
+    echo "⚠️ Файл manufacturer_fixture.json не найден. Пропускаем загрузку данных."
+fi
+
 echo "🌐 Проверяем доступность приложения..."
 if curl -s -o /dev/null -w "%{http_code}" http://localhost:8280/ | grep -q "200"; then
     echo "✅ Основное приложение работает: http://localhost:8280/"
@@ -74,6 +94,7 @@ echo "   • Остановить:         docker-compose down"
 echo "   • Перезапустить:      docker-compose restart"
 echo "   • Логи:               docker-compose logs"
 echo "   • Статус:             docker-compose ps"
+echo "   • Перезагрузить данные: docker-compose exec --user root web python manage.py setup_initial_data --clear"
 echo ""
 echo "⚠️  Важно:"
 echo "   • Только порт 8280 доступен снаружи"
