@@ -323,13 +323,12 @@ def send_order_execute(request, pk):
         
         email = EmailMessage(
             subject=subject,
-            body=text_message,
+            body=html_message,  # Используем HTML как основное тело
             from_email=settings.DEFAULT_FROM_EMAIL,
             to=[order.factory.email],
         )
         email.content_subtype = "html"  # Указываем HTML контент
         email.encoding = 'utf-8'  # Явно указываем кодировку
-        email.attach_alternative(html_message, "text/html")
         
         # Прикрепляем Excel файл
         if order.excel_file:
