@@ -121,16 +121,12 @@ msgid "Подтверждения"
 msgstr "Bestätigungen"
 
 #: templates/base.html:421
-#, fuzzy
-#| msgid "Подтверждение пароля"
 msgid "Все подтверждения"
-msgstr "Passwort bestätigen"
+msgstr "Alle Bestätigungen"
 
 #: templates/base.html:428
-#, fuzzy
-#| msgid "Отправлено"
 msgid "Управление"
-msgstr "Gesendet"
+msgstr "Verwaltung"
 
 #: templates/base.html:431 templates/orders/analytics_dashboard.html:213
 #: templates/orders/country_list.html:26
@@ -138,10 +134,8 @@ msgid "Фабрики"
 msgstr "Fabriken"
 
 #: templates/base.html:434
-#, fuzzy
-#| msgid "Страна"
 msgid "Страны"
-msgstr "Land"
+msgstr "Länder"
 
 #: templates/base.html:441
 msgid "Аналитика"
@@ -300,10 +294,8 @@ msgid "Завершение заказа"
 msgstr "Bestellname"
 
 #: templates/orders/complete_order_confirm.html:21
-#, fuzzy
-#| msgid "Подтверждение пароля"
 msgid "Подтверждение завершения заказа"
-msgstr "Passwort bestätigen"
+msgstr "Bestellabschluss bestätigen"
 
 #: templates/orders/complete_order_confirm.html:26
 msgid "Вы уверены, что хотите завершить этот заказ?"
@@ -470,16 +462,12 @@ msgid "Запросил:"
 msgstr "Angefragt von:"
 
 #: templates/orders/confirmation_detail.html:53
-#, fuzzy
-#| msgid "Подтверждение пароля"
 msgid "Подтвердил:"
-msgstr "Passwort bestätigen"
+msgstr "Bestätigt von:"
 
 #: templates/orders/confirmation_detail.html:56
-#, fuzzy
-#| msgid "Подтверждение пароля"
 msgid "Подтверждено:"
-msgstr "Passwort bestätigen"
+msgstr "Bestätigt am:"
 
 #: templates/orders/confirmation_detail.html:63
 #: templates/orders/order_detail.html:67
@@ -509,10 +497,8 @@ msgid "Действия"
 msgstr "Aktionen"
 
 #: templates/orders/confirmation_detail.html:125
-#, fuzzy
-#| msgid "Подтверждение пароля"
 msgid "Подтвердить"
-msgstr "Passwort bestätigen"
+msgstr "Bestätigen"
 
 #: templates/orders/confirmation_detail.html:128
 msgid "Отклонить"
@@ -1155,16 +1141,12 @@ msgid "Прочитано"
 msgstr ""
 
 #: templates/orders/notification_list.html:187
-#, fuzzy
-#| msgid "Настройки уведомлений"
 msgid "Навигация по уведомлениям"
-msgstr "Benachrichtigungseinstellungen"
+msgstr "Benachrichtigungsnavigation"
 
 #: templates/orders/notification_list.html:219
-#, fuzzy
-#| msgid "Настройки уведомлений"
 msgid "Нет уведомлений"
-msgstr "Benachrichtigungseinstellungen"
+msgstr "Keine Benachrichtigungen"
 
 #: templates/orders/notification_list.html:220
 msgid ""
