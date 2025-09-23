@@ -27,11 +27,17 @@ class Command(BaseCommand):
         # Проверяем, есть ли уже данные
         if Country.objects.count() > 0 or Factory.objects.count() > 0:
             self.stdout.write(
-                self.style.WARNING(
-                    '⚠️ Данные уже существуют! Используйте --clear для очистки.'
+                self.style.SUCCESS(
+                    f'✅ Данные уже существуют! Найдено {Country.objects.count()} стран и {Factory.objects.count()} фабрик.'
                 )
             )
-            return
+            if not clear_existing:
+                self.stdout.write(
+                    self.style.WARNING(
+                        '💡 Используйте --clear для принудительной перезагрузки данных.'
+                    )
+                )
+                return
         
         # Загружаем данные из JSON файла
         import json

@@ -60,12 +60,17 @@ if [ -f "manufacturer_fixture.json" ]; then
     echo "🏭 Загружаем данные производителей..."
     # Проверяем, что команда существует
     if docker-compose exec web python manage.py help setup_initial_data >/dev/null 2>&1; then
-        docker-compose exec --user root web python manage.py setup_initial_data --clear
+        docker-compose exec --user root web python manage.py setup_initial_data
     else
         echo "⚠️ Команда setup_initial_data не найдена. Пропускаем загрузку данных."
     fi
     
     echo "✅ Данные производителей загружены!"
+    
+    echo "🔍 Проверяем целостность данных..."
+    if docker-compose exec web python manage.py help check_data_integrity >/dev/null 2>&1; then
+        docker-compose exec web python manage.py check_data_integrity
+    fi
 else
     echo "⚠️ Файл manufacturer_fixture.json не найден. Пропускаем загрузку данных."
 fi
@@ -103,7 +108,9 @@ echo "   • Остановить:         docker-compose down"
 echo "   • Перезапустить:      docker-compose restart"
 echo "   • Логи:               docker-compose logs"
 echo "   • Статус:             docker-compose ps"
+echo "   • Проверить данные:   docker-compose exec web python manage.py check_data_integrity"
 echo "   • Перезагрузить данные: docker-compose exec --user root web python manage.py setup_initial_data --clear"
+echo "   • Очистить справочники: docker-compose exec web python manage.py clear_reference_data --force"
 echo ""
 echo "⚠️  Важно:"
 echo "   • Только порт 8280 доступен снаружи"
