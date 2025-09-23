@@ -30,7 +30,11 @@ if [ ! -f "nginx.conf" ]; then
 fi
 
 echo "📦 Останавливаем существующие контейнеры..."
-docker-compose down
+docker-compose down --remove-orphans
+
+echo "🧹 Удаляем конфликтующие контейнеры..."
+# Удаляем старый nginx контейнер если он существует
+docker rm -f xxl_orderhub_nginx 2>/dev/null || true
 
 echo "🔨 Собираем и запускаем контейнеры..."
 docker-compose up --build -d
@@ -54,7 +58,12 @@ if [ -f "manufacturer_fixture.json" ]; then
     fi
     
     echo "🏭 Загружаем данные производителей..."
-    docker-compose exec --user root web python manage.py setup_initial_data --clear
+    # Проверяем, что команда существует
+    if docker-compose exec web python manage.py help setup_initial_data >/dev/null 2>&1; then
+        docker-compose exec --user root web python manage.py setup_initial_data --clear
+    else
+        echo "⚠️ Команда setup_initial_data не найдена. Пропускаем загрузку данных."
+    fi
     
     echo "✅ Данные производителей загружены!"
 else

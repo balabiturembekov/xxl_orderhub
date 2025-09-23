@@ -51,7 +51,6 @@ services:
     command: >
       sh -c "python manage.py migrate &&
              python manage.py collectstatic --noinput &&
-             cp -r /app/staticfiles/. /app/static/ &&
              python manage.py setup_celery_beat &&
              python manage.py runserver 0.0.0.0:8000"
     networks:
