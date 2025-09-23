@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Подтверждение операции" %} - XXL OrderHub{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Главная" %}</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'confirmation_list' %}">{% trans "Подтверждения" %}</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'confirmation_detail' confirmation.pk %}">{% trans "Детали подтверждения" %}</a></li>
+                <li class="breadcrumb-item active">{% trans "Подтверждение операции" %}</li>
+            </ol>
+        </nav>
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                {% if confirmation.action == 'send_order' %}
+                    <i class="fas fa-paper-plane text-primary"></i>
+                {% elif confirmation.action == 'upload_invoice' %}
+                    <i class="fas fa-file-invoice text-success"></i>
+                {% elif confirmation.action == 'complete_order' %}
+                    <i class="fas fa-check-circle text-dark"></i>
+                {% else %}
+                    <i class="fas fa-cog text-secondary"></i>
+                {% endif %}
+                {% trans "Подтверждение операции" %}
+            </h2>
+            <span class="badge bg-warning fs-6">
+                {{ confirmation.get_status_display }}
+            </span>
+        </div>
+
+        <div class="row">
+            <!-- Основная информация -->
+            <div class="col-md-8">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">{% trans "Информация о подтверждении" %}</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>{% trans "Операция:" %}</strong> {{ confirmation.get_action_display }}</p>
+                                <p><strong>{% trans "Статус:" %}</strong> {{ confirmation.get_status_display }}</p>
+                                <p><strong>{% trans "Запрошено:" %}</strong> {{ confirmation.requested_at|date:"d.m.Y H:i" }}</p>
+                                <p><strong>{% trans "Истекает:" %}</strong> {{ confirmation.expires_at|date:"d.m.Y H:i" }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>{% trans "Запросил:" %}</strong> {{ confirmation.requested_by.get_full_name|default:confirmation.requested_by.username }}</p>
+                            </div>
+                        </div>
+
+                        {% if confirmation.confirmation_data %}
+                        <div class="mt-3">
+                            <strong>{% trans "Данные операции:" %}</strong>
+                            <div class="mt-2">
+                                {% for key, value in confirmation.confirmation_data.items %}
+                                <p><strong>{{ key|title }}:</strong> {{ value }}</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Информация о заказе -->
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">{% trans "Информация о заказе" %}</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>{% trans "Название:" %}</strong> {{ confirmation.order.title }}</p>
+                        <p><strong>{% trans "Фабрика:" %}</strong> {{ confirmation.order.factory.name }}</p>
+                        <p><strong>{% trans "Страна:" %}</strong> {{ confirmation.order.factory.country.name }}</p>
+                        <p><strong>{% trans "Статус:" %}</strong> 
+                            <span class="badge bg-{% if confirmation.order.status == 'uploaded' %}warning{% elif confirmation.order.status == 'sent' %}info{% elif confirmation.order.status == 'invoice_received' %}success{% elif confirmation.order.status == 'completed' %}dark{% else %}secondary{% endif %}">
+                                {{ confirmation.order.get_status_display }}
+                            </span>
+                        </p>
+                        <p><strong>{% trans "Дата загрузки:" %}</strong> {{ confirmation.order.uploaded_at|date:"d.m.Y H:i" }}</p>
+                    </div>
+                    <div class="card-footer">
+                        <a href="{% url 'order_detail' confirmation.order.pk %}" class="btn btn-outline-primary btn-sm w-100">
+                            <i class="fas fa-eye"></i> {% trans "Просмотр заказа" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Форма подтверждения -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-check-circle"></i> {% trans "Подтверждение операции" %}
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>{% trans "Внимание!" %}</strong>
+                            {% trans "Вы собираетесь подтвердить критическую операцию. Это действие нельзя отменить." %}
+                        </div>
+
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="comments" class="form-label">{% trans "Комментарии (необязательно):" %}</label>
+                                <textarea class="form-control" id="comments" name="comments" rows="3" placeholder="{% trans 'Добавьте комментарии к подтверждению...' %}"></textarea>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    <i class="fas fa-check"></i> {% trans "Подтвердить операцию" %}
+                                </button>
+                                <a href="{% url 'confirmation_detail' confirmation.pk %}" class="btn btn-outline-secondary btn-lg">
+                                    <i class="fas fa-arrow-left"></i> {% trans "Отмена" %}
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Навигация -->
+        <div class="mt-4">
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{% url 'confirmation_detail' confirmation.pk %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> {% trans "Назад к деталям" %}
+                </a>
+                <a href="{% url 'confirmation_list' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-list"></i> {% trans "Все подтверждения" %}
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
