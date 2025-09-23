@@ -250,8 +250,8 @@ CSRF_USE_SESSIONS = False  # Используем cookies, не сессии
 CSRF_COOKIE_NAME = 'csrftoken'  # Явно указываем имя cookie
 
 # File Upload Security
-FILE_UPLOAD_MAX_MEMORY_SIZE = config('FILE_UPLOAD_MAX_MEMORY_SIZE', default=10485760, cast=int)  # 10MB
-DATA_UPLOAD_MAX_MEMORY_SIZE = config('DATA_UPLOAD_MAX_MEMORY_SIZE', default=10485760, cast=int)  # 10MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = config('FILE_UPLOAD_MAX_MEMORY_SIZE', default=52428800, cast=int)  # 50MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = config('DATA_UPLOAD_MAX_MEMORY_SIZE', default=52428800, cast=int)  # 50MB
 
 # Logging
 LOGGING = {
