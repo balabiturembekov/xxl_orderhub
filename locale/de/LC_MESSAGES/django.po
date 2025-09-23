@@ -1179,88 +1179,78 @@ msgstr "Alle als gelesen markieren"
 
 #: templates/orders/notification_settings.html:23
 msgid "Общие настройки"
-msgstr ""
+msgstr "Allgemeine Einstellungen"
 
 #: templates/orders/notification_settings.html:43
 msgid "Типы уведомлений"
-msgstr ""
+msgstr "Benachrichtigungstypen"
 
 #: templates/orders/notification_settings.html:74
 msgid "Сохранить настройки"
 msgstr "Einstellungen speichern"
 
 #: templates/orders/notification_settings.html:85
-#, fuzzy
-#| msgid "Настройки уведомлений"
 msgid "Тестирование уведомлений"
-msgstr "Benachrichtigungseinstellungen"
+msgstr "Benachrichtigungstest"
 
 #: templates/orders/notification_settings.html:90
 msgid ""
 "Отправить тестовое уведомление на ваш email для проверки работы системы."
 msgstr ""
+"Senden Sie eine Testbenachrichtigung an Ihre E-Mail, um die Funktionalität "
+"des Systems zu überprüfen."
 
 #: templates/orders/notification_settings.html:95
 msgid "Текущий email:"
-msgstr ""
+msgstr "Aktuelle E-Mail:"
 
 #: templates/orders/notification_settings.html:98
 msgid "Для получения уведомлений необходимо указать email в профиле."
-msgstr ""
+msgstr "Um Benachrichtigungen zu erhalten, müssen Sie eine E-Mail im Profil angeben."
 
 #: templates/orders/notification_settings.html:107
-#, fuzzy
-#| msgid "Настройки уведомлений"
 msgid "Отправить тестовое уведомление"
-msgstr "Benachrichtigungseinstellungen"
+msgstr "Testbenachrichtigung senden"
 
 #: templates/orders/notification_settings.html:112
 msgid "Указать email в профиле"
-msgstr ""
+msgstr "E-Mail im Profil angeben"
 
 #: templates/orders/notification_settings.html:122
-#, fuzzy
-#| msgid "Вход в систему"
 msgid "Информация о системе"
-msgstr "Anmeldung im System"
+msgstr "Systeminformationen"
 
 #: templates/orders/notification_settings.html:128
-#, fuzzy
-#| msgid "Настройки уведомлений"
 msgid "Типы уведомлений:"
-msgstr "Benachrichtigungseinstellungen"
+msgstr "Benachrichtigungstypen:"
 
 #: templates/orders/notification_settings.html:130
-#, fuzzy
-#| msgid "Отправить на фабрику"
 msgid "Отправка заказа на фабрику"
-msgstr "An Fabrik senden"
+msgstr "Bestellung an Fabrik senden"
 
 #: templates/orders/notification_settings.html:131
-#, fuzzy
-#| msgid "Подтверждение пароля"
 msgid "Получение инвойса от фабрики"
-msgstr "Passwort bestätigen"
+msgstr "Rechnung von Fabrik erhalten"
 
 #: templates/orders/notification_settings.html:132
 msgid "Напоминания о неотправленных заказах"
 msgstr "Erinnerungen an nicht gesendete Bestellungen"
 
 #: templates/orders/notification_settings.html:133
-#, fuzzy
-#| msgid "Напоминания о заказах без инвойса"
 msgid "Напоминания о заказах без инвойсов"
-msgstr "Erinnerungen an Bestellungen ohne Rechnung"
+msgstr "Erinnerungen an Bestellungen ohne Rechnungen"
 
 #: templates/orders/notification_settings.html:137
 msgid "Частота напоминаний:"
-msgstr ""
+msgstr "Erinnerungshäufigkeit:"
 
 #: templates/orders/notification_settings.html:139
 msgid ""
 "Напоминания отправляются автоматически в зависимости от настроенной частоты "
 "(по умолчанию каждые 7 дней)."
 msgstr ""
+"Erinnerungen werden automatisch je nach eingestellter Häufigkeit gesendet "
+"(standardmäßig alle 7 Tage)."
 
 #: templates/orders/order_detail.html:39
 msgid "Email фабрики:"
