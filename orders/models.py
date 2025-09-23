@@ -330,7 +330,7 @@ class OrderConfirmation(models.Model):
     # Временные метки
     requested_at = models.DateTimeField(auto_now_add=True, verbose_name="Запрошено")
     confirmed_at = models.DateTimeField(null=True, blank=True, verbose_name="Подтверждено")
-    expires_at = models.DateTimeField(verbose_name="Истекает")
+    expires_at = models.DateTimeField(verbose_name="Истекает", help_text="Автоматически устанавливается при создании")
     
     class Meta:
         verbose_name = "Подтверждение операции"
@@ -343,7 +343,15 @@ class OrderConfirmation(models.Model):
     def save(self, *args, **kwargs):
         if not self.expires_at:
             from datetime import timedelta
-            self.expires_at = timezone.now() + timedelta(hours=24)
+            # Разные сроки для разных операций
+            if self.action == 'send_order':
+                self.expires_at = timezone.now() + timedelta(hours=72)  # 3 дня для отправки
+            elif self.action == 'upload_invoice':
+                self.expires_at = timezone.now() + timedelta(hours=48)  # 2 дня для инвойса
+            elif self.action in ['complete_order', 'cancel_order', 'delete_order']:
+                self.expires_at = timezone.now() + timedelta(hours=24)  # 1 день для критических
+            else:
+                self.expires_at = timezone.now() + timedelta(hours=24)  # По умолчанию 1 день
         super().save(*args, **kwargs)
     
     def is_expired(self):
