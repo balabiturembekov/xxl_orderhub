@@ -317,6 +317,8 @@ def send_order_execute(request, pk):
             from_email=settings.DEFAULT_FROM_EMAIL,
             to=[order.factory.email],
         )
+        email.content_subtype = "html"  # Указываем HTML контент
+        email.encoding = 'utf-8'  # Явно указываем кодировку
         
         # Прикрепляем Excel файл
         if order.excel_file:
