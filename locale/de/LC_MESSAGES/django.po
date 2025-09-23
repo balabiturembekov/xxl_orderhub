@@ -146,10 +146,8 @@ msgid "Дашборд"
 msgstr "Dashboard"
 
 #: templates/base.html:454
-#, fuzzy
-#| msgid "Уведомления"
 msgid "Все уведомления"
-msgstr "Benachrichtigungen"
+msgstr "Alle Benachrichtigungen"
 
 #: templates/base.html:462 templates/orders/notification_list.html:31
 msgid "Настройки"
@@ -235,10 +233,8 @@ msgid "заказов"
 msgstr "Bestellungen"
 
 #: templates/orders/analytics_dashboard.html:149
-#, fuzzy
-#| msgid "Просмотр заказов(В Разработке)"
 msgid "Просроченных заказов нет"
-msgstr "Bestellungen anzeigen (In Entwicklung)"
+msgstr "Keine überfälligen Bestellungen"
 
 #: templates/orders/analytics_dashboard.html:162
 msgid "Статистика по фабрикам"
@@ -288,10 +284,8 @@ msgstr "Anzahl der Bestellungen"
 
 #: templates/orders/complete_order_confirm.html:14
 #: templates/orders/notification_list.html:128
-#, fuzzy
-#| msgid "Название заказа"
 msgid "Завершение заказа"
-msgstr "Bestellname"
+msgstr "Bestellabschluss"
 
 #: templates/orders/complete_order_confirm.html:21
 msgid "Подтверждение завершения заказа"
@@ -359,23 +353,19 @@ msgstr "Status:"
 #: templates/orders/confirmation_detail.html:107
 #: templates/orders/order_detail.html:45 templates/orders/order_list.html:73
 #: templates/orders/send_order_confirm.html:46
-#, fuzzy
-#| msgid "Дата регистрации:"
 msgid "Дата загрузки:"
-msgstr "Registrierungsdatum:"
+msgstr "Hochladedatum:"
 
 #: templates/orders/complete_order_confirm.html:47
 #: templates/orders/order_detail.html:47
 #: templates/orders/upload_invoice_confirm.html:51
-#, fuzzy
-#| msgid "Дата регистрации:"
 msgid "Дата отправки:"
-msgstr "Registrierungsdatum:"
+msgstr "Sendungsdatum:"
 
 #: templates/orders/complete_order_confirm.html:50
 #: templates/orders/order_detail.html:50
 msgid "Дата получения инвойса:"
-msgstr ""
+msgstr "Rechnungsempfangsdatum:"
 
 #: templates/orders/complete_order_confirm.html:58
 #: templates/orders/upload_invoice.html:101
@@ -419,32 +409,24 @@ msgid "Отмена"
 msgstr "Abbrechen"
 
 #: templates/orders/complete_order_confirm.html:81
-#, fuzzy
-#| msgid "Создать заказ"
 msgid "Да, завершить заказ"
-msgstr "Bestellung erstellen"
+msgstr "Ja, Bestellung abschließen"
 
 #: templates/orders/confirmation_detail.html:4
-#, fuzzy
-#| msgid "Подтверждение пароля"
 msgid "Подтверждение операции"
-msgstr "Passwort bestätigen"
+msgstr "Operationsbestätigung"
 
 #: templates/orders/confirmation_detail.html:13
-#, fuzzy
-#| msgid "Дата регистрации:"
 msgid "Детали подтверждения"
-msgstr "Registrierungsdatum:"
+msgstr "Bestätigungsdetails"
 
 #: templates/orders/confirmation_detail.html:40
 msgid "Информация о подтверждении"
 msgstr "Bestätigungsinformationen"
 
 #: templates/orders/confirmation_detail.html:45
-#, fuzzy
-#| msgid "Регистрация"
 msgid "Операция:"
-msgstr "Registrierung"
+msgstr "Operation:"
 
 #: templates/orders/confirmation_detail.html:47
 #: templates/orders/confirmation_list.html:68
