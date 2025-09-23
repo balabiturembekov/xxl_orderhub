@@ -227,17 +227,188 @@
 
 {% else %}
 <!-- Неавторизованный пользователь -->
-<div class="row">
-    <div class="col-md-8 mx-auto">
-        <div class="jumbotron bg-light p-5 rounded text-center">
-            <h1 class="display-4">{% trans "Добро пожаловать в XXL OrderHub!" %}</h1>
-            <p class="lead">{% trans "Система управления заказами для вашего бизнеса." %}</p>
-            <hr class="my-4">
-            <p>{% trans "Для начала работы необходимо войти в систему или зарегистрироваться." %}</p>
-            <a class="btn btn-primary btn-lg" href="{% url 'login' %}" role="button">{% trans "Войти" %}</a>
-            <a class="btn btn-outline-primary btn-lg" href="{% url 'signup' %}" role="button">{% trans "Регистрация" %}</a>
+<!-- Hero Section -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="jumbotron bg-gradient-primary text-white p-5 rounded text-center">
+            <h1 class="display-4 mb-4">{% trans "Добро пожаловать в XXL OrderHub!" %}</h1>
+            <p class="lead mb-4">{% trans "Профессиональная система управления заказами для вашего бизнеса" %}</p>
+            <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                <a class="btn btn-light btn-lg px-4" href="{% url 'login' %}" role="button">
+                    <i class="fas fa-sign-in-alt me-2"></i>{% trans "Войти в систему" %}
+                </a>
+                <a class="btn btn-outline-light btn-lg px-4" href="{% url 'signup' %}" role="button">
+                    <i class="fas fa-user-plus me-2"></i>{% trans "Создать аккаунт" %}
+                </a>
+            </div>
         </div>
     </div>
 </div>
+
+<!-- Features Section -->
+<div class="row mb-5">
+    <div class="col-12">
+        <h2 class="text-center mb-5">{% trans "Возможности системы" %}</h2>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 text-center border-0 shadow-sm">
+            <div class="card-body p-4">
+                <div class="mb-3">
+                    <i class="fas fa-shopping-cart fa-3x text-primary"></i>
+                </div>
+                <h5 class="card-title">{% trans "Управление заказами" %}</h5>
+                <p class="card-text text-muted">
+                    {% trans "Создавайте, отслеживайте и управляйте заказами в единой системе. Полный контроль над жизненным циклом каждого заказа." %}
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 text-center border-0 shadow-sm">
+            <div class="card-body p-4">
+                <div class="mb-3">
+                    <i class="fas fa-factory fa-3x text-success"></i>
+                </div>
+                <h5 class="card-title">{% trans "База фабрик" %}</h5>
+                <p class="card-text text-muted">
+                    {% trans "Ведение базы данных фабрик и стран. Быстрый поиск и выбор поставщиков для ваших заказов." %}
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 text-center border-0 shadow-sm">
+            <div class="card-body p-4">
+                <div class="mb-3">
+                    <i class="fas fa-bell fa-3x text-warning"></i>
+                </div>
+                <h5 class="card-title">{% trans "Уведомления" %}</h5>
+                <p class="card-text text-muted">
+                    {% trans "Автоматические уведомления о статусе заказов. Напоминания о просроченных заказах и важных событиях." %}
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 text-center border-0 shadow-sm">
+            <div class="card-body p-4">
+                <div class="mb-3">
+                    <i class="fas fa-chart-bar fa-3x text-info"></i>
+                </div>
+                <h5 class="card-title">{% trans "Аналитика" %}</h5>
+                <p class="card-text text-muted">
+                    {% trans "Подробная аналитика и отчеты по заказам, фабрикам и странам. Визуализация данных для принятия решений." %}
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 text-center border-0 shadow-sm">
+            <div class="card-body p-4">
+                <div class="mb-3">
+                    <i class="fas fa-shield-alt fa-3x text-danger"></i>
+                </div>
+                <h5 class="card-title">{% trans "Безопасность" %}</h5>
+                <p class="card-text text-muted">
+                    {% trans "Система подтверждений для критических операций. Полный аудит действий пользователей." %}
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 text-center border-0 shadow-sm">
+            <div class="card-body p-4">
+                <div class="mb-3">
+                    <i class="fas fa-globe fa-3x text-secondary"></i>
+                </div>
+                <h5 class="card-title">{% trans "Многоязычность" %}</h5>
+                <p class="card-text text-muted">
+                    {% trans "Поддержка нескольких языков. Интерфейс на русском и немецком языках." %}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- How it works Section -->
+<div class="row mb-5">
+    <div class="col-12">
+        <h2 class="text-center mb-5">{% trans "Как это работает" %}</h2>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="text-center">
+            <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                <span class="h4 mb-0">1</span>
+            </div>
+            <h5>{% trans "Создайте заказ" %}</h5>
+            <p class="text-muted">{% trans "Загрузите Excel файл с деталями заказа и выберите фабрику" %}</p>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="text-center">
+            <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                <span class="h4 mb-0">2</span>
+            </div>
+            <h5>{% trans "Отправьте на фабрику" %}</h5>
+            <p class="text-muted">{% trans "Система автоматически отправит заказ на email фабрики" %}</p>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="text-center">
+            <div class="bg-info text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                <span class="h4 mb-0">3</span>
+            </div>
+            <h5>{% trans "Получите инвойс" %}</h5>
+            <p class="text-muted">{% trans "Загрузите PDF инвойс от фабрики в систему" %}</p>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="text-center">
+            <div class="bg-warning text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                <span class="h4 mb-0">4</span>
+            </div>
+            <h5>{% trans "Завершите заказ" %}</h5>
+            <p class="text-muted">{% trans "Отметьте заказ как завершенный после получения товара" %}</p>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Section -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="bg-light p-5 rounded text-center">
+            <h2 class="mb-4">{% trans "Статистика системы" %}</h2>
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <div class="h3 text-primary mb-1">{{ total_orders|default:"0" }}</div>
+                    <div class="text-muted">{% trans "Всего заказов" %}</div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="h3 text-success mb-1">{{ total_factories|default:"0" }}</div>
+                    <div class="text-muted">{% trans "Фабрик в базе" %}</div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="h3 text-info mb-1">{{ total_countries|default:"0" }}</div>
+                    <div class="text-muted">{% trans "Стран" %}</div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="h3 text-warning mb-1">{{ active_users|default:"0" }}</div>
+                    <div class="text-muted">{% trans "Активных пользователей" %}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endif %}
 {% endblock %}

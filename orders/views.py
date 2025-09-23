@@ -116,6 +116,25 @@ class HomeView(TemplateView):
                 context.update(stats)
             else:
                 context.update(cached_stats)
+        else:
+            # Статистика для неавторизованных пользователей
+            cache_key = "public_stats"
+            cached_stats = cache.get(cache_key)
+            
+            if cached_stats is None:
+                from django.contrib.auth.models import User
+                
+                # Общая статистика системы
+                public_stats = {
+                    'total_orders': Order.objects.count(),
+                    'total_factories': Factory.objects.count(),
+                    'total_countries': Country.objects.count(),
+                    'active_users': User.objects.filter(is_active=True).count(),
+                }
+                cache.set(cache_key, public_stats, 600)  # 10 минут
+                context.update(public_stats)
+            else:
+                context.update(cached_stats)
         
         return context
 
