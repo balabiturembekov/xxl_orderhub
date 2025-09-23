@@ -920,7 +920,9 @@ def preview_file(request, pk, file_type):
         return JsonResponse({'error': 'Файл не найден'}, status=404)
     
     # Генерируем предварительный просмотр
-    preview_data = generate_file_preview(file_path, file_type)
+    # Для invoice файлов используем тип 'pdf'
+    preview_type = 'pdf' if file_type == 'invoice' else file_type
+    preview_data = generate_file_preview(file_path, preview_type)
     
     return JsonResponse(preview_data)
 
