@@ -426,6 +426,19 @@
                     </a>
                 </div>
                 
+                <!-- Платежи -->
+                <div class="sidebar-section">
+                    <h6 class="sidebar-section-title">
+                        <i class="fas fa-credit-card me-2"></i>{% trans "Платежи" %}
+                    </h6>
+                    <a class="nav-link sidebar-link" href="{% url 'invoice_list' %}">
+                        <i class="fas fa-file-invoice-dollar me-3"></i>{% trans "Инвойсы" %}
+                    </a>
+                    <a class="nav-link sidebar-link" href="{% url 'payment_analytics' %}">
+                        <i class="fas fa-chart-pie me-3"></i>{% trans "Аналитика платежей" %}
+                    </a>
+                </div>
+                
                 <!-- Управление -->
                 <div class="sidebar-section">
                     <h6 class="sidebar-section-title">
