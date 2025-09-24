@@ -76,10 +76,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            if (fileType === 'excel') {
+            if (data.type === 'excel') {
                 renderExcelPreview(data);
-            } else if (fileType === 'invoice') {
+            } else if (data.type === 'pdf') {
                 renderPdfPreview(data);
+            } else if (data.type === 'word') {
+                renderWordPreview(data);
+            } else {
+                container.innerHTML = `
+                    <div class="alert alert-warning">
+                        <h5>{% trans "Неподдерживаемый тип файла" %}</h5>
+                        <p>${data.error || '{% trans "Этот тип файла не поддерживается для предварительного просмотра" %}'}</p>
+                    </div>
+                `;
             }
         })
         .catch(error => {
@@ -187,6 +196,26 @@ document.addEventListener('DOMContentLoaded', function() {
         html += `
             <div class="alert alert-info">
                 <small>{% trans "Показаны первые 3 страницы. Для полного просмотра скачайте файл." %}</small>
+            </div>
+        </div>
+        `;
+        
+        container.innerHTML = html;
+    }
+    
+    function renderWordPreview(data) {
+        const html = `
+        <div class="word-preview">
+            <div class="alert alert-info">
+                <h5><i class="fas fa-file-word me-2"></i>{% trans "Word документ" %}</h5>
+                <p><strong>{% trans "Файл:" %}</strong> ${data.filename}</p>
+                <p><strong>{% trans "Размер:" %}</strong> ${data.size_mb} MB</p>
+                <p class="mb-0">${data.message}</p>
+            </div>
+            <div class="text-center mt-3">
+                <a href="/orders/${orderId}/download/invoice/" class="btn btn-primary">
+                    <i class="fas fa-download me-1"></i>{% trans "Скачать файл" %}
+                </a>
             </div>
         </div>
         `;

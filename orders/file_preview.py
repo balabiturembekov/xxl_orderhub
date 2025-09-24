@@ -132,13 +132,23 @@ def generate_file_preview(file_path: str, file_type: str) -> Dict[str, Any]:
     if 'error' in file_info:
         return file_info
     
-    # Генерируем предварительный просмотр в зависимости от типа
-    if file_type == 'excel':
+    # Определяем тип файла по расширению
+    file_extension = os.path.splitext(file_path)[1].lower()
+    
+    # Генерируем предварительный просмотр в зависимости от расширения файла
+    if file_extension in ['.xlsx', '.xls']:
         preview = FilePreviewGenerator.preview_excel(file_path)
-    elif file_type == 'pdf':
+    elif file_extension == '.pdf':
         preview = FilePreviewGenerator.preview_pdf(file_path)
+    elif file_extension in ['.doc', '.docx']:
+        # Для Word файлов показываем только информацию о файле
+        preview = {
+            'type': 'word',
+            'filename': os.path.basename(file_path),
+            'message': 'Предварительный просмотр Word файлов не поддерживается. Скачайте файл для просмотра.'
+        }
     else:
-        return {'error': 'Неподдерживаемый тип файла для предварительного просмотра'}
+        return {'error': f'Неподдерживаемый тип файла: {file_extension}'}
     
     # Добавляем информацию о файле
     preview.update(file_info)
