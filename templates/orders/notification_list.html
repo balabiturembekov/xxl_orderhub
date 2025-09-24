@@ -244,8 +244,10 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(response => response.json())
             .then(data => {
-                if (data.status === 'success') {
+                if (data.success === true) {
                     markNotificationAsRead(card, this);
+                } else {
+                    console.error('Ошибка:', data.message);
                 }
             })
             .catch(error => {
