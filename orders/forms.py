@@ -1,7 +1,8 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import UserProfile, Order, Factory, NotificationSettings, Notification, Country
+from django.utils import timezone
+from .models import UserProfile, Order, Factory, NotificationSettings, Notification, Country, Invoice, InvoicePayment
 
 
 class CustomUserCreationForm(UserCreationForm):
@@ -285,3 +286,276 @@ class FactoryForm(forms.ModelForm):
             'address': 'Адрес',
             'is_active': 'Активна',
         }
+
+
+class InvoiceForm(forms.ModelForm):
+    """
+    Форма для создания и редактирования инвойса.
+    
+    Содержит поля для основной информации об инвойсе:
+    - Номер инвойса
+    - Общая сумма к оплате
+    - Срок оплаты
+    - Комментарии
+    """
+    
+    class Meta:
+        model = Invoice
+        fields = ['invoice_number', 'balance', 'due_date', 'notes']
+        widgets = {
+            'invoice_number': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Введите номер инвойса от фабрики'
+            }),
+            'balance': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0',
+                'placeholder': '0.00'
+            }),
+            'due_date': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'notes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Дополнительная информация об инвойсе'
+            }),
+        }
+        labels = {
+            'invoice_number': 'Номер инвойса',
+            'balance': 'Общая сумма к оплате',
+            'due_date': 'Срок оплаты',
+            'notes': 'Комментарии',
+        }
+        help_texts = {
+            'invoice_number': 'Уникальный номер инвойса от фабрики',
+            'balance': 'Полная сумма по инвойсу в валюте заказа',
+            'due_date': 'Дата, до которой должен быть оплачен инвойс',
+        }
+    
+    def clean_balance(self):
+        """Валидация суммы инвойса"""
+        balance = self.cleaned_data.get('balance')
+        if balance is not None and balance <= 0:
+            raise forms.ValidationError("Сумма инвойса должна быть больше нуля.")
+        return balance
+
+
+class InvoicePaymentForm(forms.ModelForm):
+    """
+    Форма для добавления платежа по инвойсу.
+    
+    Содержит поля для информации о платеже:
+    - Сумма платежа
+    - Дата платежа
+    - Тип платежа
+    - Скриншот чека оплаты
+    - Комментарии
+    """
+    
+    class Meta:
+        model = InvoicePayment
+        fields = ['amount', 'payment_date', 'payment_type', 'payment_receipt', 'notes']
+        widgets = {
+            'amount': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0',
+                'placeholder': '0.00'
+            }),
+            'payment_date': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'payment_type': forms.Select(attrs={
+                'class': 'form-control'
+            }),
+            'payment_receipt': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': 'image/*,.pdf'
+            }),
+            'notes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Дополнительная информация о платеже'
+            }),
+        }
+        labels = {
+            'amount': 'Сумма платежа',
+            'payment_date': 'Дата платежа',
+            'payment_type': 'Тип платежа',
+            'payment_receipt': 'Скриншот чека оплаты',
+            'notes': 'Комментарии',
+        }
+        help_texts = {
+            'amount': 'Сумма платежа в валюте заказа',
+            'payment_date': 'Дата, когда был произведен платеж',
+            'payment_type': 'Тип платежа (депозит, финальный платеж и т.д.)',
+            'payment_receipt': 'Фото или скриншот подтверждения оплаты (JPG, PNG, PDF)',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.invoice = kwargs.pop('invoice', None)
+        super().__init__(*args, **kwargs)
+        
+        # Устанавливаем текущую дату по умолчанию
+        if not self.instance.pk:
+            self.fields['payment_date'].initial = timezone.now().date()
+    
+    def clean_amount(self):
+        """Валидация суммы платежа"""
+        amount = self.cleaned_data.get('amount')
+        if amount is not None and amount <= 0:
+            raise forms.ValidationError("Сумма платежа должна быть больше нуля.")
+        
+        # Проверка, что сумма не превышает остаток по инвойсу
+        if self.invoice and amount:
+            remaining = self.invoice.remaining_amount
+            if amount > remaining:
+                raise forms.ValidationError(
+                    f"Сумма платежа ({amount}) не может превышать остаток к доплате ({remaining})."
+                )
+        
+        return amount
+    
+    def clean_payment_receipt(self):
+        """Валидация файла чека оплаты"""
+        receipt = self.cleaned_data.get('payment_receipt')
+        if receipt:
+            # Проверка размера файла (максимум 10MB)
+            if receipt.size > 10 * 1024 * 1024:
+                raise forms.ValidationError("Размер файла не должен превышать 10MB.")
+        return receipt
+
+
+class InvoiceWithPaymentForm(forms.Form):
+    """
+    Комбинированная форма для создания инвойса с первым платежом.
+    
+    Используется на странице загрузки инвойса для одновременного
+    создания инвойса и добавления первого платежа.
+    """
+    
+    # Поля инвойса
+    invoice_number = forms.CharField(
+        max_length=100,
+        label="Номер инвойса",
+        help_text="Уникальный номер инвойса от фабрики",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Введите номер инвойса от фабрики'
+        })
+    )
+    balance = forms.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        label="Общая сумма к оплате",
+        help_text="Полная сумма по инвойсу в валюте заказа",
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'step': '0.01',
+            'min': '0',
+            'placeholder': '0.00'
+        })
+    )
+    due_date = forms.DateField(
+        required=False,
+        label="Срок оплаты",
+        help_text="Дата, до которой должен быть оплачен инвойс",
+        widget=forms.DateInput(attrs={
+            'class': 'form-control',
+            'type': 'date'
+        })
+    )
+    invoice_notes = forms.CharField(
+        required=False,
+        label="Комментарии к инвойсу",
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 2,
+            'placeholder': 'Дополнительная информация об инвойсе'
+        })
+    )
+    
+    # Поля платежа
+    payment_amount = forms.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        label="Сумма платежа",
+        help_text="Сумма первого платежа",
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'step': '0.01',
+            'min': '0',
+            'placeholder': '0.00'
+        })
+    )
+    payment_date = forms.DateField(
+        label="Дата платежа",
+        widget=forms.DateInput(attrs={
+            'class': 'form-control',
+            'type': 'date'
+        })
+    )
+    payment_type = forms.ChoiceField(
+        choices=InvoicePayment.PAYMENT_TYPE_CHOICES,
+        label="Тип платежа",
+        widget=forms.Select(attrs={
+            'class': 'form-control'
+        })
+    )
+    payment_receipt = forms.FileField(
+        label="Скриншот чека оплаты",
+        help_text="Фото или скриншот подтверждения оплаты (JPG, PNG, PDF)",
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': 'image/*,.pdf'
+        })
+    )
+    payment_notes = forms.CharField(
+        required=False,
+        label="Комментарии к платежу",
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 2,
+            'placeholder': 'Дополнительная информация о платеже'
+        })
+    )
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Устанавливаем текущую дату по умолчанию
+        self.fields['payment_date'].initial = timezone.now().date()
+    
+    def clean_balance(self):
+        """Валидация суммы инвойса"""
+        balance = self.cleaned_data.get('balance')
+        if balance is not None and balance <= 0:
+            raise forms.ValidationError("Сумма инвойса должна быть больше нуля.")
+        return balance
+    
+    def clean_payment_amount(self):
+        """Валидация суммы платежа"""
+        amount = self.cleaned_data.get('payment_amount')
+        balance = self.cleaned_data.get('balance')
+        
+        if amount is not None and amount <= 0:
+            raise forms.ValidationError("Сумма платежа должна быть больше нуля.")
+        
+        if balance and amount and amount > balance:
+            raise forms.ValidationError(
+                f"Сумма платежа ({amount}) не может превышать общую сумму инвойса ({balance})."
+            )
+        
+        return amount
+    
+    def clean_payment_receipt(self):
+        """Валидация файла чека оплаты"""
+        receipt = self.cleaned_data.get('payment_receipt')
+        if receipt:
+            # Проверка размера файла (максимум 10MB)
+            if receipt.size > 10 * 1024 * 1024:
+                raise forms.ValidationError("Размер файла не должен превышать 10MB.")
+        return receipt

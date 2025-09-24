@@ -530,3 +530,206 @@ class OrderAuditLog(models.Model):
             user_agent=user_agent,
             comments=comments
         )
+
+
+class Invoice(models.Model):
+    """
+    Модель для инвойсов с детальной информацией о платежах.
+    
+    Содержит основную информацию об инвойсе:
+    - Связь с заказом
+    - Уникальный номер инвойса
+    - Общая сумма к оплате
+    - Статус оплаты
+    - Связанные платежи
+    """
+    
+    PAYMENT_STATUS_CHOICES = [
+        ('pending', 'Ожидает оплаты'),
+        ('partial', 'Частично оплачен'),
+        ('paid', 'Полностью оплачен'),
+        ('overdue', 'Просрочен'),
+    ]
+    
+    order = models.OneToOneField(
+        Order,
+        on_delete=models.CASCADE,
+        verbose_name="Заказ",
+        related_name='invoice'
+    )
+    invoice_number = models.CharField(
+        max_length=100,
+        verbose_name="Номер инвойса",
+        help_text="Уникальный номер инвойса от фабрики"
+    )
+    balance = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        verbose_name="Общая сумма к оплате",
+        help_text="Полная сумма по инвойсу"
+    )
+    total_paid = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name="Сумма всех платежей"
+    )
+    remaining_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name="Остаток к доплате"
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=PAYMENT_STATUS_CHOICES,
+        default='pending',
+        verbose_name="Статус оплаты"
+    )
+    
+    # Даты
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления")
+    due_date = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Срок оплаты",
+        help_text="Дата, до которой должен быть оплачен инвойс"
+    )
+    
+    # Дополнительная информация
+    notes = models.TextField(blank=True, verbose_name="Комментарии")
+    
+    class Meta:
+        verbose_name = "Инвойс"
+        verbose_name_plural = "Инвойсы"
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Инвойс {self.invoice_number} для заказа {self.order.title}"
+    
+    def save(self, *args, **kwargs):
+        """Автоматический расчет остатка при сохранении"""
+        self.remaining_amount = self.balance - self.total_paid
+        
+        # Обновление статуса
+        if self.total_paid == 0:
+            self.status = 'pending'
+        elif self.total_paid >= self.balance:
+            self.status = 'paid'
+        else:
+            self.status = 'partial'
+            
+        # Проверка просрочки
+        if self.due_date and timezone.now().date() > self.due_date and self.status != 'paid':
+            self.status = 'overdue'
+            
+        super().save(*args, **kwargs)
+    
+    @property
+    def is_overdue(self):
+        """Проверка просрочки платежа"""
+        if self.due_date and timezone.now().date() > self.due_date and self.status != 'paid':
+            return True
+        return False
+    
+    @property
+    def payment_progress_percentage(self):
+        """Процент оплаты"""
+        if self.balance == 0:
+            return 100
+        return (self.total_paid / self.balance) * 100
+
+
+class InvoicePayment(models.Model):
+    """
+    Модель для отдельных платежей по инвойсу.
+    
+    Позволяет отслеживать частичные платежи:
+    - Сумма платежа
+    - Дата платежа
+    - Тип платежа (депозит, финальный платеж)
+    - Скриншот чека оплаты
+    """
+    
+    PAYMENT_TYPE_CHOICES = [
+        ('deposit', 'Депозит'),
+        ('final_payment', 'Финальный платеж'),
+        ('partial_payment', 'Частичный платеж'),
+        ('refund', 'Возврат'),
+    ]
+    
+    invoice = models.ForeignKey(
+        Invoice,
+        on_delete=models.CASCADE,
+        verbose_name="Инвойс",
+        related_name='payments'
+    )
+    amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        verbose_name="Сумма платежа"
+    )
+    payment_date = models.DateField(
+        verbose_name="Дата платежа"
+    )
+    payment_type = models.CharField(
+        max_length=20,
+        choices=PAYMENT_TYPE_CHOICES,
+        default='partial_payment',
+        verbose_name="Тип платежа"
+    )
+    payment_receipt = models.FileField(
+        upload_to='payments/receipts/',
+        validators=[
+            FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png', 'pdf']),
+        ],
+        verbose_name="Скриншот чека оплаты",
+        help_text="Фото или скриншот подтверждения оплаты"
+    )
+    notes = models.TextField(
+        blank=True,
+        verbose_name="Комментарии",
+        help_text="Дополнительная информация о платеже"
+    )
+    
+    # Метаданные
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name="Создал"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+    
+    class Meta:
+        verbose_name = "Платеж по инвойсу"
+        verbose_name_plural = "Платежи по инвойсам"
+        ordering = ['-payment_date', '-created_at']
+    
+    def __str__(self):
+        return f"Платеж {self.amount} от {self.payment_date} по инвойсу {self.invoice.invoice_number}"
+    
+    def save(self, *args, **kwargs):
+        """Обновление общей суммы оплаты инвойса при сохранении платежа"""
+        super().save(*args, **kwargs)
+        
+        # Пересчет общей суммы оплаты
+        total_paid = self.invoice.payments.aggregate(
+            total=models.Sum('amount')
+        )['total'] or 0
+        
+        self.invoice.total_paid = total_paid
+        self.invoice.save()
+    
+    def delete(self, *args, **kwargs):
+        """Обновление общей суммы оплаты при удалении платежа"""
+        invoice = self.invoice
+        super().delete(*args, **kwargs)
+        
+        # Пересчет общей суммы оплаты
+        total_paid = invoice.payments.aggregate(
+            total=models.Sum('amount')
+        )['total'] or 0
+        
+        invoice.total_paid = total_paid
+        invoice.save()
