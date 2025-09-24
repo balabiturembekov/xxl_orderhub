@@ -133,14 +133,11 @@
                 {% for factory in factory_stats %}
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <div>
-                        <strong>{{ factory.name }}</strong>
-                        <br><small class="text-muted">{{ factory.country.name }}</small>
+                        <strong>{{ factory.factory__name }}</strong>
+                        <br><small class="text-muted">{{ factory.factory__country__name }}</small>
                     </div>
                     <div class="text-end">
-                        <span class="badge bg-primary">{{ factory.total_orders }} {% trans "заказов" %}</span>
-                        {% if factory.active_orders > 0 %}
-                        <br><small class="text-success">{{ factory.active_orders }} {% trans "активных" %}</small>
-                        {% endif %}
+                        <span class="badge bg-primary">{{ factory.count }} {% trans "заказов" %}</span>
                     </div>
                 </div>
                 {% if not forloop.last %}<hr>{% endif %}
@@ -161,11 +158,10 @@
                 {% for country in country_stats %}
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <div>
-                        <strong>{{ country.name }}</strong>
-                        <br><small class="text-muted">{{ country.total_factories }} {% trans "фабрик" %}</small>
+                        <strong>{{ country.factory__country__name }}</strong>
                     </div>
                     <div class="text-end">
-                        <span class="badge bg-info">{{ country.total_orders }} {% trans "заказов" %}</span>
+                        <span class="badge bg-info">{{ country.count }} {% trans "заказов" %}</span>
                     </div>
                 </div>
                 {% if not forloop.last %}<hr>{% endif %}

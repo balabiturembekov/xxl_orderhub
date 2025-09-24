@@ -149,7 +149,7 @@ class HomeView(TemplateView):
         recent_orders_list = user_orders.select_related('factory', 'factory__country').order_by('-uploaded_at')[:5]
         
         # Calculate factory statistics
-        factory_stats = user_orders.values('factory__name').annotate(
+        factory_stats = user_orders.values('factory__name', 'factory__country__name').annotate(
             count=Count('id')
         ).order_by('-count')[:5]
         
