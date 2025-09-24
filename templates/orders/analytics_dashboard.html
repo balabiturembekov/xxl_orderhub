@@ -131,7 +131,7 @@
                             <a href="{% url 'order_detail' order.pk %}" class="list-group-item list-group-item-action">
                                 <div class="d-flex w-100 justify-content-between">
                                     <h6 class="mb-1">{{ order.title|truncatechars:20 }}</h6>
-                                    <small>{{ order.days_since_upload|default:order.days_since_sent }} {% trans "дней" %}</small>
+                                    <small>{% if order.days_since_upload %}{{ order.days_since_upload }}{% else %}{{ order.days_since_sent|default:"0" }}{% endif %} {% trans "дней" %}</small>
                                 </div>
                                 <p class="mb-1">{{ order.factory.name }}</p>
                                 <small class="text-warning">⚠️ {% trans "Требует внимания" %}</small>
