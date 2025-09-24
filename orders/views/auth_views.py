@@ -148,6 +148,16 @@ class HomeView(TemplateView):
         # Get recent orders for display
         recent_orders_list = user_orders.select_related('factory', 'factory__country').order_by('-uploaded_at')[:5]
         
+        # Get urgent orders (uploaded more than 3 days ago and still not sent)
+        three_days_ago = now - timedelta(days=3)
+        urgent_orders_list = user_orders.filter(
+            status='uploaded',
+            uploaded_at__lt=three_days_ago
+        ).select_related('factory', 'factory__country').order_by('uploaded_at')[:5]
+        
+        # Count overdue orders
+        overdue_orders_count = urgent_orders_list.count()
+        
         # Calculate factory statistics
         factory_stats = user_orders.values('factory__name', 'factory__country__name').annotate(
             count=Count('id')
@@ -160,9 +170,15 @@ class HomeView(TemplateView):
         
         return {
             'total_orders': user_orders.count(),
+            'uploaded_orders': status_stats['uploaded'],
+            'sent_orders': status_stats['sent'],
+            'completed_orders': status_stats['completed'],
+            'cancelled_orders': status_stats['cancelled'],
             'status_stats': status_stats,
             'recent_orders_count': recent_orders,
             'recent_orders': recent_orders_list,
+            'urgent_orders': urgent_orders_list,
+            'overdue_orders': overdue_orders_count,
             'factory_stats': factory_stats,
             'country_stats': country_stats,
             'week_ago': week_ago,
