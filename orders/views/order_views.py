@@ -25,6 +25,7 @@ from ..forms import OrderForm
 from ..file_preview import generate_file_preview
 
 
+@method_decorator(login_required, name='dispatch')
 class OrderListView(ListView):
     """
     Display a list of orders for the authenticated user.

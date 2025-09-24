@@ -11,6 +11,7 @@ This module handles all analytics-related functionality:
 from typing import Dict, Any
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView
 from django.http import JsonResponse, HttpResponse
 from django.core.cache import cache
@@ -20,6 +21,7 @@ from ..models import Order, Factory, Country
 from ..analytics import get_analytics_data
 
 
+@method_decorator(login_required, name='dispatch')
 class AnalyticsDashboardView(TemplateView):
     """
     Display analytics dashboard with key metrics and charts.
