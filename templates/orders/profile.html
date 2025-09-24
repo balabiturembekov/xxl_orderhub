@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Профиль пользователя" %} - XXL OrderHub{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Боковая панель -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-circle"></i> {% trans "Профиль" %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <div class="avatar-circle bg-primary text-white">
+                            <i class="fas fa-user fa-2x"></i>
+                        </div>
+                        <h5 class="mt-2">{{ profile.display_name }}</h5>
+                        <p class="text-muted">{{ user.username }}</p>
+                    </div>
+                    
+                    <div class="list-group list-group-flush">
+                        <a href="{% url 'profile' %}" class="list-group-item list-group-item-action active">
+                            <i class="fas fa-user me-2"></i>{% trans "Общая информация" %}
+                        </a>
+                        <a href="{% url 'edit_profile' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-edit me-2"></i>{% trans "Редактировать профиль" %}
+                        </a>
+                        <a href="{% url 'change_email' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-envelope me-2"></i>{% trans "Изменить email" %}
+                        </a>
+                        <a href="{% url 'notification_settings' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-bell me-2"></i>{% trans "Настройки уведомлений" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Основной контент -->
+        <div class="col-md-9">
+            <!-- Общая информация -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle"></i> {% trans "Общая информация" %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">{% trans "Имя пользователя:" %}</dt>
+                                <dd class="col-sm-8">{{ user.username }}</dd>
+                                
+                                <dt class="col-sm-4">{% trans "Email:" %}</dt>
+                                <dd class="col-sm-8">
+                                    {% if user.email %}
+                                        {{ user.email }}
+                                        <span class="badge bg-success ms-2">{% trans "Подтвержден" %}</span>
+                                    {% else %}
+                                        <span class="text-warning">{% trans "Не указан" %}</span>
+                                        <a href="{% url 'change_email' %}" class="btn btn-sm btn-outline-primary ms-2">
+                                            {% trans "Указать" %}
+                                        </a>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt class="col-sm-4">{% trans "Имя:" %}</dt>
+                                <dd class="col-sm-8">{{ profile.first_name|default:"—" }}</dd>
+                                
+                                <dt class="col-sm-4">{% trans "Фамилия:" %}</dt>
+                                <dd class="col-sm-8">{{ profile.last_name|default:"—" }}</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">{% trans "Телефон:" %}</dt>
+                                <dd class="col-sm-8">{{ profile.phone|default:"—" }}</dd>
+                                
+                                <dt class="col-sm-4">{% trans "Отдел:" %}</dt>
+                                <dd class="col-sm-8">{{ profile.department|default:"—" }}</dd>
+                                
+                                <dt class="col-sm-4">{% trans "Должность:" %}</dt>
+                                <dd class="col-sm-8">{{ profile.position|default:"—" }}</dd>
+                                
+                                <dt class="col-sm-4">{% trans "Дата регистрации:" %}</dt>
+                                <dd class="col-sm-8">{{ user.date_joined|date:"d.m.Y" }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Статистика -->
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <i class="fas fa-shopping-cart fa-2x text-primary mb-2"></i>
+                            <h4>{{ user_orders_count }}</h4>
+                            <p class="text-muted">{% trans "Всего заказов" %}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <i class="fas fa-bell fa-2x text-info mb-2"></i>
+                            <h4>{{ user_notifications_count }}</h4>
+                            <p class="text-muted">{% trans "Всего уведомлений" %}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <i class="fas fa-envelope fa-2x text-warning mb-2"></i>
+                            <h4>{{ unread_notifications_count }}</h4>
+                            <p class="text-muted">{% trans "Непрочитанных" %}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Последние заказы -->
+            {% if recent_orders %}
+            <div class="card mt-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clock"></i> {% trans "Последние заказы" %}
+                    </h5>
+                    <a href="{% url 'order_list' %}" class="btn btn-sm btn-outline-primary">
+                        {% trans "Все заказы" %}
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>{% trans "Заказ" %}</th>
+                                    <th>{% trans "Фабрика" %}</th>
+                                    <th>{% trans "Статус" %}</th>
+                                    <th>{% trans "Дата" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in recent_orders %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'order_detail' order.pk %}">{{ order.title }}</a>
+                                    </td>
+                                    <td>{{ order.factory.name }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ order.status|default:'secondary' }}">
+                                            {{ order.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ order.uploaded_at|date:"d.m.Y" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+</style>
+{% endblock %}

@@ -8,9 +8,9 @@ This module handles user authentication functionality:
 """
 
 from typing import Dict, Any
-from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login
 from django.contrib import messages
+from ..forms import CustomUserCreationForm
 from django.views.generic import TemplateView, CreateView
 from django.urls import reverse_lazy
 from django.core.cache import cache
@@ -31,7 +31,7 @@ class SignUpView(CreateView):
     - Success message
     - Redirect to home page
     """
-    form_class = UserCreationForm
+    form_class = CustomUserCreationForm
     template_name = 'registration/signup.html'
     success_url = reverse_lazy('home')
     

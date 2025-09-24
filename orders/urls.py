@@ -16,6 +16,8 @@ from .views import (
     FactoryListView, FactoryCreateView, FactoryUpdateView, factory_delete,
     # Auth views
     SignUpView, HomeView,
+    # Profile views
+    ProfileView, edit_profile, change_email, profile_settings,
     # API views
     get_factories, get_countries, create_country_ajax, create_factory_ajax
 )
@@ -32,6 +34,12 @@ urlpatterns = [
     
     # Основные страницы
     path("", HomeView.as_view(), name="home"),
+    
+    # Профиль пользователя
+    path("profile/", ProfileView.as_view(), name="profile"),
+    path("profile/edit/", edit_profile, name="edit_profile"),
+    path("profile/change-email/", change_email, name="change_email"),
+    path("profile/settings/", profile_settings, name="profile_settings"),
     
     # Заказы
     path("orders/", OrderListView.as_view(), name="order_list"),

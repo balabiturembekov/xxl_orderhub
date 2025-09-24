@@ -1,6 +1,35 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Country, Factory, Order, NotificationSettings, Notification, NotificationTemplate
+from .models import Country, Factory, Order, NotificationSettings, Notification, NotificationTemplate, UserProfile
+
+
+@admin.register(UserProfile)
+class UserProfileAdmin(admin.ModelAdmin):
+    list_display = ['user', 'full_name', 'phone', 'department', 'position', 'created_at']
+    list_filter = ['department', 'created_at']
+    search_fields = ['user__username', 'user__email', 'first_name', 'last_name', 'phone']
+    ordering = ['user__username']
+    
+    fieldsets = (
+        ('Пользователь', {
+            'fields': ('user',)
+        }),
+        ('Личная информация', {
+            'fields': ('first_name', 'last_name', 'phone')
+        }),
+        ('Рабочая информация', {
+            'fields': ('department', 'position')
+        }),
+        ('Метаданные', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    readonly_fields = ['created_at', 'updated_at']
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('user')
 
 
 @admin.register(Country)

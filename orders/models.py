@@ -8,6 +8,92 @@ from django.conf import settings
 from .validators import validate_excel_file, validate_pdf_file, validate_safe_filename
 
 
+class UserProfile(models.Model):
+    """
+    Расширенный профиль пользователя.
+    
+    Содержит дополнительную информацию о пользователе:
+    - Личные данные (имя, фамилия)
+    - Контактная информация (телефон)
+    - Рабочая информация (отдел, должность)
+    - Настройки уведомлений
+    """
+    user = models.OneToOneField(
+        User, 
+        on_delete=models.CASCADE, 
+        verbose_name="Пользователь",
+        related_name='profile'
+    )
+    first_name = models.CharField(
+        max_length=50, 
+        blank=True, 
+        verbose_name="Имя"
+    )
+    last_name = models.CharField(
+        max_length=50, 
+        blank=True, 
+        verbose_name="Фамилия"
+    )
+    phone = models.CharField(
+        max_length=20, 
+        blank=True, 
+        verbose_name="Телефон"
+    )
+    department = models.CharField(
+        max_length=100, 
+        blank=True, 
+        verbose_name="Отдел"
+    )
+    position = models.CharField(
+        max_length=100, 
+        blank=True, 
+        verbose_name="Должность"
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True, 
+        verbose_name="Дата создания профиля"
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True, 
+        verbose_name="Дата обновления профиля"
+    )
+    
+    class Meta:
+        verbose_name = "Профиль пользователя"
+        verbose_name_plural = "Профили пользователей"
+        ordering = ['user__username']
+    
+    def __str__(self):
+        return f"Профиль {self.user.username}"
+    
+    @property
+    def full_name(self):
+        """
+        Возвращает полное имя пользователя.
+        
+        Returns:
+            str: Полное имя или username, если имя не указано
+        """
+        if self.first_name and self.last_name:
+            return f"{self.first_name} {self.last_name}"
+        elif self.first_name:
+            return self.first_name
+        elif self.last_name:
+            return self.last_name
+        else:
+            return self.user.username
+    
+    @property
+    def display_name(self):
+        """
+        Возвращает отображаемое имя пользователя.
+        
+        Returns:
+            str: Полное имя или username
+        """
+        return self.full_name
+
+
 class Country(models.Model):
     """Модель для стран"""
     name = models.CharField(max_length=100, verbose_name="Название страны")

@@ -334,6 +334,10 @@
                             {{ user.username }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{% url 'profile' %}">
+                                <i class="fas fa-user me-2"></i>{% trans "Профиль" %}
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item d-flex align-items-center justify-content-between" href="{% url 'notification_list' %}">
                                 <span>
                                     <i class="fas fa-bell me-2"></i>{% trans "Уведомления" %}

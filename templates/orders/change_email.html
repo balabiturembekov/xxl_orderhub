@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load widget_tweaks %}
+
+{% block title %}{% trans "Изменить email" %} - XXL OrderHub{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Боковая панель -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-circle"></i> {% trans "Профиль" %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <div class="avatar-circle bg-primary text-white">
+                            <i class="fas fa-user fa-2x"></i>
+                        </div>
+                        <h5 class="mt-2">{{ user.username }}</h5>
+                        <p class="text-muted">{% trans "Пользователь" %}</p>
+                    </div>
+                    
+                    <div class="list-group list-group-flush">
+                        <a href="{% url 'profile' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-user me-2"></i>{% trans "Общая информация" %}
+                        </a>
+                        <a href="{% url 'edit_profile' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-edit me-2"></i>{% trans "Редактировать профиль" %}
+                        </a>
+                        <a href="{% url 'change_email' %}" class="list-group-item list-group-item-action active">
+                            <i class="fas fa-envelope me-2"></i>{% trans "Изменить email" %}
+                        </a>
+                        <a href="{% url 'notification_settings' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-bell me-2"></i>{% trans "Настройки уведомлений" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Основной контент -->
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-envelope"></i> {% trans "Изменить email" %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Текущий email -->
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle me-2"></i>{% trans "Текущий email" %}</h6>
+                        {% if user.email %}
+                            <p class="mb-0"><strong>{{ user.email }}</strong></p>
+                            <small class="text-muted">{% trans "Этот email используется для получения уведомлений" %}</small>
+                        {% else %}
+                            <p class="mb-0 text-warning">{% trans "Email не указан" %}</p>
+                            <small class="text-muted">{% trans "Укажите email для получения уведомлений" %}</small>
+                        {% endif %}
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {{ form.non_field_errors }}
+                            </div>
+                        {% endif %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.email.id_for_label }}" class="form-label">
+                                {% trans "Новый email" %}
+                            </label>
+                            {{ form.email|add_class:"form-control" }}
+                            {% if form.email.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.email.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                {% trans "Введите новый email адрес. Он будет использоваться для получения уведомлений." %}
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>{% trans "Внимание!" %}</strong>
+                            {% trans "После изменения email вы сможете получать уведомления на новый адрес." %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'profile' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i> {% trans "Назад" %}
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i> {% trans "Сохранить email" %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+</style>
+{% endblock %}
