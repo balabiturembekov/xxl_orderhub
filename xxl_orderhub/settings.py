@@ -249,7 +249,7 @@ SESSION_COOKIE_DOMAIN = None  # Позволяет работать с разн�
 
 # CSRF Security
 CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='http://192.168.0.100:8280,http://localhost:8280,https://orderhub.automatonsoft.de', cast=Csv())
-CSRF_COOKIE_SECURE = False  # Для HTTP
+CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=False, cast=bool)
 CSRF_COOKIE_HTTPONLY = False  # Для AJAX
 CSRF_COOKIE_SAMESITE = 'Lax'  # Для работы с разными портами
 CSRF_COOKIE_DOMAIN = None  # Позволяет работать с разными портами
