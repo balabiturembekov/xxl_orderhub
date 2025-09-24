@@ -1,1 +1,1 @@
-# Пустой файл для создания пакета templatetags
+# Template tags package

@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load i18n %}
+{% load file_utils %}
 
 {% block title %}{{ order.title }} - XXL OrderHub{% endblock %}
 
@@ -89,6 +90,10 @@
                                 <h6>{% trans "Excel файл заказа" %}</h6>
                                 {% if order.excel_file %}
                                 <p class="text-success">✅ {% trans "Файл загружен" %}</p>
+                                <p class="text-muted small">
+                                    <strong>{% trans "Имя файла:" %}</strong> {{ order.excel_file|filename }}<br>
+                                    <strong>{% trans "Размер:" %}</strong> {{ order.excel_file|filesize }}
+                                </p>
                                 <div class="btn-group" role="group">
                                     <a href="{% url 'preview_file_modal' order.pk 'excel' %}" class="btn btn-outline-info btn-sm" target="_blank">
                                         👁️ {% trans "Просмотр" %}
@@ -105,6 +110,10 @@
                                 <h6>{% trans "PDF файл инвойса" %}</h6>
                                 {% if order.invoice_file %}
                                 <p class="text-success">✅ {% trans "Инвойс получен" %}</p>
+                                <p class="text-muted small">
+                                    <strong>{% trans "Имя файла:" %}</strong> {{ order.invoice_file|filename }}<br>
+                                    <strong>{% trans "Размер:" %}</strong> {{ order.invoice_file|filesize }}
+                                </p>
                                 <div class="btn-group" role="group">
                                     <a href="{% url 'preview_file_modal' order.pk 'invoice' %}" class="btn btn-outline-info btn-sm" target="_blank">
                                         👁️ {% trans "Просмотр" %}

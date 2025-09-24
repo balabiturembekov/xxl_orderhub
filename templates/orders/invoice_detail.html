@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load i18n %}
+{% load file_utils %}
 
 {% block title %}{% trans "Инвойс" %} {{ invoice.invoice_number }} - {{ invoice.order.title }}{% endblock %}
 
@@ -144,9 +145,15 @@
                                         </td>
                                         <td>
                                             {% if payment.payment_receipt %}
-                                                <a href="{{ payment.payment_receipt.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                                    <i class="fas fa-file-image"></i> {% trans "Просмотр" %}
-                                                </a>
+                                                <div class="d-flex flex-column">
+                                                    <a href="{{ payment.payment_receipt.url }}" target="_blank" class="btn btn-sm btn-outline-primary mb-1">
+                                                        <i class="fas fa-file-image"></i> {% trans "Просмотр" %}
+                                                    </a>
+                                                    <small class="text-muted">
+                                                        {{ payment.payment_receipt|filename }}<br>
+                                                        {{ payment.payment_receipt|filesize }}
+                                                    </small>
+                                                </div>
                                             {% else %}
                                                 <span class="text-muted">-</span>
                                             {% endif %}

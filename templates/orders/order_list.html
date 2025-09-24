@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load i18n %}
+{% load file_utils %}
 
 {% block title %}{% trans "Список заказов" %} - XXL OrderHub{% endblock %}
 
@@ -71,6 +72,12 @@
                             <strong>{% trans "Фабрика:" %}</strong> {{ order.factory.name }}<br>
                             <strong>{% trans "Страна:" %}</strong> {{ order.factory.country.name }}<br>
                             <strong>{% trans "Дата загрузки:" %}</strong> {{ order.uploaded_at|date:"d.m.Y H:i" }}
+                            {% if order.excel_file %}
+                            <br><strong>{% trans "Excel:" %}</strong> {{ order.excel_file|filesize }}
+                            {% endif %}
+                            {% if order.invoice_file %}
+                            <br><strong>{% trans "PDF:" %}</strong> {{ order.invoice_file|filesize }}
+                            {% endif %}
                         </p>
                         
                         {% if order.description %}
