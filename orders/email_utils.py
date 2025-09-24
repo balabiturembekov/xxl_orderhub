@@ -15,6 +15,7 @@ COUNTRY_LANGUAGE_MAP = {
 
 # Маппинг языков на названия языков
 LANGUAGE_NAMES = {
+    'ru': 'Русский',
     'it': 'Italiano',
     'tr': 'Türkçe',
     'pl': 'Polski',
@@ -26,6 +27,7 @@ LANGUAGE_NAMES = {
 
 # Маппинг языков на заголовки писем
 EMAIL_SUBJECTS = {
+    'ru': 'Заказ на производство',
     'it': 'Ordine di produzione',
     'tr': 'Üretim siparişi',
     'pl': 'Zamówienie produkcyjne',
