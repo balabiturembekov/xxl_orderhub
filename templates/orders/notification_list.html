@@ -284,8 +284,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     });
                     
-                    // Обновляем счетчик
-                    location.reload();
+                    // Обновляем счетчик непрочитанных
+                    updateUnreadCounter(0);
                 }).catch(error => {
                     console.error('Ошибка при массовом обновлении:', error);
                 });
@@ -309,6 +309,17 @@ document.addEventListener('DOMContentLoaded', function() {
         // Убираем классы непрочитанного
         card.classList.remove('notification-unread', 'border-primary');
         card.style.backgroundColor = '';
+        
+        // Обновляем счетчик непрочитанных
+        const currentUnreadCount = parseInt(document.querySelector('.text-danger.fw-bold').textContent);
+        updateUnreadCounter(currentUnreadCount - 1);
+    }
+    
+    function updateUnreadCounter(newCount) {
+        const unreadElement = document.querySelector('.text-danger.fw-bold');
+        if (unreadElement) {
+            unreadElement.textContent = newCount;
+        }
     }
 });
 </script>
