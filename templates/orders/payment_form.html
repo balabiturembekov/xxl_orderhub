@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{{ title }} - {{ invoice.invoice_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Заголовок -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-credit-card"></i> {{ title }}</h2>
+                    <p class="text-muted mb-0">
+                        {% trans "Инвойс" %} {{ invoice.invoice_number }} - {{ invoice.order.title }}
+                    </p>
+                </div>
+                <div>
+                    <a href="{% url 'invoice_detail' invoice.id %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> {% trans "К инвойсу" %}
+                    </a>
+                </div>
+            </div>
+
+            <!-- Информация об инвойсе -->
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0"><i class="fas fa-info-circle"></i> {% trans "Информация об инвойсе" %}</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>{% trans "Номер инвойса" %}:</strong> {{ invoice.invoice_number }}</p>
+                                    <p><strong>{% trans "Общая сумма" %}:</strong> 
+                                        <span class="text-primary font-weight-bold">{{ invoice.balance }} €</span>
+                                    </p>
+                                    <p><strong>{% trans "Статус" %}:</strong> 
+                                        <span class="badge badge-{% if invoice.status == 'paid' %}success{% elif invoice.status == 'partial' %}warning{% elif invoice.status == 'overdue' %}danger{% else %}secondary{% endif %}">
+                                            {{ invoice.get_status_display }}
+                                        </span>
+                                    </p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>{% trans "Оплачено" %}:</strong> 
+                                        <span class="text-success font-weight-bold">{{ invoice.total_paid }} €</span>
+                                    </p>
+                                    <p><strong>{% trans "Остаток к доплате" %}:</strong> 
+                                        <span class="text-warning font-weight-bold">{{ invoice.remaining_amount }} €</span>
+                                    </p>
+                                    {% if invoice.due_date %}
+                                    <p><strong>{% trans "Срок оплаты" %}:</strong> 
+                                        <span class="{% if invoice.is_overdue %}text-danger{% endif %}">
+                                            {{ invoice.due_date|date:"d.m.Y" }}
+                                        </span>
+                                    </p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Прогресс оплаты -->
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="fas fa-chart-pie"></i> {% trans "Прогресс оплаты" %}</h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar {% if invoice.status == 'paid' %}bg-success{% elif invoice.status == 'partial' %}bg-warning{% elif invoice.status == 'overdue' %}bg-danger{% else %}bg-secondary{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {{ invoice.payment_progress_percentage }}%"
+                                         aria-valuenow="{{ invoice.payment_progress_percentage }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        {{ invoice.payment_progress_percentage|floatformat:1 }}%
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <h4 class="text-success">{{ invoice.total_paid }} €</h4>
+                                    <small class="text-muted">{% trans "Оплачено" %}</small>
+                                </div>
+                                <div class="col-6">
+                                    <h4 class="text-primary">{{ invoice.remaining_amount }} €</h4>
+                                    <small class="text-muted">{% trans "Остаток" %}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Форма платежа -->
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-plus-circle"></i> {{ title }}</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.amount.id_for_label }}" class="form-label">
+                                        {{ form.amount.label }} <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.amount }}
+                                    {% if form.amount.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.amount.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">{{ form.amount.help_text }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.payment_date.id_for_label }}" class="form-label">
+                                        {{ form.payment_date.label }} <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.payment_date }}
+                                    {% if form.payment_date.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.payment_date.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.payment_type.id_for_label }}" class="form-label">
+                                        {{ form.payment_type.label }} <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.payment_type }}
+                                    {% if form.payment_type.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.payment_type.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">{{ form.payment_type.help_text }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.payment_receipt.id_for_label }}" class="form-label">
+                                        {{ form.payment_receipt.label }} <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.payment_receipt }}
+                                    {% if form.payment_receipt.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.payment_receipt.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">{{ form.payment_receipt.help_text }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label">{{ form.notes.label }}</label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.notes.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.notes.help_text }}</div>
+                        </div>
+
+                        <!-- Предупреждение о превышении суммы -->
+                        <div class="alert alert-warning" id="amountWarning" style="display: none;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>{% trans "Внимание!" %}</strong>
+                            <span id="warningText"></span>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'invoice_detail' invoice.id %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> {% trans "Отмена" %}
+                            </a>
+                            <button type="submit" class="btn btn-success" id="submitBtn">
+                                <i class="fas fa-save"></i> 
+                                {% if object.pk %}{% trans "Обновить платеж" %}{% else %}{% trans "Добавить платеж" %}{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const amountInput = document.getElementById('id_amount');
+    const remainingAmount = {{ invoice.remaining_amount }};
+    const warningDiv = document.getElementById('amountWarning');
+    const warningText = document.getElementById('warningText');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    function validateAmount() {
+        const amount = parseFloat(amountInput.value) || 0;
+        
+        if (amount > remainingAmount) {
+            warningText.textContent = '{% trans "Сумма платежа не может превышать остаток к доплате" %} (' + remainingAmount + ' €).';
+            warningDiv.style.display = 'block';
+            submitBtn.disabled = true;
+            submitBtn.classList.add('btn-secondary');
+            submitBtn.classList.remove('btn-success');
+        } else if (amount <= 0) {
+            warningText.textContent = '{% trans "Сумма платежа должна быть больше нуля" %}.';
+            warningDiv.style.display = 'block';
+            submitBtn.disabled = true;
+            submitBtn.classList.add('btn-secondary');
+            submitBtn.classList.remove('btn-success');
+        } else {
+            warningDiv.style.display = 'none';
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('btn-secondary');
+            submitBtn.classList.add('btn-success');
+        }
+    }
+    
+    if (amountInput) {
+        amountInput.addEventListener('input', validateAmount);
+        validateAmount(); // Проверяем при загрузке страницы
+    }
+});
+</script>
+{% endblock %}

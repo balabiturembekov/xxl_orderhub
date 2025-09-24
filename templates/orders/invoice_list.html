@@ -1,0 +1,244 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Инвойсы и платежи" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Заголовок -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-file-invoice-dollar"></i> {% trans "Инвойсы и платежи" %}</h2>
+                    <p class="text-muted mb-0">{% trans "Управление инвойсами и отслеживание платежей" %}</p>
+                </div>
+                <div>
+                    <a href="{% url 'payment_analytics' %}" class="btn btn-info">
+                        <i class="fas fa-chart-bar"></i> {% trans "Аналитика" %}
+                    </a>
+                </div>
+            </div>
+
+            <!-- Статистика -->
+            <div class="row mb-4">
+                <div class="col-md-2">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h4 class="text-primary">{{ total_invoices }}</h4>
+                            <small class="text-muted">{% trans "Всего инвойсов" %}</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h4 class="text-warning">{{ pending_invoices }}</h4>
+                            <small class="text-muted">{% trans "Ожидают оплаты" %}</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h4 class="text-info">{{ partial_invoices }}</h4>
+                            <small class="text-muted">{% trans "Частично оплачены" %}</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h4 class="text-success">{{ paid_invoices }}</h4>
+                            <small class="text-muted">{% trans "Полностью оплачены" %}</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h4 class="text-danger">{{ overdue_invoices }}</h4>
+                            <small class="text-muted">{% trans "Просрочены" %}</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h4 class="text-primary">{{ total_amount }} €</h4>
+                            <small class="text-muted">{% trans "Общая сумма" %}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Фильтры -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="status" class="form-label">{% trans "Статус" %}</label>
+                            <select name="status" id="status" class="form-control">
+                                <option value="">{% trans "Все статусы" %}</option>
+                                <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>{% trans "Ожидает оплаты" %}</option>
+                                <option value="partial" {% if request.GET.status == 'partial' %}selected{% endif %}>{% trans "Частично оплачен" %}</option>
+                                <option value="paid" {% if request.GET.status == 'paid' %}selected{% endif %}>{% trans "Полностью оплачен" %}</option>
+                                <option value="overdue" {% if request.GET.status == 'overdue' %}selected{% endif %}>{% trans "Просрочен" %}</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="overdue" class="form-label">{% trans "Просрочка" %}</label>
+                            <select name="overdue" id="overdue" class="form-control">
+                                <option value="">{% trans "Все" %}</option>
+                                <option value="true" {% if request.GET.overdue == 'true' %}selected{% endif %}>{% trans "Только просроченные" %}</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="search" class="form-label">{% trans "Поиск" %}</label>
+                            <input type="text" name="search" id="search" class="form-control" 
+                                   placeholder="{% trans 'Номер инвойса, название заказа или фабрика' %}"
+                                   value="{{ request.GET.search }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> {% trans "Фильтр" %}
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Список инвойсов -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-list"></i> {% trans "Список инвойсов" %}</h5>
+                </div>
+                <div class="card-body">
+                    {% if invoices %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>{% trans "Инвойс" %}</th>
+                                        <th>{% trans "Заказ" %}</th>
+                                        <th>{% trans "Фабрика" %}</th>
+                                        <th>{% trans "Сумма" %}</th>
+                                        <th>{% trans "Оплачено" %}</th>
+                                        <th>{% trans "Остаток" %}</th>
+                                        <th>{% trans "Статус" %}</th>
+                                        <th>{% trans "Срок" %}</th>
+                                        <th>{% trans "Прогресс" %}</th>
+                                        <th>{% trans "Действия" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for invoice in invoices %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ invoice.invoice_number }}</strong><br>
+                                            <small class="text-muted">{{ invoice.created_at|date:"d.m.Y" }}</small>
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'order_detail' invoice.order.id %}" class="text-decoration-none">
+                                                {{ invoice.order.title }}
+                                            </a>
+                                        </td>
+                                        <td>{{ invoice.order.factory.name }}</td>
+                                        <td>
+                                            <span class="font-weight-bold text-primary">{{ invoice.balance }} €</span>
+                                        </td>
+                                        <td>
+                                            <span class="text-success">{{ invoice.total_paid }} €</span>
+                                        </td>
+                                        <td>
+                                            <span class="text-warning">{{ invoice.remaining_amount }} €</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-{% if invoice.status == 'paid' %}success{% elif invoice.status == 'partial' %}warning{% elif invoice.status == 'overdue' %}danger{% else %}secondary{% endif %}">
+                                                {{ invoice.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if invoice.due_date %}
+                                                <span class="{% if invoice.is_overdue %}text-danger{% endif %}">
+                                                    {{ invoice.due_date|date:"d.m.Y" }}
+                                                    {% if invoice.is_overdue %} <i class="fas fa-exclamation-triangle text-danger"></i>{% endif %}
+                                                </span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="progress" style="height: 20px; width: 100px;">
+                                                <div class="progress-bar {% if invoice.status == 'paid' %}bg-success{% elif invoice.status == 'partial' %}bg-warning{% elif invoice.status == 'overdue' %}bg-danger{% else %}bg-secondary{% endif %}" 
+                                                     role="progressbar" 
+                                                     style="width: {{ invoice.payment_progress_percentage }}%"
+                                                     aria-valuenow="{{ invoice.payment_progress_percentage }}" 
+                                                     aria-valuemin="0" 
+                                                     aria-valuemax="100">
+                                                    {{ invoice.payment_progress_percentage|floatformat:0 }}%
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{% url 'invoice_detail' invoice.id %}" class="btn btn-outline-primary" title="{% trans 'Просмотр' %}">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{% url 'payment_create' invoice.id %}" class="btn btn-outline-success" title="{% trans 'Добавить платеж' %}">
+                                                    <i class="fas fa-plus"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Пагинация -->
+                        {% if invoices.has_other_pages %}
+                        <nav aria-label="{% trans 'Навигация по инвойсам' %}">
+                            <ul class="pagination justify-content-center">
+                                {% if invoices.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.overdue %}&overdue={{ request.GET.overdue }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{% trans "Первая" %}</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ invoices.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.overdue %}&overdue={{ request.GET.overdue }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{% trans "Предыдущая" %}</a>
+                                    </li>
+                                {% endif %}
+
+                                <li class="page-item active">
+                                    <span class="page-link">
+                                        {% trans "Страница" %} {{ invoices.number }} {% trans "из" %} {{ invoices.paginator.num_pages }}
+                                    </span>
+                                </li>
+
+                                {% if invoices.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ invoices.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.overdue %}&overdue={{ request.GET.overdue }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{% trans "Следующая" %}</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ invoices.paginator.num_pages }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.overdue %}&overdue={{ request.GET.overdue }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{% trans "Последняя" %}</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-file-invoice-dollar fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">{% trans "Инвойсы не найдены" %}</h5>
+                            <p class="text-muted">{% trans "У вас пока нет инвойсов или они не соответствуют выбранным фильтрам." %}</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

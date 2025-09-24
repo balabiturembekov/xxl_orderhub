@@ -93,6 +93,112 @@
                         </div>
                     </div>
 
+                    <!-- Информация об инвойсе -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0"><i class="fas fa-file-invoice-dollar"></i> {% trans "Информация об инвойсе" %}</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="id_invoice_number" class="form-label">
+                                            {% trans "Номер инвойса" %} <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="text" name="invoice_number" id="id_invoice_number" class="form-control" 
+                                               placeholder="{% trans 'Введите номер инвойса от фабрики' %}" required>
+                                        <div class="form-text">{% trans "Уникальный номер инвойса от фабрики" %}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="id_balance" class="form-label">
+                                            {% trans "Общая сумма к оплате" %} <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="number" name="balance" id="id_balance" class="form-control" 
+                                               step="0.01" min="0" placeholder="0.00" required>
+                                        <div class="form-text">{% trans "Полная сумма по инвойсу в валюте заказа" %}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="id_due_date" class="form-label">{% trans "Срок оплаты" %}</label>
+                                        <input type="date" name="due_date" id="id_due_date" class="form-control">
+                                        <div class="form-text">{% trans "Дата, до которой должен быть оплачен инвойс" %}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="id_invoice_notes" class="form-label">{% trans "Комментарии к инвойсу" %}</label>
+                                        <textarea name="invoice_notes" id="id_invoice_notes" class="form-control" rows="2" 
+                                                  placeholder="{% trans 'Дополнительная информация об инвойсе' %}"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Информация о платеже -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0"><i class="fas fa-credit-card"></i> {% trans "Информация о платеже" %}</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="id_payment_amount" class="form-label">
+                                            {% trans "Сумма платежа" %} <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="number" name="payment_amount" id="id_payment_amount" class="form-control" 
+                                               step="0.01" min="0" placeholder="0.00" required>
+                                        <div class="form-text">{% trans "Сумма первого платежа" %}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="id_payment_date" class="form-label">
+                                            {% trans "Дата платежа" %} <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="date" name="payment_date" id="id_payment_date" class="form-control" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="id_payment_type" class="form-label">
+                                            {% trans "Тип платежа" %} <span class="text-danger">*</span>
+                                        </label>
+                                        <select name="payment_type" id="id_payment_type" class="form-control" required>
+                                            <option value="deposit">{% trans "Депозит" %}</option>
+                                            <option value="final_payment">{% trans "Финальный платеж" %}</option>
+                                            <option value="partial_payment" selected>{% trans "Частичный платеж" %}</option>
+                                            <option value="refund">{% trans "Возврат" %}</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="id_payment_receipt" class="form-label">
+                                            {% trans "Скриншот чека оплаты" %} <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="file" name="payment_receipt" id="id_payment_receipt" class="form-control" 
+                                               accept="image/*,.pdf" required>
+                                        <div class="form-text">{% trans "Фото или скриншот подтверждения оплаты (JPG, PNG, PDF)" %}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="id_payment_notes" class="form-label">{% trans "Комментарии к платежу" %}</label>
+                                <textarea name="payment_notes" id="id_payment_notes" class="form-control" rows="2" 
+                                          placeholder="{% trans 'Дополнительная информация о платеже' %}"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="alert alert-warning">
                         <h6><i class="fas fa-exclamation-triangle"></i> {% trans "Внимание!" %}</h6>
                         <ul class="mb-0">
@@ -119,28 +225,78 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const fileInput = document.querySelector('input[type="file"]');
+    const invoiceFileInput = document.querySelector('input[name="invoice_file"]');
+    const paymentReceiptInput = document.querySelector('input[name="payment_receipt"]');
     const uploadBtn = document.getElementById('uploadBtn');
+    const balanceInput = document.getElementById('id_balance');
+    const paymentAmountInput = document.getElementById('id_payment_amount');
     
-    if (fileInput && uploadBtn) {
-        fileInput.addEventListener('change', function() {
-            if (this.files && this.files.length > 0) {
-                // Файл выбран - активируем кнопку
-                uploadBtn.disabled = false;
-                uploadBtn.classList.remove('btn-secondary');
-                uploadBtn.classList.add('btn-success');
+    // Устанавливаем текущую дату по умолчанию
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('id_payment_date').value = today;
+    
+    function validateForm() {
+        const invoiceFileSelected = invoiceFileInput && invoiceFileInput.files.length > 0;
+        const paymentReceiptSelected = paymentReceiptInput && paymentReceiptInput.files.length > 0;
+        const balanceFilled = balanceInput && balanceInput.value && parseFloat(balanceInput.value) > 0;
+        const paymentAmountFilled = paymentAmountInput && paymentAmountInput.value && parseFloat(paymentAmountInput.value) > 0;
+        
+        // Проверяем, что сумма платежа не превышает сумму инвойса
+        let amountValid = true;
+        if (balanceFilled && paymentAmountFilled) {
+            const balance = parseFloat(balanceInput.value);
+            const paymentAmount = parseFloat(paymentAmountInput.value);
+            if (paymentAmount > balance) {
+                amountValid = false;
+                paymentAmountInput.setCustomValidity('Сумма платежа не может превышать сумму инвойса');
             } else {
-                // Файл не выбран - деактивируем кнопку
-                uploadBtn.disabled = true;
-                uploadBtn.classList.remove('btn-success');
-                uploadBtn.classList.add('btn-secondary');
+                paymentAmountInput.setCustomValidity('');
+            }
+        }
+        
+        const formValid = invoiceFileSelected && paymentReceiptSelected && balanceFilled && paymentAmountFilled && amountValid;
+        
+        if (formValid) {
+            uploadBtn.disabled = false;
+            uploadBtn.classList.remove('btn-secondary');
+            uploadBtn.classList.add('btn-success');
+        } else {
+            uploadBtn.disabled = true;
+            uploadBtn.classList.remove('btn-success');
+            uploadBtn.classList.add('btn-secondary');
+        }
+    }
+    
+    // Добавляем обработчики событий
+    if (invoiceFileInput) {
+        invoiceFileInput.addEventListener('change', validateForm);
+    }
+    
+    if (paymentReceiptInput) {
+        paymentReceiptInput.addEventListener('change', validateForm);
+    }
+    
+    if (balanceInput) {
+        balanceInput.addEventListener('input', validateForm);
+    }
+    
+    if (paymentAmountInput) {
+        paymentAmountInput.addEventListener('input', validateForm);
+    }
+    
+    // Изначально кнопка должна быть неактивной
+    validateForm();
+    
+    // Добавляем валидацию в реальном времени
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (uploadBtn.disabled) {
+                e.preventDefault();
+                alert('Пожалуйста, заполните все обязательные поля и выберите файлы.');
+                return false;
             }
         });
-        
-        // Изначально кнопка должна быть неактивной
-        uploadBtn.disabled = true;
-        uploadBtn.classList.remove('btn-success');
-        uploadBtn.classList.add('btn-secondary');
     }
 });
 </script>

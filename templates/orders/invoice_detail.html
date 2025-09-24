@@ -1,0 +1,265 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Инвойс" %} {{ invoice.invoice_number }} - {{ invoice.order.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Заголовок -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-file-invoice-dollar"></i> {% trans "Инвойс" %} {{ invoice.invoice_number }}</h2>
+                    <p class="text-muted mb-0">{{ invoice.order.title }} - {{ invoice.order.factory.name }}</p>
+                </div>
+                <div>
+                    <a href="{% url 'order_detail' invoice.order.id %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> {% trans "К заказу" %}
+                    </a>
+                    <a href="{% url 'payment_create' invoice.id %}" class="btn btn-success">
+                        <i class="fas fa-plus"></i> {% trans "Добавить платеж" %}
+                    </a>
+                </div>
+            </div>
+
+            <!-- Основная информация об инвойсе -->
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0"><i class="fas fa-info-circle"></i> {% trans "Информация об инвойсе" %}</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>{% trans "Номер инвойса" %}:</strong> {{ invoice.invoice_number }}</p>
+                                    <p><strong>{% trans "Общая сумма" %}:</strong> 
+                                        <span class="text-primary font-weight-bold">{{ invoice.balance }} €</span>
+                                    </p>
+                                    <p><strong>{% trans "Статус оплаты" %}:</strong> 
+                                        <span class="badge badge-{% if invoice.status == 'paid' %}success{% elif invoice.status == 'partial' %}warning{% elif invoice.status == 'overdue' %}danger{% else %}secondary{% endif %}">
+                                            {{ invoice.get_status_display }}
+                                        </span>
+                                    </p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>{% trans "Дата создания" %}:</strong> {{ invoice.created_at|date:"d.m.Y H:i" }}</p>
+                                    {% if invoice.due_date %}
+                                    <p><strong>{% trans "Срок оплаты" %}:</strong> 
+                                        <span class="{% if invoice.is_overdue %}text-danger{% endif %}">
+                                            {{ invoice.due_date|date:"d.m.Y" }}
+                                            {% if invoice.is_overdue %} <i class="fas fa-exclamation-triangle text-danger"></i>{% endif %}
+                                        </span>
+                                    </p>
+                                    {% endif %}
+                                    <p><strong>{% trans "Последнее обновление" %}:</strong> {{ invoice.updated_at|date:"d.m.Y H:i" }}</p>
+                                </div>
+                            </div>
+                            {% if invoice.notes %}
+                            <div class="mt-3">
+                                <strong>{% trans "Комментарии" %}:</strong>
+                                <p class="text-muted">{{ invoice.notes }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Прогресс оплаты -->
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="fas fa-chart-pie"></i> {% trans "Прогресс оплаты" %}</h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar {% if invoice.status == 'paid' %}bg-success{% elif invoice.status == 'partial' %}bg-warning{% elif invoice.status == 'overdue' %}bg-danger{% else %}bg-secondary{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {{ invoice.payment_progress_percentage }}%"
+                                         aria-valuenow="{{ invoice.payment_progress_percentage }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        {{ invoice.payment_progress_percentage|floatformat:1 }}%
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <h4 class="text-success">{{ invoice.total_paid }} €</h4>
+                                    <small class="text-muted">{% trans "Оплачено" %}</small>
+                                </div>
+                                <div class="col-6">
+                                    <h4 class="text-primary">{{ invoice.remaining_amount }} €</h4>
+                                    <small class="text-muted">{% trans "Остаток" %}</small>
+                                </div>
+                            </div>
+                            
+                            {% if invoice.status == 'overdue' %}
+                            <div class="alert alert-danger mt-3">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <strong>{% trans "Просрочен!" %}</strong><br>
+                                <small>{% trans "Срок оплаты истек" %}</small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- История платежей -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-history"></i> {% trans "История платежей" %}</h5>
+                    <span class="badge badge-info">{{ total_payments }} {% trans "платежей" %}</span>
+                </div>
+                <div class="card-body">
+                    {% if payments %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>{% trans "Дата" %}</th>
+                                        <th>{% trans "Сумма" %}</th>
+                                        <th>{% trans "Тип" %}</th>
+                                        <th>{% trans "Чек" %}</th>
+                                        <th>{% trans "Комментарии" %}</th>
+                                        <th>{% trans "Создал" %}</th>
+                                        <th>{% trans "Действия" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for payment in payments %}
+                                    <tr>
+                                        <td>{{ payment.payment_date|date:"d.m.Y" }}</td>
+                                        <td>
+                                            <span class="font-weight-bold text-success">{{ payment.amount }} €</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-{% if payment.payment_type == 'deposit' %}primary{% elif payment.payment_type == 'final_payment' %}success{% elif payment.payment_type == 'partial_payment' %}warning{% else %}secondary{% endif %}">
+                                                {{ payment.get_payment_type_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if payment.payment_receipt %}
+                                                <a href="{{ payment.payment_receipt.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-file-image"></i> {% trans "Просмотр" %}
+                                                </a>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if payment.notes %}
+                                                <small class="text-muted">{{ payment.notes|truncatechars:50 }}</small>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">{{ payment.created_by.username }}</small><br>
+                                            <small class="text-muted">{{ payment.created_at|date:"d.m.Y H:i" }}</small>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{% url 'payment_update' payment.id %}" class="btn btn-outline-primary" title="{% trans 'Редактировать' %}">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-outline-danger" 
+                                                        onclick="deletePayment({{ payment.id }}, '{{ payment.amount }}')" 
+                                                        title="{% trans 'Удалить' %}">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Пагинация -->
+                        {% if payments.has_other_pages %}
+                        <nav aria-label="{% trans 'Навигация по платежам' %}">
+                            <ul class="pagination justify-content-center">
+                                {% if payments.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1">{% trans "Первая" %}</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ payments.previous_page_number }}">{% trans "Предыдущая" %}</a>
+                                    </li>
+                                {% endif %}
+
+                                <li class="page-item active">
+                                    <span class="page-link">
+                                        {% trans "Страница" %} {{ payments.number }} {% trans "из" %} {{ payments.paginator.num_pages }}
+                                    </span>
+                                </li>
+
+                                {% if payments.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ payments.next_page_number }}">{% trans "Следующая" %}</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ payments.paginator.num_pages }}">{% trans "Последняя" %}</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-credit-card fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">{% trans "Платежи не найдены" %}</h5>
+                            <p class="text-muted">{% trans "Пока не было добавлено ни одного платежа по этому инвойсу." %}</p>
+                            <a href="{% url 'payment_create' invoice.id %}" class="btn btn-success">
+                                <i class="fas fa-plus"></i> {% trans "Добавить первый платеж" %}
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно подтверждения удаления -->
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{% trans "Подтверждение удаления" %}</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>{% trans "Вы уверены, что хотите удалить этот платеж?" %}</p>
+                <p><strong>{% trans "Сумма" %}:</strong> <span id="paymentAmount"></span></p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    {% trans "Это действие нельзя отменить!" %}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Отмена" %}</button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">{% trans "Удалить" %}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function deletePayment(paymentId, amount) {
+    document.getElementById('paymentAmount').textContent = amount + ' €';
+    document.getElementById('deleteForm').action = '{% url "payment_delete" 0 %}'.replace('0', paymentId);
+    $('#deleteModal').modal('show');
+}
+</script>
+{% endblock %}

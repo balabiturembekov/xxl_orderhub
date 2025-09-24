@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Аналитика платежей" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Заголовок -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-chart-bar"></i> {% trans "Аналитика платежей" %}</h2>
+                    <p class="text-muted mb-0">{% trans "Подробная статистика по инвойсам и платежам" %}</p>
+                </div>
+                <div>
+                    <a href="{% url 'invoice_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-list"></i> {% trans "Список инвойсов" %}
+                    </a>
+                </div>
+            </div>
+
+            <!-- Общая статистика -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h3 class="text-primary">{{ total_invoices }}</h3>
+                            <p class="text-muted mb-0">{% trans "Всего инвойсов" %}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h3 class="text-info">{{ total_amount }} €</h3>
+                            <p class="text-muted mb-0">{% trans "Общая сумма" %}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h3 class="text-success">{{ total_paid }} €</h3>
+                            <p class="text-muted mb-0">{% trans "Оплачено" %}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h3 class="text-warning">{{ remaining_amount }} €</h3>
+                            <p class="text-muted mb-0">{% trans "Остаток к доплате" %}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Прогресс оплаты -->
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-chart-pie"></i> {% trans "Общий прогресс оплаты" %}</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-center mb-3">
+                                <div class="progress" style="height: 30px;">
+                                    <div class="progress-bar bg-success" 
+                                         role="progressbar" 
+                                         style="width: {{ payment_progress }}%"
+                                         aria-valuenow="{{ payment_progress }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        {{ payment_progress|floatformat:1 }}%
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <h4 class="text-success">{{ total_paid }} €</h4>
+                                    <small class="text-muted">{% trans "Оплачено" %}</small>
+                                </div>
+                                <div class="col-6">
+                                    <h4 class="text-primary">{{ remaining_amount }} €</h4>
+                                    <small class="text-muted">{% trans "Остаток" %}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-exclamation-triangle"></i> {% trans "Просроченные инвойсы" %}</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if overdue_invoices %}
+                                <div class="alert alert-danger">
+                                    <h4 class="alert-heading">{{ overdue_invoices.count }}</h4>
+                                    <p class="mb-0">{% trans "Просроченных инвойсов" %}</p>
+                                </div>
+                                <div class="list-group">
+                                    {% for invoice in overdue_invoices|slice:":3" %}
+                                    <a href="{% url 'invoice_detail' invoice.id %}" class="list-group-item list-group-item-action">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">{{ invoice.invoice_number }}</h6>
+                                            <small>{{ invoice.due_date|date:"d.m.Y" }}</small>
+                                        </div>
+                                        <p class="mb-1">{{ invoice.order.title }}</p>
+                                        <small>{{ invoice.remaining_amount }} € {% trans "к доплате" %}</small>
+                                    </a>
+                                    {% endfor %}
+                                </div>
+                                {% if overdue_invoices.count > 3 %}
+                                <div class="text-center mt-2">
+                                    <small class="text-muted">{% trans "И еще" %} {{ overdue_invoices.count|add:"-3" }} {% trans "просроченных" %}</small>
+                                </div>
+                                {% endif %}
+                            {% else %}
+                                <div class="text-center py-3">
+                                    <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                                    <p class="text-muted mb-0">{% trans "Нет просроченных инвойсов" %}</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Статистика по статусам -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-chart-bar"></i> {% trans "Статистика по статусам" %}</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if status_stats %}
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>{% trans "Статус" %}</th>
+                                                <th>{% trans "Количество" %}</th>
+                                                <th>{% trans "Сумма" %}</th>
+                                                <th>{% trans "Оплачено" %}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for stat in status_stats %}
+                                            <tr>
+                                                <td>
+                                                    <span class="badge badge-{% if stat.status == 'paid' %}success{% elif stat.status == 'partial' %}warning{% elif stat.status == 'overdue' %}danger{% else %}secondary{% endif %}">
+                                                        {% if stat.status == 'pending' %}{% trans "Ожидает оплаты" %}{% elif stat.status == 'partial' %}{% trans "Частично оплачен" %}{% elif stat.status == 'paid' %}{% trans "Полностью оплачен" %}{% elif stat.status == 'overdue' %}{% trans "Просрочен" %}{% endif %}
+                                                    </span>
+                                                </td>
+                                                <td>{{ stat.count }}</td>
+                                                <td>{{ stat.total_balance }} €</td>
+                                                <td>{{ stat.total_paid }} €</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-3">
+                                    <i class="fas fa-chart-bar fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted mb-0">{% trans "Нет данных для отображения" %}</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Статистика по типам платежей -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-credit-card"></i> {% trans "Статистика по типам платежей" %}</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if payment_stats %}
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>{% trans "Тип платежа" %}</th>
+                                                <th>{% trans "Количество" %}</th>
+                                                <th>{% trans "Сумма" %}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for stat in payment_stats %}
+                                            <tr>
+                                                <td>
+                                                    <span class="badge badge-{% if stat.payment_type == 'deposit' %}primary{% elif stat.payment_type == 'final_payment' %}success{% elif stat.payment_type == 'partial_payment' %}warning{% else %}secondary{% endif %}">
+                                                        {% if stat.payment_type == 'deposit' %}{% trans "Депозит" %}{% elif stat.payment_type == 'final_payment' %}{% trans "Финальный платеж" %}{% elif stat.payment_type == 'partial_payment' %}{% trans "Частичный платеж" %}{% elif stat.payment_type == 'refund' %}{% trans "Возврат" %}{% endif %}
+                                                    </span>
+                                                </td>
+                                                <td>{{ stat.count }}</td>
+                                                <td>{{ stat.total_amount }} €</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-3">
+                                    <i class="fas fa-credit-card fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted mb-0">{% trans "Нет данных для отображения" %}</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Рекомендации -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-lightbulb"></i> {% trans "Рекомендации" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            {% if overdue_invoices.count > 0 %}
+                            <div class="alert alert-danger">
+                                <h6><i class="fas fa-exclamation-triangle"></i> {% trans "Требует внимания" %}</h6>
+                                <p class="mb-0">{% trans "У вас есть просроченные инвойсы. Рекомендуется срочно произвести оплату." %}</p>
+                            </div>
+                            {% endif %}
+                            
+                            {% if payment_progress < 50 %}
+                            <div class="alert alert-warning">
+                                <h6><i class="fas fa-info-circle"></i> {% trans "Низкий прогресс оплаты" %}</h6>
+                                <p class="mb-0">{% trans "Общий прогресс оплаты составляет менее 50%. Рекомендуется ускорить процесс оплаты." %}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            {% if payment_progress >= 80 %}
+                            <div class="alert alert-success">
+                                <h6><i class="fas fa-check-circle"></i> {% trans "Отличный прогресс" %}</h6>
+                                <p class="mb-0">{% trans "Общий прогресс оплаты составляет более 80%. Продолжайте в том же духе!" %}</p>
+                            </div>
+                            {% endif %}
+                            
+                            {% if total_invoices == 0 %}
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-info-circle"></i> {% trans "Начните работу" %}</h6>
+                                <p class="mb-0">{% trans "У вас пока нет инвойсов. Создайте первый заказ и загрузите инвойс для начала работы с системой." %}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
