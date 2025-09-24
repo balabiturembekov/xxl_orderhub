@@ -7,7 +7,7 @@ This module handles CRUD operations for reference data:
 - AJAX endpoints for dynamic forms
 """
 
-from typing import Optional, Dict, Any
+from typing import Dict, Any
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -15,6 +15,8 @@ from django.views.generic import ListView, CreateView, UpdateView
 from django.http import JsonResponse
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
+from django.db.models import Q
+import json
 
 from ..models import Country, Factory
 from ..forms import CountryForm, FactoryForm

@@ -8,16 +8,13 @@ This module handles all analytics-related functionality:
 - Performance metrics
 """
 
-from typing import Optional, Dict, Any, List
+from typing import Dict, Any
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.views.generic import TemplateView
 from django.http import JsonResponse, HttpResponse
-from django.utils import timezone
-from django.db.models import Count, Q
-from datetime import datetime, timedelta
+from django.core.cache import cache
 import csv
-import json
 
 from ..models import Order, Factory, Country
 from ..analytics import get_analytics_data

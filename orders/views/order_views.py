@@ -9,19 +9,18 @@ This module contains all views related to order CRUD operations:
 - Order status management
 """
 
-from typing import Optional, Dict, Any
+from typing import Dict, Any
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.views.generic import ListView, DetailView
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse, Http404, JsonResponse
 from django.utils import timezone
 from django.db.models import Q
-from django.core.files.storage import default_storage
 import os
 
 from ..models import Order, Factory
-from ..forms import OrderForm, InvoiceUploadForm
+from ..forms import OrderForm
 from ..file_preview import generate_file_preview
 
 

@@ -7,7 +7,7 @@ This module handles user authentication functionality:
 - User dashboard
 """
 
-from typing import Optional, Dict, Any
+from typing import Dict, Any
 from django.shortcuts import render, redirect
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login
@@ -15,7 +15,7 @@ from django.contrib import messages
 from django.views.generic import TemplateView, CreateView
 from django.urls import reverse_lazy
 from django.core.cache import cache
-from django.db.models import Case, When, IntegerField, Q, Count
+from django.db.models import Q, Count
 from django.utils import timezone
 from datetime import timedelta
 

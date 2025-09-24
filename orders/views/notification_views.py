@@ -8,17 +8,16 @@ This module handles all notification-related functionality:
 - Testing notification system
 """
 
-from typing import Optional, Dict, Any
+from typing import Dict, Any
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.views.generic import ListView
 from django.http import JsonResponse
 from django.utils import timezone
-from django.db.models import Q
 
 from ..models import Notification, NotificationSettings, Order
-from ..forms import NotificationSettingsForm, NotificationFilterForm
+from ..forms import NotificationSettingsForm
 from ..tasks import send_order_notification
 
 
