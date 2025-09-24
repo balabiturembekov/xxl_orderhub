@@ -151,8 +151,8 @@
                                             {% for stat in status_stats %}
                                             <tr>
                                                 <td>
-                                                    <span class="badge badge-{% if stat.status == 'paid' %}success{% elif stat.status == 'partial' %}warning{% elif stat.status == 'overdue' %}danger{% else %}secondary{% endif %}">
-                                                        {% if stat.status == 'pending' %}{% trans "Ожидает оплаты" %}{% elif stat.status == 'partial' %}{% trans "Частично оплачен" %}{% elif stat.status == 'paid' %}{% trans "Полностью оплачен" %}{% elif stat.status == 'overdue' %}{% trans "Просрочен" %}{% endif %}
+                                                    <span class="badge bg-{% if stat.status == 'paid' %}success{% elif stat.status == 'partial' %}warning{% elif stat.status == 'overdue' %}danger{% else %}secondary{% endif %} text-white">
+                                                        {{ stat.status_name }}
                                                     </span>
                                                 </td>
                                                 <td>{{ stat.count }}</td>
@@ -194,8 +194,8 @@
                                             {% for stat in payment_stats %}
                                             <tr>
                                                 <td>
-                                                    <span class="badge badge-{% if stat.payment_type == 'deposit' %}primary{% elif stat.payment_type == 'final_payment' %}success{% elif stat.payment_type == 'partial_payment' %}warning{% else %}secondary{% endif %}">
-                                                        {% if stat.payment_type == 'deposit' %}{% trans "Депозит" %}{% elif stat.payment_type == 'final_payment' %}{% trans "Финальный платеж" %}{% elif stat.payment_type == 'partial_payment' %}{% trans "Частичный платеж" %}{% elif stat.payment_type == 'refund' %}{% trans "Возврат" %}{% endif %}
+                                                    <span class="badge bg-{% if stat.payment_type == 'deposit' %}primary{% elif stat.payment_type == 'final_payment' %}success{% elif stat.payment_type == 'partial_payment' %}warning{% else %}secondary{% endif %} text-white">
+                                                        {{ stat.payment_type_name }}
                                                     </span>
                                                 </td>
                                                 <td>{{ stat.count }}</td>

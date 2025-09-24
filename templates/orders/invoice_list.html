@@ -157,7 +157,7 @@
                                             <span class="text-warning">{{ invoice.remaining_amount }} €</span>
                                         </td>
                                         <td>
-                                            <span class="badge badge-{% if invoice.status == 'paid' %}success{% elif invoice.status == 'partial' %}warning{% elif invoice.status == 'overdue' %}danger{% else %}secondary{% endif %}">
+                                            <span class="badge bg-{% if invoice.status == 'paid' %}success{% elif invoice.status == 'partial' %}warning{% elif invoice.status == 'overdue' %}danger{% else %}secondary{% endif %} text-white">
                                                 {{ invoice.get_status_display }}
                                             </span>
                                         </td>
