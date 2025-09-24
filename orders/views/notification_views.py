@@ -12,15 +12,18 @@ from typing import Dict, Any
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
 from django.views.generic import ListView
 from django.http import JsonResponse
 from django.utils import timezone
+from django.db.models import Q
 
 from ..models import Notification, NotificationSettings, Order
-from ..forms import NotificationSettingsForm
+from ..forms import NotificationSettingsForm, NotificationFilterForm
 from ..tasks import send_order_notification
 
 
+@method_decorator(login_required, name='dispatch')
 class NotificationListView(ListView):
     """
     Display a list of notifications for the authenticated user.
@@ -41,21 +44,50 @@ class NotificationListView(ListView):
         
         # Apply filters
         status_filter = self.request.GET.get('status')
+        type_filter = self.request.GET.get('notification_type')
+        search_query = self.request.GET.get('search')
+        
+        # Status filter
         if status_filter == 'unread':
             queryset = queryset.filter(is_read=False)
         elif status_filter == 'read':
             queryset = queryset.filter(is_read=True)
+        
+        # Type filter
+        if type_filter:
+            queryset = queryset.filter(notification_type=type_filter)
+        
+        # Search filter
+        if search_query:
+            queryset = queryset.filter(
+                Q(title__icontains=search_query) |
+                Q(message__icontains=search_query)
+            )
         
         return queryset
     
     def get_context_data(self, **kwargs):
         """Add filter options to context."""
         context = super().get_context_data(**kwargs)
+        
+        # Create filter form with current GET parameters
+        form = NotificationFilterForm(self.request.GET)
+        context['form'] = form
+        
+        # Add filter values
         context['status_filter'] = self.request.GET.get('status', '')
+        context['type_filter'] = self.request.GET.get('notification_type', '')
+        context['search_query'] = self.request.GET.get('search', '')
+        
+        # Add counts
         context['unread_count'] = Notification.objects.filter(
             user=self.request.user, 
             is_read=False
         ).count()
+        context['total_count'] = Notification.objects.filter(
+            user=self.request.user
+        ).count()
+        
         return context
 
 
