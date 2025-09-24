@@ -30,20 +30,20 @@ if [ ! -f "nginx.conf" ]; then
 fi
 
 echo "📦 Останавливаем существующие контейнеры..."
-docker-compose down --remove-orphans
+docker-compose -f docker-compose.prod.yml down --remove-orphans
 
 echo "🧹 Удаляем конфликтующие контейнеры..."
 # Удаляем старый nginx контейнер если он существует
 docker rm -f xxl_orderhub_nginx 2>/dev/null || true
 
-echo "🔨 Собираем и запускаем контейнеры..."
-docker-compose up --build -d
+echo "🔨 Собираем и запускаем контейнеры (продакшен)..."
+docker-compose -f docker-compose.prod.yml up --build -d
 
 echo "⏳ Ждем запуска сервисов..."
 sleep 15
 
 echo "🔍 Проверяем статус сервисов..."
-docker-compose ps
+docker-compose -f docker-compose.prod.yml ps
 
 echo "📊 Настройка начальных данных..."
 # Проверяем, есть ли JSON файл с данными производителей
@@ -52,15 +52,15 @@ if [ -f "manufacturer_fixture.json" ]; then
     docker cp manufacturer_fixture.json xxl_orderhub-web-1:/app/
     
     # Копируем команды управления если их нет
-    if ! docker-compose exec web test -f orders/management/commands/setup_initial_data.py; then
+    if ! docker-compose -f docker-compose.prod.yml exec web test -f orders/management/commands/setup_initial_data.py; then
         echo "📁 Копируем команды управления..."
         docker cp orders/management/commands/setup_initial_data.py xxl_orderhub-web-1:/app/orders/management/commands/
     fi
     
     echo "🏭 Загружаем данные производителей..."
     # Проверяем, что команда существует
-    if docker-compose exec web python manage.py help setup_initial_data >/dev/null 2>&1; then
-        docker-compose exec --user root web python manage.py setup_initial_data
+    if docker-compose -f docker-compose.prod.yml exec web python manage.py help setup_initial_data >/dev/null 2>&1; then
+        docker-compose -f docker-compose.prod.yml exec --user root web python manage.py setup_initial_data
     else
         echo "⚠️ Команда setup_initial_data не найдена. Пропускаем загрузку данных."
     fi
@@ -68,8 +68,8 @@ if [ -f "manufacturer_fixture.json" ]; then
     echo "✅ Данные производителей загружены!"
     
     echo "🔍 Проверяем целостность данных..."
-    if docker-compose exec web python manage.py help check_data_integrity >/dev/null 2>&1; then
-        docker-compose exec web python manage.py check_data_integrity
+    if docker-compose -f docker-compose.prod.yml exec web python manage.py help check_data_integrity >/dev/null 2>&1; then
+        docker-compose -f docker-compose.prod.yml exec web python manage.py check_data_integrity
     fi
 else
     echo "⚠️ Файл manufacturer_fixture.json не найден. Пропускаем загрузку данных."
@@ -104,13 +104,13 @@ echo "   • Статические файлы:  http://localhost:8280/static/"
 echo "   • Медиа файлы:        http://localhost:8280/media/"
 echo ""
 echo "🔧 Управление:"
-echo "   • Остановить:         docker-compose down"
-echo "   • Перезапустить:      docker-compose restart"
-echo "   • Логи:               docker-compose logs"
-echo "   • Статус:             docker-compose ps"
-echo "   • Проверить данные:   docker-compose exec web python manage.py check_data_integrity"
-echo "   • Перезагрузить данные: docker-compose exec --user root web python manage.py setup_initial_data --clear"
-echo "   • Очистить справочники: docker-compose exec web python manage.py clear_reference_data --force"
+echo "   • Остановить:         docker-compose -f docker-compose.prod.yml down"
+echo "   • Перезапустить:      docker-compose -f docker-compose.prod.yml restart"
+echo "   • Логи:               docker-compose -f docker-compose.prod.yml logs"
+echo "   • Статус:             docker-compose -f docker-compose.prod.yml ps"
+echo "   • Проверить данные:   docker-compose -f docker-compose.prod.yml exec web python manage.py check_data_integrity"
+echo "   • Перезагрузить данные: docker-compose -f docker-compose.prod.yml exec --user root web python manage.py setup_initial_data --clear"
+echo "   • Очистить справочники: docker-compose -f docker-compose.prod.yml exec web python manage.py clear_reference_data --force"
 echo ""
 echo "⚠️  Важно:"
 echo "   • Только порт 8280 доступен снаружи"
