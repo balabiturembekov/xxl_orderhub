@@ -419,6 +419,36 @@ def upload_invoice(request, pk):
 
 
 @login_required
+def upload_invoice_form(request, pk):
+    """Показ формы загрузки инвойса после подтверждения"""
+    order = get_object_or_404(Order, pk=pk, employee=request.user)
+    
+    # Проверяем, что заказ отправлен (можно прикреплять инвойс только после отправки)
+    if order.status not in ['sent', 'invoice_received']:
+        messages.error(request, 'Инвойс можно прикрепить только после отправки заказа на фабрику!')
+        return redirect('order_detail', pk=pk)
+    
+    # Проверяем, есть ли активное подтверждение
+    active_confirmation = OrderConfirmation.objects.filter(
+        order=order,
+        action='upload_invoice',
+        status='pending',
+        expires_at__gt=timezone.now()
+    ).first()
+    
+    if not active_confirmation:
+        messages.error(request, 'Нет активного подтверждения для загрузки инвойса!')
+        return redirect('order_detail', pk=pk)
+    
+    form = InvoiceUploadForm()
+    return render(request, 'orders/upload_invoice_form.html', {
+        'form': form,
+        'order': order,
+        'confirmation': active_confirmation
+    })
+
+
+@login_required
 def upload_invoice_execute(request, pk):
     """Выполнение загрузки инвойса после подтверждения"""
     order = get_object_or_404(Order, pk=pk, employee=request.user)
@@ -428,8 +458,20 @@ def upload_invoice_execute(request, pk):
         messages.error(request, 'Инвойс можно прикрепить только после отправки заказа на фабрику!')
         return redirect('order_detail', pk=pk)
     
+    # Проверяем, есть ли активное подтверждение
+    active_confirmation = OrderConfirmation.objects.filter(
+        order=order,
+        action='upload_invoice',
+        status='pending',
+        expires_at__gt=timezone.now()
+    ).first()
+    
+    if not active_confirmation:
+        messages.error(request, 'Нет активного подтверждения для загрузки инвойса!')
+        return redirect('order_detail', pk=pk)
+    
     if request.method != 'POST':
-        return redirect('upload_invoice', pk=pk)
+        return redirect('upload_invoice_form', pk=pk)
     
     form = InvoiceUploadForm(request.POST, request.FILES)
     if form.is_valid():
@@ -437,24 +479,18 @@ def upload_invoice_execute(request, pk):
             invoice_file = form.cleaned_data['invoice_file']
             old_status = order.status
             
-            # Создаем запись подтверждения
-            confirmation = OrderConfirmation.objects.create(
-                order=order,
-                action='upload_invoice',
-                requested_by=request.user,
-                confirmation_data={
-                    'invoice_file_name': invoice_file.name,
-                    'invoice_file_size': invoice_file.size,
-                    'order_title': order.title,
-                    'factory_name': order.factory.name,
-                }
-            )
+            # Обновляем данные подтверждения
+            active_confirmation.confirmation_data.update({
+                'invoice_file_name': invoice_file.name,
+                'invoice_file_size': invoice_file.size,
+            })
+            active_confirmation.save()
             
             # Обновляем статус заказа
             order.mark_invoice_received(invoice_file)
             
             # Подтверждаем операцию
-            confirmation.confirm(request.user, f"Инвойс {invoice_file.name} успешно загружен")
+            active_confirmation.confirm(request.user, f"Инвойс {invoice_file.name} успешно загружен")
             
             # Создаем запись аудита
             OrderAuditLog.objects.create(
@@ -1226,8 +1262,8 @@ def confirmation_approve(request, pk):
                 
             elif confirmation.action == 'upload_invoice':
                 # Для загрузки инвойса нужна форма с файлом
-                messages.info(request, 'Для загрузки инвойса используйте специальную форму.')
-                return redirect('order_detail', pk=confirmation.order.pk)
+                # Перенаправляем на специальную страницу загрузки инвойса
+                return redirect('upload_invoice_form', pk=confirmation.order.pk)
                 
             elif confirmation.action == 'complete_order':
                 # Выполняем завершение заказа

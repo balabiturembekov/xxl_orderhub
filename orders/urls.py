@@ -22,6 +22,7 @@ urlpatterns = [
     path("orders/<int:pk>/send/", views.send_order, name="send_order"),
     path("orders/<int:pk>/send-execute/", views.send_order_execute, name="send_order_execute"),
     path("orders/<int:pk>/upload-invoice/", views.upload_invoice, name="upload_invoice"),
+    path("orders/<int:pk>/upload-invoice-form/", views.upload_invoice_form, name="upload_invoice_form"),
     path("orders/<int:pk>/upload-invoice-execute/", views.upload_invoice_execute, name="upload_invoice_execute"),
     path("orders/<int:pk>/complete/", views.complete_order, name="complete_order"),
     path("orders/<int:pk>/download/<str:file_type>/", views.download_file, name="download_file"),

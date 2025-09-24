@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load file_filters %}
+
+{% block title %}Загрузка инвойса - XXL OrderHub{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Главная" %}</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'order_list' %}">{% trans "Заказы" %}</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'order_detail' order.pk %}">{{ order.title }}</a></li>
+                <li class="breadcrumb-item active">{% trans "Загрузка инвойса" %}</li>
+            </ol>
+        </nav>
+
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-file-invoice"></i> {% trans "Загрузка инвойса" %}
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h5><i class="fas fa-info-circle"></i> {% trans "Информация о подтверждении" %}</h5>
+                    <p class="mb-0">
+                        {% trans "Операция загрузки инвойса была подтверждена. Теперь вы можете загрузить PDF файл инвойса." %}
+                    </p>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">{% trans "Информация о заказе" %}</h6>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>{% trans "Название:" %}</strong> {{ order.title }}</p>
+                                <p><strong>{% trans "Фабрика:" %}</strong> {{ order.factory.name }}</p>
+                                <p><strong>{% trans "Страна:" %}</strong> {{ order.factory.country.name }}</p>
+                                <p><strong>{% trans "Текущий статус:" %}</strong> 
+                                    <span class="badge bg-info">{{ order.get_status_display }}</span>
+                                </p>
+                                {% if order.sent_at %}
+                                <p><strong>{% trans "Дата отправки:" %}</strong> {{ order.sent_at|date:"d.m.Y H:i" }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">{% trans "Информация о подтверждении" %}</h6>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>{% trans "Операция:" %}</strong> {{ confirmation.get_action_display }}</p>
+                                <p><strong>{% trans "Статус:" %}</strong> {{ confirmation.get_status_display }}</p>
+                                <p><strong>{% trans "Запрошено:" %}</strong> {{ confirmation.requested_at|date:"d.m.Y H:i" }}</p>
+                                <p><strong>{% trans "Истекает:" %}</strong> {{ confirmation.expires_at|date:"d.m.Y H:i" }}</p>
+                                <p><strong>{% trans "Запросил:" %}</strong> {{ confirmation.requested_by.get_full_name|default:confirmation.requested_by.username }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <form method="post" action="{% url 'upload_invoice_execute' order.pk %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h6 class="mb-0">{% trans "Выберите файл инвойса" %}</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="{{ form.invoice_file.id_for_label }}" class="form-label">
+                                    {% trans "PDF файл инвойса" %} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.invoice_file }}
+                                {% if form.invoice_file.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.invoice_file.errors %}
+                                    <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    {% trans "Поддерживаемые форматы: PDF. Максимальный размер: 50MB." %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-exclamation-triangle"></i> {% trans "Внимание!" %}</h6>
+                        <ul class="mb-0">
+                            <li>{% trans "После загрузки инвойса статус заказа изменится на 'Инвойс получен'" %}</li>
+                            <li>{% trans "Будет создана запись аудита операции" %}</li>
+                            <li>{% trans "Отправится уведомление о получении инвойса" %}</li>
+                            <li>{% trans "Заказ станет доступен для завершения" %}</li>
+                        </ul>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'confirmation_detail' confirmation.pk %}" class="btn btn-outline-secondary me-md-2">
+                            <i class="fas fa-arrow-left"></i> {% trans "Назад к подтверждению" %}
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-upload"></i> {% trans "Загрузить инвойс" %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
