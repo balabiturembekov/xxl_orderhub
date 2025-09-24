@@ -242,7 +242,7 @@ X_FRAME_OPTIONS = 'DENY'
 
 # Session Security
 SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=False, cast=bool)
-SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_HTTPONLY = config('SESSION_COOKIE_HTTPONLY', default=True, cast=bool)
 SESSION_COOKIE_AGE = 3600  # 1 hour
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_COOKIE_DOMAIN = None  # Позволяет работать с разными портами
