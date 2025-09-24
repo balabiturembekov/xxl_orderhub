@@ -38,7 +38,7 @@ services:
     build: .
     # Убираем внешний порт - доступ только через nginx
     env_file:
-      - docker.env
+      - docker.env.local
     volumes:
       - ./media:/app/media
       - ./logs:/app/logs
@@ -61,7 +61,7 @@ services:
   worker:
     build: .
     env_file:
-      - docker.env
+      - docker.env.local
     volumes:
       - ./media:/app/media
       - ./logs:/app/logs
@@ -78,7 +78,7 @@ services:
   beat:
     build: .
     env_file:
-      - docker.env
+      - docker.env.local
     volumes:
       - ./media:/app/media
       - ./logs:/app/logs
@@ -99,7 +99,7 @@ services:
     build: .
     # Убираем внешний порт - доступ только через nginx
     env_file:
-      - docker.env
+      - docker.env.local
     volumes:
       - ./logs:/app/logs
     depends_on:
