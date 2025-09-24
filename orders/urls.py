@@ -51,7 +51,7 @@ urlpatterns = [
     path("orders/<int:pk>/send/", send_order, name="send_order"),
     path("orders/<int:pk>/upload-invoice/", upload_invoice, name="upload_invoice"),
     path("orders/<int:pk>/upload-invoice-form/", upload_invoice_form, name="upload_invoice_form"),
-    path("orders/<int:pk>/upload-invoice-execute/", upload_invoice_execute, name="upload_invoice_execute"),
+    path("orders/<int:pk>/upload-invoice-execute/", upload_invoice_with_payment, name="upload_invoice_execute"),
     path("orders/<int:pk>/complete/", complete_order, name="complete_order"),
     path("orders/<int:pk>/download/<str:file_type>/", download_file, name="download_file"),
     

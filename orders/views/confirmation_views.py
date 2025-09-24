@@ -206,7 +206,9 @@ def upload_invoice_form(request, pk: int):
         messages.error(request, 'Нет активного подтверждения для загрузки инвойса!')
         return redirect('order_detail', pk=pk)
     
-    form = InvoiceUploadForm()
+    # Используем новую форму для создания инвойса с платежом
+    from ..forms import InvoiceWithPaymentForm
+    form = InvoiceWithPaymentForm()
     return render(request, 'orders/upload_invoice_form.html', {
         'form': form,
         'order': order,

@@ -23,23 +23,37 @@ from django.core.paginator import Paginator
 from django.db.models import Q, Sum, Count, Avg
 from django.utils.translation import gettext as _
 
-from ..models import Order, Invoice, InvoicePayment, OrderAuditLog
+from ..models import Order, Invoice, InvoicePayment, OrderAuditLog, OrderConfirmation
 from ..forms import InvoiceForm, InvoicePaymentForm, InvoiceWithPaymentForm
 
 
 @login_required
-def upload_invoice_with_payment(request, order_id):
+def upload_invoice_with_payment(request, pk):
     """
     Обработка загрузки инвойса с первым платежом.
     
     Создает инвойс и первый платеж одновременно.
     """
-    order = get_object_or_404(Order, id=order_id, employee=request.user)
+    order = get_object_or_404(Order, id=pk, employee=request.user)
     
-    # Проверяем, что у заказа еще нет инвойса
-    if hasattr(order, 'invoice'):
+    # Проверяем активное подтверждение (если вызывается через старый URL)
+    active_confirmation = None
+    if request.resolver_match.url_name == 'upload_invoice_execute':
+        active_confirmation = OrderConfirmation.objects.filter(
+            order=order,
+            action='upload_invoice',
+            status='pending',
+            expires_at__gt=timezone.now()
+        ).first()
+        
+        if not active_confirmation:
+            messages.error(request, _('Нет активного подтверждения для загрузки инвойса!'))
+            return redirect('order_detail', pk=order.id)
+    
+    # Проверяем, что у заказа еще нет инвойса (только если нет активного подтверждения)
+    if not active_confirmation and hasattr(order, 'invoice'):
         messages.error(request, _('У этого заказа уже есть инвойс.'))
-        return redirect('order_detail', order_id=order.id)
+        return redirect('order_detail', pk=order.id)
     
     if request.method == 'POST':
         form = InvoiceWithPaymentForm(request.POST, request.FILES)
@@ -47,14 +61,24 @@ def upload_invoice_with_payment(request, order_id):
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    # Создаем инвойс
-                    invoice = Invoice.objects.create(
-                        order=order,
-                        invoice_number=form.cleaned_data['invoice_number'],
-                        balance=form.cleaned_data['balance'],
-                        due_date=form.cleaned_data.get('due_date'),
-                        notes=form.cleaned_data.get('invoice_notes', '')
-                    )
+                    # Создаем или обновляем инвойс
+                    if hasattr(order, 'invoice'):
+                        # Обновляем существующий инвойс
+                        invoice = order.invoice
+                        invoice.invoice_number = form.cleaned_data['invoice_number']
+                        invoice.balance = form.cleaned_data['balance']
+                        invoice.due_date = form.cleaned_data.get('due_date')
+                        invoice.notes = form.cleaned_data.get('invoice_notes', '')
+                        invoice.save()
+                    else:
+                        # Создаем новый инвойс
+                        invoice = Invoice.objects.create(
+                            order=order,
+                            invoice_number=form.cleaned_data['invoice_number'],
+                            balance=form.cleaned_data['balance'],
+                            due_date=form.cleaned_data.get('due_date'),
+                            notes=form.cleaned_data.get('invoice_notes', '')
+                        )
                     
                     # Создаем первый платеж
                     payment = InvoicePayment.objects.create(
@@ -67,10 +91,35 @@ def upload_invoice_with_payment(request, order_id):
                         created_by=request.user
                     )
                     
+                    # Сохраняем файл инвойса в заказ
+                    invoice_file = form.cleaned_data['invoice_file']
+                    order.invoice_file = invoice_file
+                    
                     # Обновляем статус заказа
                     order.status = 'invoice_received'
                     order.invoice_received_at = timezone.now()
                     order.save()
+                    
+                    # Обрабатываем подтверждение (если есть)
+                    if request.resolver_match.url_name == 'upload_invoice_execute':
+                        active_confirmation = OrderConfirmation.objects.filter(
+                            order=order,
+                            action='upload_invoice',
+                            status='pending',
+                            expires_at__gt=timezone.now()
+                        ).first()
+                        
+                        if active_confirmation:
+                            active_confirmation.status = 'approved'
+                            active_confirmation.confirmed_by = request.user
+                            active_confirmation.confirmed_at = timezone.now()
+                            active_confirmation.confirmation_data.update({
+                                'invoice_number': invoice.invoice_number,
+                                'balance': str(invoice.balance),
+                                'payment_amount': str(payment.amount),
+                                'payment_type': payment.payment_type,
+                            })
+                            active_confirmation.save()
                     
                     # Создаем запись аудита
                     OrderAuditLog.log_action(
@@ -92,7 +141,7 @@ def upload_invoice_with_payment(request, order_id):
                         )
                     )
                     
-                    return redirect('order_detail', order_id=order.id)
+                    return redirect('order_detail', pk=order.id)
                     
             except Exception as e:
                 messages.error(request, _('Ошибка при создании инвойса: {error}').format(error=str(e)))
@@ -178,10 +227,7 @@ class PaymentCreateView(CreateView):
     def form_valid(self, form):
         invoice = self.get_invoice()
         
-        # Проверяем, что сумма платежа не превышает остаток
-        if form.cleaned_data['amount'] > invoice.remaining_amount:
-            form.add_error('amount', _('Сумма платежа не может превышать остаток к доплате.'))
-            return self.form_invalid(form)
+        # Валидация уже выполнена в форме, дополнительная проверка не нужна
         
         # Сохраняем платеж
         payment = form.save(commit=False)
@@ -379,19 +425,45 @@ def payment_analytics(request):
     remaining_amount = total_amount - total_paid
     
     # Статистика по статусам
-    status_stats = user_invoices.values('status').annotate(
+    status_stats_raw = user_invoices.values('status').annotate(
         count=Count('id'),
         total_balance=Sum('balance'),
         total_paid=Sum('total_paid')
     )
     
+    # Добавляем русские названия статусов
+    status_names = {
+        'pending': 'Ожидает оплаты',
+        'partial': 'Частично оплачен', 
+        'paid': 'Полностью оплачен',
+        'overdue': 'Просрочен'
+    }
+    
+    status_stats = []
+    for stat in status_stats_raw:
+        stat['status_name'] = status_names.get(stat['status'], stat['status'])
+        status_stats.append(stat)
+    
     # Статистика по типам платежей
-    payment_stats = InvoicePayment.objects.filter(
+    payment_stats_raw = InvoicePayment.objects.filter(
         invoice__order__employee=request.user
     ).values('payment_type').annotate(
         count=Count('id'),
         total_amount=Sum('amount')
     )
+    
+    # Добавляем русские названия типов платежей
+    payment_type_names = {
+        'deposit': 'Депозит',
+        'final_payment': 'Финальный платеж',
+        'partial_payment': 'Частичный платеж',
+        'refund': 'Возврат'
+    }
+    
+    payment_stats = []
+    for stat in payment_stats_raw:
+        stat['payment_type_name'] = payment_type_names.get(stat['payment_type'], stat['payment_type'])
+        payment_stats.append(stat)
     
     # Просроченные инвойсы
     overdue_invoices = user_invoices.filter(
