@@ -119,9 +119,15 @@
                                 {% else %}
                                 <p class="text-muted">❌ {% trans "Инвойс не получен" %}</p>
                                 {% if order.status == 'sent' or order.status == 'invoice_received' %}
+                                {% if order.invoice_file %}
+                                <a href="{% url 'upload_invoice' order.pk %}" class="btn btn-outline-success btn-sm">
+                                    📋 {% trans "Обновить инвойс" %}
+                                </a>
+                                {% else %}
                                 <a href="{% url 'upload_invoice' order.pk %}" class="btn btn-success btn-sm">
                                     📋 {% trans "Загрузить инвойс" %}
                                 </a>
+                                {% endif %}
                                 {% endif %}
                                 {% endif %}
                             </div>
@@ -154,9 +160,15 @@
                         </div>
                         {% elif order.status == 'sent' %}
                         <div class="d-grid gap-2">
+                            {% if order.invoice_file %}
+                            <a href="{% url 'upload_invoice' order.pk %}" class="btn btn-outline-success">
+                                📋 {% trans "Обновить инвойс" %}
+                            </a>
+                            {% else %}
                             <a href="{% url 'upload_invoice' order.pk %}" class="btn btn-success">
                                 📋 {% trans "Загрузить инвойс" %}
                             </a>
+                            {% endif %}
                         </div>
                         <div class="mt-3">
                             <small class="text-muted">
@@ -223,9 +235,15 @@
                     📤 {% trans "Отправить на фабрику" %}
                 </a>
                 {% elif order.status == 'sent' %}
+                {% if order.invoice_file %}
+                <a href="{% url 'upload_invoice' order.pk %}" class="btn btn-outline-warning">
+                    📋 {% trans "Обновить инвойс" %}
+                </a>
+                {% else %}
                 <a href="{% url 'upload_invoice' order.pk %}" class="btn btn-warning">
                     📋 {% trans "Загрузить инвойс" %}
                 </a>
+                {% endif %}
                 {% elif order.status == 'invoice_received' %}
                 <a href="{% url 'complete_order' order.pk %}" class="btn btn-success">
                     ✅ {% trans "Завершить заказ" %}

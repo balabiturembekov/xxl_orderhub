@@ -112,9 +112,15 @@
                             </a>
                             {% endif %}
                             {% if order.status == 'sent' or order.status == 'invoice_received' %}
+                            {% if order.invoice_file %}
                             <a href="{% url 'upload_invoice' order.pk %}" class="btn btn-outline-warning btn-sm">
-                                📋 {% trans "Инвойс" %}
+                                📋 {% trans "Обновить" %}
                             </a>
+                            {% else %}
+                            <a href="{% url 'upload_invoice' order.pk %}" class="btn btn-outline-success btn-sm">
+                                📋 {% trans "Загрузить" %}
+                            </a>
+                            {% endif %}
                             {% endif %}
                         </div>
                     </div>
