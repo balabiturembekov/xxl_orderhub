@@ -182,7 +182,15 @@ def preview_file(request, pk: int, file_type: str):
     order = get_object_or_404(Order, pk=pk, employee=request.user)
     
     try:
-        preview_data = generate_file_preview(order, file_type)
+        # Get file path based on file type
+        if file_type == 'excel' and order.excel_file:
+            file_path = order.excel_file.path
+        elif file_type == 'invoice' and order.invoice_file:
+            file_path = order.invoice_file.path
+        else:
+            return JsonResponse({'error': 'Файл не найден'}, status=404)
+        
+        preview_data = generate_file_preview(file_path, file_type)
         return JsonResponse(preview_data)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
@@ -203,7 +211,19 @@ def preview_file_modal(request, pk: int, file_type: str):
     order = get_object_or_404(Order, pk=pk, employee=request.user)
     
     try:
-        preview_data = generate_file_preview(order, file_type)
+        # Get file path based on file type
+        if file_type == 'excel' and order.excel_file:
+            file_path = order.excel_file.path
+        elif file_type == 'invoice' and order.invoice_file:
+            file_path = order.invoice_file.path
+        else:
+            return render(request, 'orders/file_preview_modal.html', {
+                'order': order,
+                'file_type': file_type,
+                'error': 'Файл не найден'
+            })
+        
+        preview_data = generate_file_preview(file_path, file_type)
         return render(request, 'orders/file_preview_modal.html', {
             'order': order,
             'file_type': file_type,
