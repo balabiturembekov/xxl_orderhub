@@ -107,7 +107,7 @@
                         <a href="{% url 'confirmation_detail' confirmation.pk %}" class="btn btn-outline-secondary me-md-2">
                             <i class="fas fa-arrow-left"></i> {% trans "Назад к подтверждению" %}
                         </a>
-                        <button type="submit" class="btn btn-success">
+                        <button type="submit" class="btn btn-success" id="uploadBtn" disabled>
                             <i class="fas fa-upload"></i> {% trans "Загрузить инвойс" %}
                         </button>
                     </div>
@@ -116,4 +116,32 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.querySelector('input[type="file"]');
+    const uploadBtn = document.getElementById('uploadBtn');
+    
+    if (fileInput && uploadBtn) {
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files.length > 0) {
+                // Файл выбран - активируем кнопку
+                uploadBtn.disabled = false;
+                uploadBtn.classList.remove('btn-secondary');
+                uploadBtn.classList.add('btn-success');
+            } else {
+                // Файл не выбран - деактивируем кнопку
+                uploadBtn.disabled = true;
+                uploadBtn.classList.remove('btn-success');
+                uploadBtn.classList.add('btn-secondary');
+            }
+        });
+        
+        // Изначально кнопка должна быть неактивной
+        uploadBtn.disabled = true;
+        uploadBtn.classList.remove('btn-success');
+        uploadBtn.classList.add('btn-secondary');
+    }
+});
+</script>
 {% endblock %}
