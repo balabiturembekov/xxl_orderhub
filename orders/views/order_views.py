@@ -13,6 +13,7 @@ from typing import Dict, Any
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
 from django.views.generic import ListView, DetailView
 from django.http import HttpResponse, Http404, JsonResponse
 from django.utils import timezone
@@ -72,6 +73,7 @@ class OrderListView(ListView):
         return context
 
 
+@method_decorator(login_required, name='dispatch')
 class OrderDetailView(DetailView):
     """
     Display detailed information about a specific order.
@@ -97,7 +99,7 @@ class OrderDetailView(DetailView):
         
         # Add related data
         context['confirmations'] = order.orderconfirmation_set.all().order_by('-requested_at')
-        context['audit_logs'] = order.orderauditlog_set.all().order_by('-created_at')
+        context['audit_logs'] = order.orderauditlog_set.all().order_by('-timestamp')
         
         # Calculate days since upload/sent
         if order.uploaded_at:
