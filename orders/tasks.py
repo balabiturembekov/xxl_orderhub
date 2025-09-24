@@ -41,14 +41,16 @@ def send_notification_email(notification_id):
                 'notification': notification,
                 'order': notification.order,
                 'user': user,
-                'template': template
+                'template': template,
+                'base_url': settings.BASE_URL
             })
             # Рендерим текстовый шаблон
             message = render_to_string('emails/notification.txt', {
                 'notification': notification,
                 'order': notification.order,
                 'user': user,
-                'template': template
+                'template': template,
+                'base_url': settings.BASE_URL
             })
         
         # Отправляем email

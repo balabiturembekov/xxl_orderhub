@@ -13,7 +13,7 @@ XXL OrderHub - {{ notification.title }}
 {% if order.uploaded_at %}Дата загрузки: {{ order.uploaded_at|date:"d.m.Y H:i" }}{% endif %}
 {% if order.sent_at %}Дата отправки: {{ order.sent_at|date:"d.m.Y H:i" }}{% endif %}
 
-Ссылка на заказ: http://localhost:8000{% url 'order_detail' order.pk %}
+Ссылка на заказ: {{ base_url }}{% url 'order_detail' order.pk %}
 
 ---
 Это автоматическое уведомление от системы XXL OrderHub

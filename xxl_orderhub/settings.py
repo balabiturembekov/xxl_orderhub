@@ -221,6 +221,9 @@ DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@xxlorderhub.c
 EMAIL_CHARSET = 'utf-8'
 EMAIL_CONTENT_TYPE = 'text/plain; charset=utf-8'
 
+# Base URL for absolute links in emails
+BASE_URL = config('BASE_URL', default='http://localhost:8280')
+
 # File upload settings (удалены - дублируются ниже)
 
 # Celery settings

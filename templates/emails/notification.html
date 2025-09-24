@@ -100,7 +100,7 @@
         </div>
         
         <div style="text-align: center;">
-            <a href="http://localhost:8000{% url 'order_detail' order.pk %}" class="btn">
+            <a href="{{ base_url }}{% url 'order_detail' order.pk %}" class="btn">
                 Перейти к заказу
             </a>
         </div>
