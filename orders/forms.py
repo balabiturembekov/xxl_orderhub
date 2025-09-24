@@ -554,9 +554,9 @@ class InvoiceWithPaymentForm(forms.Form):
             if not invoice_file.name.lower().endswith('.pdf'):
                 raise forms.ValidationError("Файл инвойса должен быть в формате PDF.")
             
-            # Проверка размера файла (максимум 50MB)
-            if invoice_file.size > 50 * 1024 * 1024:
-                raise forms.ValidationError("Размер файла инвойса не должен превышать 50MB.")
+            # Проверка размера файла (максимум 500MB)
+            if invoice_file.size > 500 * 1024 * 1024:
+                raise forms.ValidationError("Размер файла инвойса не должен превышать 500MB.")
         return invoice_file
     
     def clean_payment_amount(self):
