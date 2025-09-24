@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: XXL OrderHub 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-09-23 11:31+0000\n"
+"POT-Creation-Date: 2025-09-24 06:35+0000\n"
 "PO-Revision-Date: 2025-09-19 09:23+0000\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
@@ -54,102 +54,112 @@ msgstr ""
 msgid "Имя файла не может быть пустым"
 msgstr ""
 
-#: templates/base.html:339 templates/base.html:451
-#: templates/orders/notification_list.html:15
+#: templates/base.html:338 templates/orders/change_email.html:15
+#: templates/orders/edit_profile.html:15 templates/orders/profile.html:14
+msgid "Профиль"
+msgstr ""
+
+#: templates/base.html:343 templates/base.html:455
+#: templates/orders/home.html:284 templates/orders/notification_list.html:15
 #: templates/orders/notification_list.html:22
 msgid "Уведомления"
 msgstr "Benachrichtigungen"
 
-#: templates/base.html:346 templates/orders/notification_settings.html:14
+#: templates/base.html:350 templates/orders/change_email.html:38
+#: templates/orders/edit_profile.html:38
+#: templates/orders/notification_settings.html:14
+#: templates/orders/profile.html:37
 msgid "Настройки уведомлений"
 msgstr "Benachrichtigungseinstellungen"
 
-#: templates/base.html:353
+#: templates/base.html:357
 msgid "Выйти"
 msgstr "Abmelden"
 
-#: templates/base.html:361 templates/orders/home.html:237
-#: templates/registration/login.html:55 templates/registration/signup.html:75
+#: templates/base.html:365 templates/registration/login.html:55
+#: templates/registration/signup.html:90
 msgid "Войти"
 msgstr "Anmelden"
 
-#: templates/base.html:364 templates/orders/home.html:238
-#: templates/registration/signup.html:5 templates/registration/signup.html:12
+#: templates/base.html:368 templates/registration/signup.html:5
+#: templates/registration/signup.html:12
 msgid "Регистрация"
 msgstr "Registrierung"
 
-#: templates/base.html:371
+#: templates/base.html:375
 msgid "Выберите язык"
 msgstr "Sprache wählen"
 
-#: templates/base.html:399 templates/orders/complete_order_confirm.html:11
+#: templates/base.html:403 templates/orders/confirmation_approve.html:11
 #: templates/orders/confirmation_detail.html:11
+#: templates/orders/confirmation_reject.html:11
 #: templates/orders/file_preview_modal.html:11
 #: templates/orders/notification_list.html:14
 #: templates/orders/order_detail.html:11 templates/orders/order_form.html:11
-#: templates/orders/send_order_confirm.html:12
 #: templates/orders/upload_invoice.html:11
-#: templates/orders/upload_invoice_confirm.html:12
+#: templates/orders/upload_invoice_form.html:12
 msgid "Главная"
 msgstr "Startseite"
 
-#: templates/base.html:405 templates/orders/analytics_dashboard.html:171
+#: templates/base.html:409 templates/orders/analytics_dashboard.html:171
 #: templates/orders/analytics_dashboard.html:212
-#: templates/orders/complete_order_confirm.html:12
 #: templates/orders/factory_list.html:28
 #: templates/orders/file_preview_modal.html:12
 #: templates/orders/order_detail.html:12 templates/orders/order_form.html:12
-#: templates/orders/send_order_confirm.html:13
 #: templates/orders/upload_invoice.html:12
-#: templates/orders/upload_invoice_confirm.html:13
+#: templates/orders/upload_invoice_form.html:13
 msgid "Заказы"
 msgstr "Bestellungen"
 
-#: templates/base.html:408 templates/orders/home.html:24
+#: templates/base.html:412 templates/orders/home.html:24
+#: templates/orders/profile.html:138
 msgid "Все заказы"
 msgstr "Alle Bestellungen"
 
-#: templates/base.html:411 templates/orders/home.html:21
+#: templates/base.html:415 templates/orders/home.html:21
 #: templates/orders/notification_list.html:222
 #: templates/orders/order_form.html:4 templates/orders/order_form.html:13
 #: templates/orders/order_form.html:145 templates/orders/order_list.html:12
 msgid "Создать заказ"
 msgstr "Bestellung erstellen"
 
-#: templates/base.html:418 templates/orders/confirmation_detail.html:12
+#: templates/base.html:422 templates/orders/confirmation_approve.html:12
+#: templates/orders/confirmation_detail.html:12
+#: templates/orders/confirmation_reject.html:12
 msgid "Подтверждения"
 msgstr "Bestätigungen"
 
-#: templates/base.html:421
+#: templates/base.html:425 templates/orders/confirmation_approve.html:166
+#: templates/orders/confirmation_reject.html:143
 msgid "Все подтверждения"
 msgstr "Alle Bestätigungen"
 
-#: templates/base.html:428
+#: templates/base.html:432
 msgid "Управление"
 msgstr "Verwaltung"
 
-#: templates/base.html:431 templates/orders/analytics_dashboard.html:213
+#: templates/base.html:435 templates/orders/analytics_dashboard.html:213
 #: templates/orders/country_list.html:26
 msgid "Фабрики"
 msgstr "Fabriken"
 
-#: templates/base.html:434
+#: templates/base.html:438
 msgid "Страны"
 msgstr "Länder"
 
-#: templates/base.html:441
+#: templates/base.html:445 templates/orders/home.html:298
 msgid "Аналитика"
 msgstr "Analytik"
 
-#: templates/base.html:444
+#: templates/base.html:448
 msgid "Дашборд"
 msgstr "Dashboard"
 
-#: templates/base.html:454
+#: templates/base.html:458
 msgid "Все уведомления"
 msgstr "Alle Benachrichtigungen"
 
-#: templates/base.html:462 templates/orders/notification_list.html:31
+#: templates/base.html:466 templates/orders/notification_list.html:31
 msgid "Настройки"
 msgstr "Einstellungen"
 
@@ -180,6 +190,7 @@ msgstr "Filter anwenden"
 
 #: templates/orders/analytics_dashboard.html:52
 #: templates/orders/analytics_dashboard.html:318 templates/orders/home.html:41
+#: templates/orders/home.html:390 templates/orders/profile.html:106
 msgid "Всего заказов"
 msgstr "Gesamtbestellungen"
 
@@ -228,7 +239,7 @@ msgstr "Und noch"
 
 #: templates/orders/analytics_dashboard.html:143
 #: templates/orders/factory_list.html:50 templates/orders/home.html:140
-#: templates/orders/home.html:168
+#: templates/orders/home.html:164
 msgid "заказов"
 msgstr "Bestellungen"
 
@@ -242,6 +253,7 @@ msgstr "Statistik nach Fabriken"
 
 #: templates/orders/analytics_dashboard.html:170
 #: templates/orders/order_form.html:71 templates/orders/order_list.html:37
+#: templates/orders/profile.html:147
 msgid "Фабрика"
 msgstr "Fabrik"
 
@@ -250,7 +262,7 @@ msgstr "Fabrik"
 msgid "Нет данных за выбранный период"
 msgstr "Keine Daten für den gewählten Zeitraum"
 
-#: templates/orders/analytics_dashboard.html:203 templates/orders/home.html:158
+#: templates/orders/analytics_dashboard.html:203 templates/orders/home.html:155
 msgid "Статистика по странам"
 msgstr "Statistik nach Ländern"
 
@@ -268,7 +280,7 @@ msgstr "Hochgeladen"
 msgid "Отправлено"
 msgstr "Gesendet"
 
-#: templates/orders/analytics_dashboard.html:245 templates/orders/home.html:196
+#: templates/orders/analytics_dashboard.html:245 templates/orders/home.html:192
 #: templates/orders/order_detail.html:107
 #: templates/orders/order_detail.html:177
 msgid "Инвойс получен"
@@ -282,166 +294,312 @@ msgstr "Storniert"
 msgid "Количество заказов"
 msgstr "Anzahl der Bestellungen"
 
-#: templates/orders/complete_order_confirm.html:14
-#: templates/orders/notification_list.html:128
-msgid "Завершение заказа"
-msgstr "Bestellabschluss"
+#: templates/orders/change_email.html:5 templates/orders/change_email.html:35
+#: templates/orders/change_email.html:50 templates/orders/edit_profile.html:35
+#: templates/orders/profile.html:34
+#, fuzzy
+#| msgid "Отклонить"
+msgid "Изменить email"
+msgstr "Ablehnen"
 
-#: templates/orders/complete_order_confirm.html:21
-msgid "Подтверждение завершения заказа"
-msgstr "Bestellabschluss bestätigen"
+#: templates/orders/change_email.html:24
+#, fuzzy
+#| msgid "Имя пользователя"
+msgid "Пользователь"
+msgstr "Benutzername"
 
-#: templates/orders/complete_order_confirm.html:26
-msgid "Вы уверены, что хотите завершить этот заказ?"
-msgstr "Sind Sie sicher, dass Sie diese Bestellung abschließen möchten?"
+#: templates/orders/change_email.html:29 templates/orders/edit_profile.html:29
+#: templates/orders/profile.html:28 templates/orders/profile.html:50
+#, fuzzy
+#| msgid "Регистрация"
+msgid "Общая информация"
+msgstr "Registrierung"
 
-#: templates/orders/complete_order_confirm.html:27
+#: templates/orders/change_email.html:32 templates/orders/edit_profile.html:5
+#: templates/orders/edit_profile.html:32 templates/orders/edit_profile.html:50
+#: templates/orders/profile.html:31
+#, fuzzy
+#| msgid "Зарегистрироваться"
+msgid "Редактировать профиль"
+msgstr "Registrieren"
+
+#: templates/orders/change_email.html:56
+#, fuzzy
+#| msgid "Текущий email:"
+msgid "Текущий email"
+msgstr "Aktuelle E-Mail:"
+
+#: templates/orders/change_email.html:59
+#, fuzzy
+#| msgid "Отправить тестовое уведомление"
+msgid "Этот email используется для получения уведомлений"
+msgstr "Testbenachrichtigung senden"
+
+#: templates/orders/change_email.html:61
+#, fuzzy
+#| msgid "К заказам"
+msgid "Email не указан"
+msgstr "Zu Bestellungen"
+
+#: templates/orders/change_email.html:62
+#, fuzzy
+#| msgid "Навигация по уведомлениям"
+msgid "Укажите email для получения уведомлений"
+msgstr "Benachrichtigungsnavigation"
+
+#: templates/orders/change_email.html:77
+#, fuzzy
+#| msgid "Текущий email:"
+msgid "Новый email"
+msgstr "Aktuelle E-Mail:"
+
+#: templates/orders/change_email.html:88
 msgid ""
-"После завершения заказ будет помечен как выполненный и больше не будет "
-"участвовать в напоминаниях."
+"Введите новый email адрес. Он будет использоваться для получения уведомлений."
 msgstr ""
-"Nach dem Abschluss wird die Bestellung als erledigt markiert und nimmt nicht "
-"mehr an Erinnerungen teil."
 
-#: templates/orders/complete_order_confirm.html:32
-#: templates/orders/confirmation_detail.html:96
-#: templates/orders/order_detail.html:31
-#: templates/orders/send_order_confirm.html:41
-#: templates/orders/upload_invoice_confirm.html:41
-msgid "Информация о заказе"
-msgstr "Bestellinformationen"
+#: templates/orders/change_email.html:94
+#: templates/orders/confirmation_approve.html:134
+#: templates/orders/confirmation_reject.html:108
+#: templates/orders/country_confirm_delete.html:15
+#: templates/orders/factory_confirm_delete.html:15
+#: templates/orders/home.html:213 templates/orders/upload_invoice_form.html:97
+msgid "Внимание!"
+msgstr ""
 
-#: templates/orders/complete_order_confirm.html:37
-#: templates/orders/confirmation_detail.html:99
-#: templates/orders/country_confirm_delete.html:18
-#: templates/orders/factory_confirm_delete.html:18
-#: templates/orders/order_detail.html:36 templates/orders/order_detail.html:196
-#: templates/orders/send_order_confirm.html:44
-#: templates/orders/send_order_confirm.html:62
-#: templates/orders/upload_invoice.html:26
-#: templates/orders/upload_invoice_confirm.html:44
-msgid "Название:"
-msgstr "Titel:"
+#: templates/orders/change_email.html:95
+msgid "После изменения email вы сможете получать уведомления на новый адрес."
+msgstr ""
 
-#: templates/orders/complete_order_confirm.html:38
-#: templates/orders/confirmation_detail.html:100
-#: templates/orders/confirmation_list.html:67
-#: templates/orders/order_detail.html:37 templates/orders/order_list.html:71
-#: templates/orders/upload_invoice.html:27
-#: templates/orders/upload_invoice_confirm.html:45
-msgid "Фабрика:"
-msgstr "Fabrik:"
+#: templates/orders/change_email.html:100
+#: templates/orders/edit_profile.html:145
+#, fuzzy
+#| msgid "дней назад"
+msgid "Назад"
+msgstr "Tage her"
 
-#: templates/orders/complete_order_confirm.html:39
-#: templates/orders/confirmation_detail.html:101
-#: templates/orders/factory_confirm_delete.html:19
-#: templates/orders/order_detail.html:38 templates/orders/order_list.html:72
-#: templates/orders/send_order_confirm.html:63
-#: templates/orders/upload_invoice_confirm.html:46
-msgid "Страна:"
-msgstr "Land:"
+#: templates/orders/change_email.html:103
+#, fuzzy
+#| msgid "Сохранить настройки"
+msgid "Сохранить email"
+msgstr "Einstellungen speichern"
 
-#: templates/orders/complete_order_confirm.html:42
-#: templates/orders/confirmation_detail.html:46
-#: templates/orders/confirmation_detail.html:102
-#: templates/orders/order_detail.html:44
-#: templates/orders/upload_invoice.html:28
-msgid "Статус:"
-msgstr "Status:"
-
-#: templates/orders/complete_order_confirm.html:45
-#: templates/orders/confirmation_detail.html:107
-#: templates/orders/order_detail.html:45 templates/orders/order_list.html:73
-#: templates/orders/send_order_confirm.html:46
-msgid "Дата загрузки:"
-msgstr "Hochladedatum:"
-
-#: templates/orders/complete_order_confirm.html:47
-#: templates/orders/order_detail.html:47
-#: templates/orders/upload_invoice_confirm.html:51
-msgid "Дата отправки:"
-msgstr "Sendungsdatum:"
-
-#: templates/orders/complete_order_confirm.html:50
-#: templates/orders/order_detail.html:50
-msgid "Дата получения инвойса:"
-msgstr "Rechnungsempfangsdatum:"
-
-#: templates/orders/complete_order_confirm.html:58
-#: templates/orders/upload_invoice.html:101
-msgid "Важно:"
-msgstr "Wichtig:"
-
-#: templates/orders/complete_order_confirm.html:60
-msgid "Заказ можно завершить только после получения инвойса от фабрики"
-msgstr "Die Bestellung kann nur nach Erhalt der Rechnung von der Fabrik abgeschlossen werden"
-
-#: templates/orders/complete_order_confirm.html:61
-msgid "После завершения статус заказа изменится на 'Завершен'"
-msgstr "Nach dem Abschluss ändert sich der Bestellstatus zu 'Abgeschlossen'"
-
-#: templates/orders/complete_order_confirm.html:62
-msgid "Завершенные заказы не участвуют в системе напоминаний"
-msgstr "Abgeschlossene Bestellungen nehmen nicht am Erinnerungssystem teil"
-
-#: templates/orders/complete_order_confirm.html:63
-msgid "Это действие нельзя отменить"
-msgstr "Diese Aktion kann nicht rückgängig gemacht werden"
-
-#: templates/orders/complete_order_confirm.html:71
-msgid "Причина завершения (необязательно)"
-msgstr "Abschlussgrund (optional)"
-
-#: templates/orders/complete_order_confirm.html:73
-msgid "Укажите причину завершения заказа..."
-msgstr "Geben Sie den Grund für den Bestellabschluss an..."
-
-#: templates/orders/complete_order_confirm.html:78
-#: templates/orders/country_confirm_delete.html:30
-#: templates/orders/country_form.html:70
-#: templates/orders/factory_confirm_delete.html:31
-#: templates/orders/factory_form.html:143 templates/orders/order_form.html:142
-#: templates/orders/order_form.html:209 templates/orders/order_form.html:280
-#: templates/orders/send_order_confirm.html:110
-#: templates/orders/upload_invoice.html:76
-#: templates/orders/upload_invoice_confirm.html:129
-msgid "Отмена"
-msgstr "Abbrechen"
-
-#: templates/orders/complete_order_confirm.html:81
-msgid "Да, завершить заказ"
-msgstr "Ja, Bestellung abschließen"
-
+#: templates/orders/confirmation_approve.html:4
+#: templates/orders/confirmation_approve.html:14
+#: templates/orders/confirmation_approve.html:29
+#: templates/orders/confirmation_approve.html:102
 #: templates/orders/confirmation_detail.html:4
 msgid "Подтверждение операции"
 msgstr "Operationsbestätigung"
 
+#: templates/orders/confirmation_approve.html:13
 #: templates/orders/confirmation_detail.html:13
+#: templates/orders/confirmation_reject.html:13
 msgid "Детали подтверждения"
 msgstr "Bestätigungsdetails"
 
+#: templates/orders/confirmation_approve.html:41
 #: templates/orders/confirmation_detail.html:40
+#: templates/orders/confirmation_reject.html:41
+#: templates/orders/upload_invoice_form.html:27
+#: templates/orders/upload_invoice_form.html:56
 msgid "Информация о подтверждении"
 msgstr "Bestätigungsinformationen"
 
+#: templates/orders/confirmation_approve.html:46
 #: templates/orders/confirmation_detail.html:45
+#: templates/orders/confirmation_reject.html:46
+#: templates/orders/upload_invoice_form.html:59
 msgid "Операция:"
 msgstr "Operation:"
 
+#: templates/orders/confirmation_approve.html:47
+#: templates/orders/confirmation_approve.html:80
+#: templates/orders/confirmation_detail.html:46
+#: templates/orders/confirmation_detail.html:102
+#: templates/orders/confirmation_reject.html:47
+#: templates/orders/confirmation_reject.html:80
+#: templates/orders/order_detail.html:44
+#: templates/orders/upload_invoice.html:28
+#: templates/orders/upload_invoice_form.html:60
+msgid "Статус:"
+msgstr "Status:"
+
+#: templates/orders/confirmation_approve.html:48
 #: templates/orders/confirmation_detail.html:47
 #: templates/orders/confirmation_list.html:68
+#: templates/orders/confirmation_reject.html:48
+#: templates/orders/upload_invoice_form.html:61
 #, fuzzy
 #| msgid "Завершено"
 msgid "Запрошено:"
 msgstr "Abgeschlossen"
 
+#: templates/orders/confirmation_approve.html:49
 #: templates/orders/confirmation_detail.html:48
+#: templates/orders/confirmation_reject.html:49
+#: templates/orders/upload_invoice_form.html:62
 msgid "Истекает:"
 msgstr "Läuft ab:"
 
+#: templates/orders/confirmation_approve.html:52
 #: templates/orders/confirmation_detail.html:51
+#: templates/orders/confirmation_reject.html:52
+#: templates/orders/upload_invoice_form.html:63
 msgid "Запросил:"
 msgstr "Angefragt von:"
+
+#: templates/orders/confirmation_approve.html:58
+#: templates/orders/confirmation_reject.html:58
+#, fuzzy
+#| msgid "Дата регистрации:"
+msgid "Данные операции:"
+msgstr "Registrierungsdatum:"
+
+#: templates/orders/confirmation_approve.html:74
+#: templates/orders/confirmation_detail.html:96
+#: templates/orders/confirmation_reject.html:74
+#: templates/orders/order_detail.html:31
+#: templates/orders/upload_invoice_form.html:37
+msgid "Информация о заказе"
+msgstr "Bestellinformationen"
+
+#: templates/orders/confirmation_approve.html:77
+#: templates/orders/confirmation_detail.html:99
+#: templates/orders/confirmation_reject.html:77
+#: templates/orders/country_confirm_delete.html:18
+#: templates/orders/factory_confirm_delete.html:18
+#: templates/orders/order_detail.html:36 templates/orders/order_detail.html:196
+#: templates/orders/upload_invoice.html:26
+#: templates/orders/upload_invoice_form.html:40
+msgid "Название:"
+msgstr "Titel:"
+
+#: templates/orders/confirmation_approve.html:78
+#: templates/orders/confirmation_detail.html:100
+#: templates/orders/confirmation_list.html:67
+#: templates/orders/confirmation_reject.html:78
+#: templates/orders/order_detail.html:37 templates/orders/order_list.html:71
+#: templates/orders/upload_invoice.html:27
+#: templates/orders/upload_invoice_form.html:41
+msgid "Фабрика:"
+msgstr "Fabrik:"
+
+#: templates/orders/confirmation_approve.html:79
+#: templates/orders/confirmation_detail.html:101
+#: templates/orders/confirmation_reject.html:79
+#: templates/orders/factory_confirm_delete.html:19
+#: templates/orders/order_detail.html:38 templates/orders/order_list.html:72
+#: templates/orders/upload_invoice_form.html:42
+msgid "Страна:"
+msgstr "Land:"
+
+#: templates/orders/confirmation_approve.html:85
+#: templates/orders/confirmation_detail.html:107
+#: templates/orders/confirmation_reject.html:85
+#: templates/orders/order_detail.html:45 templates/orders/order_list.html:73
+msgid "Дата загрузки:"
+msgstr "Hochladedatum:"
+
+#: templates/orders/confirmation_approve.html:89
+#: templates/orders/confirmation_detail.html:111
+#: templates/orders/confirmation_reject.html:89
+#, fuzzy
+#| msgid "Просмотр"
+msgid "Просмотр заказа"
+msgstr "Anzeigen"
+
+#: templates/orders/confirmation_approve.html:109
+#: templates/orders/notification_settings.html:130
+msgid "Отправка заказа на фабрику"
+msgstr "Bestellung an Fabrik senden"
+
+#: templates/orders/confirmation_approve.html:111
+#, fuzzy
+#| msgid "Заказ будет отправлен на email фабрики"
+msgid "При подтверждении заказ будет отправлен на email фабрики"
+msgstr "Die Bestellung wird an die E-Mail der Fabrik gesendet"
+
+#: templates/orders/confirmation_approve.html:113
+#, fuzzy
+#| msgid "Статус заказа изменится на 'Отправлен'"
+msgid "с прикрепленным Excel файлом. Статус заказа изменится на 'Отправлен'."
+msgstr "Der Bestellstatus ändert sich zu 'Gesendet'"
+
+#: templates/orders/confirmation_approve.html:118
+#: templates/orders/upload_invoice_form.html:15
+#: templates/orders/upload_invoice_form.html:22
+#, fuzzy
+#| msgid "Загрузить инвойс"
+msgid "Загрузка инвойса"
+msgstr "Rechnung hochladen"
+
+#: templates/orders/confirmation_approve.html:120
+#, fuzzy
+#| msgid "После завершения статус заказа изменится на 'Завершен'"
+msgid ""
+"При подтверждении вы сможете загрузить PDF файл инвойса. Статус заказа "
+"изменится на 'Инвойс получен'."
+msgstr "Nach dem Abschluss ändert sich der Bestellstatus zu 'Abgeschlossen'"
+
+#: templates/orders/confirmation_approve.html:125
+#: templates/orders/notification_list.html:128
+msgid "Завершение заказа"
+msgstr "Bestellabschluss"
+
+#: templates/orders/confirmation_approve.html:127
+#, fuzzy
+#| msgid ""
+#| "После завершения заказ будет помечен как выполненный и больше не будет "
+#| "участвовать в напоминаниях."
+msgid ""
+"При подтверждении заказ будет помечен как завершенный и больше не будет "
+"участвовать в системе напоминаний."
+msgstr ""
+"Nach dem Abschluss wird die Bestellung als erledigt markiert und nimmt nicht "
+"mehr an Erinnerungen teil."
+
+#: templates/orders/confirmation_approve.html:135
+msgid ""
+"Вы собираетесь подтвердить критическую операцию. Это действие нельзя "
+"отменить."
+msgstr ""
+
+#: templates/orders/confirmation_approve.html:141
+#, fuzzy
+#| msgid "Причина завершения (необязательно)"
+msgid "Комментарии (необязательно):"
+msgstr "Abschlussgrund (optional)"
+
+#: templates/orders/confirmation_approve.html:142
+#, fuzzy
+#| msgid "Детали подтверждения"
+msgid "Добавьте комментарии к подтверждению..."
+msgstr "Bestätigungsdetails"
+
+#: templates/orders/confirmation_approve.html:147
+#, fuzzy
+#| msgid "Подтверждения операций"
+msgid "Подтвердить операцию"
+msgstr "Operationsbestätigungen"
+
+#: templates/orders/confirmation_approve.html:150
+#: templates/orders/confirmation_reject.html:127
+#: templates/orders/country_confirm_delete.html:30
+#: templates/orders/country_form.html:70
+#: templates/orders/factory_confirm_delete.html:31
+#: templates/orders/factory_form.html:143 templates/orders/order_form.html:142
+#: templates/orders/order_form.html:209 templates/orders/order_form.html:280
+#: templates/orders/upload_invoice.html:76
+msgid "Отмена"
+msgstr "Abbrechen"
+
+#: templates/orders/confirmation_approve.html:163
+#: templates/orders/confirmation_reject.html:140
+#, fuzzy
+#| msgid "Название заказа"
+msgid "Назад к деталям"
+msgstr "Bestellname"
 
 #: templates/orders/confirmation_detail.html:53
 msgid "Подтвердил:"
@@ -457,6 +615,7 @@ msgid "Комментарии:"
 msgstr "Kommentare:"
 
 #: templates/orders/confirmation_detail.html:70
+#: templates/orders/confirmation_reject.html:116
 msgid "Причина отклонения:"
 msgstr "Ablehnungsgrund:"
 
@@ -465,12 +624,6 @@ msgstr "Ablehnungsgrund:"
 #| msgid "Дата регистрации:"
 msgid "Данные операции"
 msgstr "Registrierungsdatum:"
-
-#: templates/orders/confirmation_detail.html:111
-#, fuzzy
-#| msgid "Просмотр"
-msgid "Просмотр заказа"
-msgstr "Anzeigen"
 
 #: templates/orders/confirmation_detail.html:120
 #: templates/orders/country_list.html:27 templates/orders/factory_list.html:29
@@ -519,7 +672,7 @@ msgstr "Bestellname"
 #: templates/orders/confirmation_list.html:21
 #: templates/orders/factory_list.html:27
 #: templates/orders/notification_list.html:55
-#: templates/orders/order_list.html:26
+#: templates/orders/order_list.html:26 templates/orders/profile.html:148
 msgid "Статус"
 msgstr "Status"
 
@@ -557,12 +710,13 @@ msgid "Отклонено"
 msgstr "Storniert"
 
 #: templates/orders/confirmation_list.html:97 templates/orders/home.html:115
-#: templates/orders/home.html:201 templates/orders/order_detail.html:94
+#: templates/orders/home.html:197 templates/orders/order_detail.html:94
 #: templates/orders/order_detail.html:110 templates/orders/order_list.html:96
 msgid "Просмотр"
 msgstr "Anzeigen"
 
 #: templates/orders/confirmation_list.html:100
+#: templates/orders/profile.html:146
 #, fuzzy
 #| msgid "Заказы"
 msgid "Заказ"
@@ -589,7 +743,7 @@ msgstr "Vorherige"
 
 #: templates/orders/confirmation_list.html:128
 #: templates/orders/country_list.html:73 templates/orders/factory_list.html:85
-#: templates/orders/file_preview_modal.html:178
+#: templates/orders/file_preview_modal.html:187
 #: templates/orders/notification_list.html:200
 #: templates/orders/order_list.html:145
 msgid "Страница"
@@ -630,19 +784,45 @@ msgstr ""
 msgid "Перейти к заказам"
 msgstr ""
 
+#: templates/orders/confirmation_reject.html:4
+#: templates/orders/confirmation_reject.html:14
+#: templates/orders/confirmation_reject.html:29
+#: templates/orders/confirmation_reject.html:102
+#, fuzzy
+#| msgid "Подтверждение операции"
+msgid "Отклонение операции"
+msgstr "Operationsbestätigung"
+
+#: templates/orders/confirmation_reject.html:109
+#, fuzzy
+#| msgid "Это действие нельзя отменить"
+msgid "Вы собираетесь отклонить операцию. Это действие нельзя отменить."
+msgstr "Diese Aktion kann nicht rückgängig gemacht werden"
+
+#: templates/orders/confirmation_reject.html:118
+#, fuzzy
+#| msgid "Укажите причину завершения заказа..."
+msgid "Укажите причину отклонения операции..."
+msgstr "Geben Sie den Grund für den Bestellabschluss an..."
+
+#: templates/orders/confirmation_reject.html:119
+#, fuzzy
+#| msgid "Укажите причину завершения заказа..."
+msgid "Обязательно укажите причину отклонения операции."
+msgstr "Geben Sie den Grund für den Bestellabschluss an..."
+
+#: templates/orders/confirmation_reject.html:124
+#, fuzzy
+#| msgid "Отклонить"
+msgid "Отклонить операцию"
+msgstr "Ablehnen"
+
 #: templates/orders/country_confirm_delete.html:4
 #: templates/orders/country_confirm_delete.html:11
 #, fuzzy
 #| msgid "Регистрация"
 msgid "Удаление страны"
 msgstr "Registrierung"
-
-#: templates/orders/country_confirm_delete.html:15
-#: templates/orders/factory_confirm_delete.html:15
-#: templates/orders/home.html:217 templates/orders/send_order_confirm.html:99
-#: templates/orders/upload_invoice_confirm.html:120
-msgid "Внимание!"
-msgstr ""
 
 #: templates/orders/country_confirm_delete.html:16
 msgid "Вы собираетесь удалить страну:"
@@ -726,7 +906,7 @@ msgstr "Anmeldung"
 msgid "Дата создания"
 msgstr "Registrierungsdatum:"
 
-#: templates/orders/country_list.html:38 templates/orders/home.html:165
+#: templates/orders/country_list.html:38
 #, fuzzy
 #| msgid "Фабрика"
 msgid "фабрик"
@@ -760,6 +940,33 @@ msgstr "Datei nicht hochgeladen"
 msgid "Начните с добавления первой страны."
 msgstr ""
 
+#: templates/orders/edit_profile.html:67
+msgid "Имя"
+msgstr ""
+
+#: templates/orders/edit_profile.html:82
+msgid "Фамилия"
+msgstr ""
+
+#: templates/orders/edit_profile.html:100 templates/orders/factory_form.html:93
+#: templates/orders/order_form.html:261
+msgid "Телефон"
+msgstr ""
+
+#: templates/orders/edit_profile.html:115
+msgid "Отдел"
+msgstr ""
+
+#: templates/orders/edit_profile.html:131
+msgid "Должность"
+msgstr ""
+
+#: templates/orders/edit_profile.html:148
+#, fuzzy
+#| msgid "Страница"
+msgid "Сохранить"
+msgstr "Seite"
+
 #: templates/orders/factory_confirm_delete.html:4
 #: templates/orders/factory_confirm_delete.html:11
 #, fuzzy
@@ -774,8 +981,7 @@ msgid "Вы собираетесь удалить фабрику:"
 msgstr "An Fabrik senden"
 
 #: templates/orders/factory_confirm_delete.html:20
-#: templates/orders/order_detail.html:197
-#: templates/orders/send_order_confirm.html:64
+#: templates/orders/order_detail.html:197 templates/orders/profile.html:60
 msgid "Email:"
 msgstr ""
 
@@ -808,10 +1014,6 @@ msgstr "Bestelldynamik"
 msgid "Контактное лицо"
 msgstr ""
 
-#: templates/orders/factory_form.html:93 templates/orders/order_form.html:261
-msgid "Телефон"
-msgstr ""
-
 #: templates/orders/factory_form.html:107 templates/orders/order_form.html:267
 msgid "Адрес"
 msgstr ""
@@ -842,7 +1044,7 @@ msgstr "An Fabrik senden"
 msgid "Добавить фабрику"
 msgstr "An Fabrik senden"
 
-#: templates/orders/factory_list.html:25
+#: templates/orders/factory_list.html:25 templates/registration/signup.html:40
 msgid "Email"
 msgstr ""
 
@@ -897,6 +1099,7 @@ msgid "Назад к заказу"
 msgstr "Bestellname"
 
 #: templates/orders/file_preview_modal.html:39
+#: templates/orders/file_preview_modal.html:211
 #, fuzzy
 #| msgid "Файлы"
 msgid "Файл:"
@@ -913,48 +1116,70 @@ msgid "Загружаем предварительный просмотр..."
 msgstr ""
 
 #: templates/orders/file_preview_modal.html:72
-#: templates/orders/file_preview_modal.html:88
+#: templates/orders/file_preview_modal.html:97
 #, fuzzy
 #| msgid "Дата регистрации:"
 msgid "Ошибка загрузки"
 msgstr "Registrierungsdatum:"
 
+#: templates/orders/file_preview_modal.html:88
+msgid "Неподдерживаемый тип файла"
+msgstr ""
+
 #: templates/orders/file_preview_modal.html:89
+msgid "Этот тип файла не поддерживается для предварительного просмотра"
+msgstr ""
+
+#: templates/orders/file_preview_modal.html:98
 msgid "Не удалось загрузить предварительный просмотр"
 msgstr ""
 
-#: templates/orders/file_preview_modal.html:99
+#: templates/orders/file_preview_modal.html:108
 msgid "Всего строк:"
 msgstr ""
 
-#: templates/orders/file_preview_modal.html:102
+#: templates/orders/file_preview_modal.html:111
 #, fuzzy
 #| msgid "Всего заказов"
 msgid "Всего колонок:"
 msgstr "Gesamtbestellungen"
 
-#: templates/orders/file_preview_modal.html:105
-#: templates/orders/file_preview_modal.html:169
+#: templates/orders/file_preview_modal.html:114
+#: templates/orders/file_preview_modal.html:178
 msgid "Размер файла:"
 msgstr ""
 
-#: templates/orders/file_preview_modal.html:113
+#: templates/orders/file_preview_modal.html:122
 msgid "Листы:"
 msgstr ""
 
-#: templates/orders/file_preview_modal.html:153
+#: templates/orders/file_preview_modal.html:162
 msgid "Показаны первые 10 строк. Для полного просмотра скачайте файл."
 msgstr ""
 
-#: templates/orders/file_preview_modal.html:166
+#: templates/orders/file_preview_modal.html:175
 #, fuzzy
 #| msgid "Регистрация"
 msgid "Всего страниц:"
 msgstr "Registrierung"
 
-#: templates/orders/file_preview_modal.html:189
+#: templates/orders/file_preview_modal.html:198
 msgid "Показаны первые 3 страницы. Для полного просмотра скачайте файл."
 msgstr ""
+
+#: templates/orders/file_preview_modal.html:210
+msgid "Word документ"
+msgstr ""
+
+#: templates/orders/file_preview_modal.html:212
+msgid "Размер:"
+msgstr ""
+
+#: templates/orders/file_preview_modal.html:217
+#, fuzzy
+#| msgid "Скачать PDF"
+msgid "Скачать файл"
+msgstr "PDF herunterladen"
 
 #: templates/orders/home.html:15
 #, fuzzy
@@ -962,7 +1187,7 @@ msgstr ""
 msgid "Добро пожаловать"
 msgstr "Willkommen bei XXL OrderHub!"
 
-#: templates/orders/home.html:16 templates/orders/home.html:234
+#: templates/orders/home.html:16
 msgid "Система управления заказами для вашего бизнеса."
 msgstr "Bestellverwaltungssystem für Ihr Unternehmen."
 
@@ -978,66 +1203,210 @@ msgstr "Erfordert Aufmerksamkeit"
 msgid "Топ фабрик"
 msgstr "Alle Fabriken"
 
-#: templates/orders/home.html:142
-msgid "активных"
-msgstr ""
-
-#: templates/orders/home.html:183
+#: templates/orders/home.html:179 templates/orders/profile.html:135
 #, fuzzy
 #| msgid "Подтверждение пароля"
 msgid "Последние заказы"
 msgstr "Passwort bestätigen"
 
-#: templates/orders/home.html:194 templates/orders/order_list.html:85
-#: templates/orders/upload_invoice_confirm.html:71
-#: templates/orders/upload_invoice_confirm.html:80
+#: templates/orders/home.html:190 templates/orders/order_list.html:85
 msgid "Загружен"
 msgstr ""
 
-#: templates/orders/home.html:195 templates/orders/order_detail.html:163
+#: templates/orders/home.html:191 templates/orders/order_detail.html:163
 #: templates/orders/order_list.html:89
 msgid "Отправлен"
 msgstr "Gesendet"
 
-#: templates/orders/home.html:197
+#: templates/orders/home.html:193
 #, fuzzy
 #| msgid "Завершено"
 msgid "Завершен"
 msgstr "Abgeschlossen"
 
-#: templates/orders/home.html:198
+#: templates/orders/home.html:194
 #, fuzzy
 #| msgid "Отменено"
 msgid "Отменен"
 msgstr "Storniert"
 
-#: templates/orders/home.html:218
+#: templates/orders/home.html:214
 msgid "У вас есть"
 msgstr ""
 
-#: templates/orders/home.html:218
+#: templates/orders/home.html:214
 msgid "просроченных заказов, требующих внимания."
 msgstr ""
 
-#: templates/orders/home.html:221
+#: templates/orders/home.html:217
 #, fuzzy
 #| msgid "Просроченные заказы"
 msgid "Просмотреть просроченные заказы"
 msgstr "Überfällige Bestellungen"
 
-#: templates/orders/home.html:233
+#: templates/orders/home.html:230
 msgid "Добро пожаловать в XXL OrderHub!"
 msgstr "Willkommen bei XXL OrderHub!"
 
-#: templates/orders/home.html:236
-msgid "Для начала работы необходимо войти в систему или зарегистрироваться."
-msgstr "Um zu beginnen, müssen Sie sich anmelden oder registrieren."
+#: templates/orders/home.html:231
+#, fuzzy
+#| msgid "Система управления заказами для вашего бизнеса."
+msgid "Профессиональная система управления заказами для вашего бизнеса"
+msgstr "Bestellverwaltungssystem für Ihr Unternehmen."
+
+#: templates/orders/home.html:234
+#, fuzzy
+#| msgid "Вход в систему"
+msgid "Войти в систему"
+msgstr "Anmeldung im System"
+
+#: templates/orders/home.html:237
+#, fuzzy
+#| msgid "Создать заказ"
+msgid "Создать аккаунт"
+msgstr "Bestellung erstellen"
+
+#: templates/orders/home.html:247
+#, fuzzy
+#| msgid "Выйти из системы"
+msgid "Возможности системы"
+msgstr "Aus dem System abmelden"
+
+#: templates/orders/home.html:256
+#, fuzzy
+#| msgid "Отправить на фабрику"
+msgid "Управление заказами"
+msgstr "An Fabrik senden"
+
+#: templates/orders/home.html:258
+msgid ""
+"Создавайте, отслеживайте и управляйте заказами в единой системе. Полный "
+"контроль над жизненным циклом каждого заказа."
+msgstr ""
+
+#: templates/orders/home.html:270
+#, fuzzy
+#| msgid "Все фабрики"
+msgid "База фабрик"
+msgstr "Alle Fabriken"
+
+#: templates/orders/home.html:272
+msgid ""
+"Ведение базы данных фабрик и стран. Быстрый поиск и выбор поставщиков для "
+"ваших заказов."
+msgstr ""
+
+#: templates/orders/home.html:286
+msgid ""
+"Автоматические уведомления о статусе заказов. Напоминания о просроченных "
+"заказах и важных событиях."
+msgstr ""
+
+#: templates/orders/home.html:300
+msgid ""
+"Подробная аналитика и отчеты по заказам, фабрикам и странам. Визуализация "
+"данных для принятия решений."
+msgstr ""
+
+#: templates/orders/home.html:312
+msgid "Безопасность"
+msgstr ""
+
+#: templates/orders/home.html:314
+msgid ""
+"Система подтверждений для критических операций. Полный аудит действий "
+"пользователей."
+msgstr ""
+
+#: templates/orders/home.html:326
+msgid "Многоязычность"
+msgstr ""
+
+#: templates/orders/home.html:328
+msgid "Поддержка нескольких языков. Интерфейс на русском и немецком языках."
+msgstr ""
+
+#: templates/orders/home.html:338
+msgid "Как это работает"
+msgstr ""
+
+#: templates/orders/home.html:346
+#, fuzzy
+#| msgid "Создать заказ"
+msgid "Создайте заказ"
+msgstr "Bestellung erstellen"
+
+#: templates/orders/home.html:347
+msgid "Загрузите Excel файл с деталями заказа и выберите фабрику"
+msgstr ""
+
+#: templates/orders/home.html:356
+#, fuzzy
+#| msgid "Отправить на фабрику"
+msgid "Отправьте на фабрику"
+msgstr "An Fabrik senden"
+
+#: templates/orders/home.html:357
+#, fuzzy
+#| msgid "Подтверждение отправки заказа на фабрику"
+msgid "Система автоматически отправит заказ на email фабрики"
+msgstr "Bestellung an Fabrik senden bestätigen"
+
+#: templates/orders/home.html:366
+#, fuzzy
+#| msgid "Подтверждение пароля"
+msgid "Получите инвойс"
+msgstr "Passwort bestätigen"
+
+#: templates/orders/home.html:367
+#, fuzzy
+#| msgid "Получение инвойса от фабрики"
+msgid "Загрузите PDF инвойс от фабрики в систему"
+msgstr "Rechnung von Fabrik erhalten"
+
+#: templates/orders/home.html:376
+#, fuzzy
+#| msgid "Создать заказ"
+msgid "Завершите заказ"
+msgstr "Bestellung erstellen"
+
+#: templates/orders/home.html:377
+#, fuzzy
+#| msgid "Заказ можно завершить только после получения инвойса от фабрики"
+msgid "Отметьте заказ как завершенный после получения товара"
+msgstr ""
+"Die Bestellung kann nur nach Erhalt der Rechnung von der Fabrik "
+"abgeschlossen werden"
+
+#: templates/orders/home.html:386
+#, fuzzy
+#| msgid "Статистика по странам"
+msgid "Статистика системы"
+msgstr "Statistik nach Ländern"
+
+#: templates/orders/home.html:394
+#, fuzzy
+#| msgid "Фабрика"
+msgid "Фабрик в базе"
+msgstr "Fabrik"
+
+#: templates/orders/home.html:398
+#, fuzzy
+#| msgid "Страны"
+msgid "Стран"
+msgstr "Länder"
+
+#: templates/orders/home.html:402
+#, fuzzy
+#| msgid "Имя пользователя"
+msgid "Активных пользователей"
+msgstr "Benutzername"
 
 #: templates/orders/notification_list.html:25
 msgid "Всего"
 msgstr ""
 
-#: templates/orders/notification_list.html:26
+#: templates/orders/notification_list.html:26 templates/orders/profile.html:124
 msgid "Непрочитанных"
 msgstr ""
 
@@ -1118,7 +1487,7 @@ msgstr "Als gelesen markieren"
 
 #: templates/orders/notification_list.html:168
 #: templates/orders/notification_list.html:172
-#: templates/orders/notification_list.html:304
+#: templates/orders/notification_list.html:306
 msgid "Прочитано"
 msgstr ""
 
@@ -1135,7 +1504,7 @@ msgid ""
 "У вас пока нет уведомлений. Они появятся здесь при изменении статуса заказов."
 msgstr ""
 
-#: templates/orders/notification_list.html:261
+#: templates/orders/notification_list.html:263
 #, fuzzy
 #| msgid "Отметить все как прочитанные"
 msgid "Отметить все уведомления как прочитанные?"
@@ -1170,7 +1539,8 @@ msgstr "Aktuelle E-Mail:"
 
 #: templates/orders/notification_settings.html:98
 msgid "Для получения уведомлений необходимо указать email в профиле."
-msgstr "Um Benachrichtigungen zu erhalten, müssen Sie eine E-Mail im Profil angeben."
+msgstr ""
+"Um Benachrichtigungen zu erhalten, müssen Sie eine E-Mail im Profil angeben."
 
 #: templates/orders/notification_settings.html:107
 msgid "Отправить тестовое уведомление"
@@ -1187,10 +1557,6 @@ msgstr "Systeminformationen"
 #: templates/orders/notification_settings.html:128
 msgid "Типы уведомлений:"
 msgstr "Benachrichtigungstypen:"
-
-#: templates/orders/notification_settings.html:130
-msgid "Отправка заказа на фабрику"
-msgstr "Bestellung an Fabrik senden"
 
 #: templates/orders/notification_settings.html:131
 msgid "Получение инвойса от фабрики"
@@ -1220,6 +1586,15 @@ msgstr ""
 msgid "Email фабрики:"
 msgstr ""
 
+#: templates/orders/order_detail.html:47
+#: templates/orders/upload_invoice_form.html:47
+msgid "Дата отправки:"
+msgstr "Sendungsdatum:"
+
+#: templates/orders/order_detail.html:50
+msgid "Дата получения инвойса:"
+msgstr "Rechnungsempfangsdatum:"
+
 #: templates/orders/order_detail.html:53
 #, fuzzy
 #| msgid "Дата регистрации:"
@@ -1227,7 +1602,6 @@ msgid "Дата завершения:"
 msgstr "Registrierungsdatum:"
 
 #: templates/orders/order_detail.html:60
-#: templates/orders/send_order_confirm.html:45
 msgid "Описание:"
 msgstr ""
 
@@ -1253,7 +1627,7 @@ msgstr "Datei nicht hochgeladen"
 
 #: templates/orders/order_detail.html:105
 #: templates/orders/upload_invoice.html:42
-#: templates/orders/upload_invoice_confirm.html:101
+#: templates/orders/upload_invoice_form.html:79
 msgid "PDF файл инвойса"
 msgstr "PDF-Rechnungsdatei"
 
@@ -1272,6 +1646,7 @@ msgstr "Rechnung nicht erhalten"
 #: templates/orders/upload_invoice.html:14
 #: templates/orders/upload_invoice.html:20
 #: templates/orders/upload_invoice.html:79
+#: templates/orders/upload_invoice_form.html:111
 msgid "Загрузить инвойс"
 msgstr "Rechnung hochladen"
 
@@ -1281,7 +1656,6 @@ msgid "Отправить на фабрику"
 msgstr "An Fabrik senden"
 
 #: templates/orders/order_detail.html:148
-#: templates/orders/send_order_confirm.html:101
 msgid "Заказ загружен"
 msgstr "Bestellung hochgeladen"
 
@@ -1318,11 +1692,10 @@ msgid "Контакты фабрики"
 msgstr ""
 
 #: templates/orders/order_detail.html:201
-#: templates/orders/send_order_confirm.html:68
 msgid "Контактное лицо:"
 msgstr ""
 
-#: templates/orders/order_detail.html:204
+#: templates/orders/order_detail.html:204 templates/orders/profile.html:82
 msgid "Телефон:"
 msgstr ""
 
@@ -1432,72 +1805,67 @@ msgstr ""
 msgid "Создать первый заказ"
 msgstr ""
 
-#: templates/orders/send_order_confirm.html:15
-msgid "Подтверждение отправки"
-msgstr "Versand bestätigen"
-
-#: templates/orders/send_order_confirm.html:22
-msgid "Подтверждение отправки заказа на фабрику"
-msgstr "Bestellung an Fabrik senden bestätigen"
-
-#: templates/orders/send_order_confirm.html:27
-msgid "Что произойдет при отправке?"
-msgstr "Was passiert beim Versand?"
-
-#: templates/orders/send_order_confirm.html:29
-msgid "Заказ будет отправлен на email фабрики"
-msgstr "Die Bestellung wird an die E-Mail der Fabrik gesendet"
-
-#: templates/orders/send_order_confirm.html:30
-msgid "Excel файл будет прикреплен к письму"
-msgstr "Die Excel-Datei wird an die E-Mail angehängt"
-
-#: templates/orders/send_order_confirm.html:31
-msgid "Статус заказа изменится на 'Отправлен'"
-msgstr "Der Bestellstatus ändert sich zu 'Gesendet'"
-
-#: templates/orders/send_order_confirm.html:32
-#: templates/orders/upload_invoice_confirm.html:31
-msgid "Будет создана запись аудита операции"
-msgstr "Ein Audit-Eintrag für die Operation wird erstellt"
-
-#: templates/orders/send_order_confirm.html:33
-msgid "Отправится уведомление о статусе заказа"
-msgstr "Eine Benachrichtigung über den Bestellstatus wird gesendet"
-
-#: templates/orders/send_order_confirm.html:47
+#: templates/orders/profile.html:4
 #, fuzzy
-#| msgid "Дата регистрации:"
-msgid "Дней с загрузки:"
-msgstr "Registrierungsdatum:"
+#| msgid "Имя пользователя"
+msgid "Профиль пользователя"
+msgstr "Benutzername"
 
-#: templates/orders/send_order_confirm.html:59
+#: templates/orders/profile.html:57
 #, fuzzy
-#| msgid "Отправить на фабрику"
-msgid "Информация о фабрике"
-msgstr "An Fabrik senden"
+#| msgid "Имя пользователя"
+msgid "Имя пользователя:"
+msgstr "Benutzername"
 
-#: templates/orders/send_order_confirm.html:77
+#: templates/orders/profile.html:64
 #, fuzzy
-#| msgid "Дата регистрации:"
-msgid "Файлы для отправки"
-msgstr "Registrierungsdatum:"
+#| msgid "Подтверждение пароля"
+msgid "Подтвержден"
+msgstr "Passwort bestätigen"
 
-#: templates/orders/send_order_confirm.html:91
-msgid "Внимание! У заказа нет Excel файла для отправки."
+#: templates/orders/profile.html:66
+#, fuzzy
+#| msgid "К заказам"
+msgid "Не указан"
+msgstr "Zu Bestellungen"
+
+#: templates/orders/profile.html:68
+msgid "Указать"
 msgstr ""
 
-#: templates/orders/send_order_confirm.html:101
-#, fuzzy
-#| msgid "Рекомендуется отправить"
-msgid "дней назад. Рекомендуется отправить его как можно скорее."
-msgstr "Empfohlen zu senden"
+#: templates/orders/profile.html:73
+msgid "Имя:"
+msgstr ""
 
-#: templates/orders/send_order_confirm.html:113
+#: templates/orders/profile.html:76
+msgid "Фамилия:"
+msgstr ""
+
+#: templates/orders/profile.html:85
+msgid "Отдел:"
+msgstr ""
+
+#: templates/orders/profile.html:88
+msgid "Должность:"
+msgstr ""
+
+#: templates/orders/profile.html:91
 #, fuzzy
-#| msgid "Создать заказ"
-msgid "Да, отправить заказ"
-msgstr "Bestellung erstellen"
+#| msgid "Регистрация"
+msgid "Дата регистрации:"
+msgstr "Registrierung"
+
+#: templates/orders/profile.html:115
+#, fuzzy
+#| msgid "Все уведомления"
+msgid "Всего уведомлений"
+msgstr "Alle Benachrichtigungen"
+
+#: templates/orders/profile.html:149
+#, fuzzy
+#| msgid "Дата с"
+msgid "Дата"
+msgstr "Datum von"
 
 #: templates/orders/upload_invoice.html:25
 msgid "Информация о заказе:"
@@ -1539,102 +1907,61 @@ msgstr ""
 msgid "Нажмите 'Загрузить инвойс'"
 msgstr ""
 
+#: templates/orders/upload_invoice.html:101
+msgid "Важно:"
+msgstr "Wichtig:"
+
 #: templates/orders/upload_invoice.html:102
 msgid ""
 "После загрузки инвойса статус заказа изменится на 'Инвойс получен'. Вы "
 "сможете скачать файл в любое время."
 msgstr ""
 
-#: templates/orders/upload_invoice_confirm.html:15
-#: templates/orders/upload_invoice_confirm.html:22
-msgid "Подтверждение загрузки инвойса"
-msgstr "Rechnung hochladen bestätigen"
+#: templates/orders/upload_invoice_form.html:29
+msgid ""
+"Операция загрузки инвойса была подтверждена. Теперь вы можете загрузить PDF "
+"файл инвойса."
+msgstr ""
 
-#: templates/orders/upload_invoice_confirm.html:27
-msgid "Что произойдет при загрузке инвойса?"
-msgstr "Was passiert beim Hochladen der Rechnung?"
-
-#: templates/orders/upload_invoice_confirm.html:29
-msgid "PDF файл инвойса будет прикреплен к заказу"
-msgstr "Die PDF-Rechnungsdatei wird an die Bestellung angehängt"
-
-#: templates/orders/upload_invoice_confirm.html:30
-msgid "Статус заказа изменится на 'Инвойс получен'"
-msgstr "Der Bestellstatus ändert sich zu 'Rechnung erhalten'"
-
-#: templates/orders/upload_invoice_confirm.html:32
-msgid "Отправится уведомление о получении инвойса"
-msgstr "Eine Benachrichtigung über den Rechnungsempfang wird gesendet"
-
-#: templates/orders/upload_invoice_confirm.html:33
-msgid "Заказ станет доступен для завершения"
-msgstr "Die Bestellung wird für den Abschluss verfügbar"
-
-#: templates/orders/upload_invoice_confirm.html:47
+#: templates/orders/upload_invoice_form.html:43
 #, fuzzy
 #| msgid "Все статусы"
 msgid "Текущий статус:"
 msgstr "Alle Status"
 
-#: templates/orders/upload_invoice_confirm.html:52
-#, fuzzy
-#| msgid "Дата регистрации:"
-msgid "Дней с отправки:"
-msgstr "Registrierungsdatum:"
-
-#: templates/orders/upload_invoice_confirm.html:65
-msgid "Текущие файлы"
-msgstr ""
-
-#: templates/orders/upload_invoice_confirm.html:69
-#, fuzzy
-#| msgid "Excel файл заказа"
-msgid "Excel файл:"
-msgstr "Excel-Bestelldatei"
-
-#: templates/orders/upload_invoice_confirm.html:73
-msgid "Отсутствует"
-msgstr ""
-
-#: templates/orders/upload_invoice_confirm.html:78
-#, fuzzy
-#| msgid "Инвойс"
-msgid "PDF инвойс:"
-msgstr "Rechnung"
-
-#: templates/orders/upload_invoice_confirm.html:83
-#, fuzzy
-#| msgid "Ожидается инвойс"
-msgid "Ожидается"
-msgstr "Rechnung erwartet"
-
-#: templates/orders/upload_invoice_confirm.html:96
+#: templates/orders/upload_invoice_form.html:74
 #, fuzzy
 #| msgid "PDF файл инвойса"
 msgid "Выберите файл инвойса"
 msgstr "PDF-Rechnungsdatei"
 
-#: templates/orders/upload_invoice_confirm.html:112
-msgid "Поддерживаемые форматы: PDF. Максимальный размер: 10MB."
+#: templates/orders/upload_invoice_form.html:90
+msgid "Поддерживаемые форматы: PDF. Максимальный размер: 50MB."
 msgstr ""
 
-#: templates/orders/upload_invoice_confirm.html:122
+#: templates/orders/upload_invoice_form.html:99
 #, fuzzy
-#| msgid "Заказ завершен"
-msgid "Заказ отправлен"
-msgstr "Bestellung abgeschlossen"
+#| msgid "После завершения статус заказа изменится на 'Завершен'"
+msgid "После загрузки инвойса статус заказа изменится на 'Инвойс получен'"
+msgstr "Nach dem Abschluss ändert sich der Bestellstatus zu 'Abgeschlossen'"
 
-#: templates/orders/upload_invoice_confirm.html:122
-#, fuzzy
-#| msgid "Уведомления о получении инвойса"
-msgid "дней назад. Ожидается получение инвойса от фабрики."
-msgstr "Benachrichtigungen über Rechnungsempfang"
+#: templates/orders/upload_invoice_form.html:100
+msgid "Будет создана запись аудита операции"
+msgstr "Ein Audit-Eintrag für die Operation wird erstellt"
 
-#: templates/orders/upload_invoice_confirm.html:132
+#: templates/orders/upload_invoice_form.html:101
+msgid "Отправится уведомление о получении инвойса"
+msgstr "Eine Benachrichtigung über den Rechnungsempfang wird gesendet"
+
+#: templates/orders/upload_invoice_form.html:102
+msgid "Заказ станет доступен для завершения"
+msgstr "Die Bestellung wird für den Abschluss verfügbar"
+
+#: templates/orders/upload_invoice_form.html:108
 #, fuzzy
-#| msgid "Загрузить инвойс"
-msgid "Да, загрузить инвойс"
-msgstr "Rechnung hochladen"
+#| msgid "Детали подтверждения"
+msgid "Назад к подтверждению"
+msgstr "Bestätigungsdetails"
 
 #: templates/registration/login.html:4
 msgid "Вход"
@@ -1648,7 +1975,7 @@ msgstr "Anmeldung im System"
 msgid "Имя пользователя"
 msgstr "Benutzername"
 
-#: templates/registration/login.html:36 templates/registration/signup.html:40
+#: templates/registration/login.html:36 templates/registration/signup.html:55
 msgid "Пароль"
 msgstr "Passwort"
 
@@ -1660,7 +1987,7 @@ msgstr "Angemeldet bleiben"
 msgid "Нет аккаунта?"
 msgstr "Noch kein Konto?"
 
-#: templates/registration/login.html:60 templates/registration/signup.html:70
+#: templates/registration/login.html:60 templates/registration/signup.html:85
 msgid "Зарегистрироваться"
 msgstr "Registrieren"
 
@@ -1668,11 +1995,11 @@ msgstr "Registrieren"
 msgid "Забыли пароль?"
 msgstr "Passwort vergessen?"
 
-#: templates/registration/signup.html:55
+#: templates/registration/signup.html:70
 msgid "Подтверждение пароля"
 msgstr "Passwort bestätigen"
 
-#: templates/registration/signup.html:75
+#: templates/registration/signup.html:90
 msgid "Уже есть аккаунт?"
 msgstr "Bereits ein Konto?"
 
@@ -1684,11 +2011,107 @@ msgstr "Russisch"
 msgid "Deutsch"
 msgstr "Deutsch"
 
+#~ msgid "Подтверждение завершения заказа"
+#~ msgstr "Bestellabschluss bestätigen"
+
+#~ msgid "Вы уверены, что хотите завершить этот заказ?"
+#~ msgstr "Sind Sie sicher, dass Sie diese Bestellung abschließen möchten?"
+
+#~ msgid "Завершенные заказы не участвуют в системе напоминаний"
+#~ msgstr "Abgeschlossene Bestellungen nehmen nicht am Erinnerungssystem teil"
+
+#~ msgid "Да, завершить заказ"
+#~ msgstr "Ja, Bestellung abschließen"
+
+#~ msgid "Для начала работы необходимо войти в систему или зарегистрироваться."
+#~ msgstr "Um zu beginnen, müssen Sie sich anmelden oder registrieren."
+
+#~ msgid "Подтверждение отправки"
+#~ msgstr "Versand bestätigen"
+
+#~ msgid "Что произойдет при отправке?"
+#~ msgstr "Was passiert beim Versand?"
+
+#~ msgid "Excel файл будет прикреплен к письму"
+#~ msgstr "Die Excel-Datei wird an die E-Mail angehängt"
+
+#~ msgid "Отправится уведомление о статусе заказа"
+#~ msgstr "Eine Benachrichtigung über den Bestellstatus wird gesendet"
+
+#, fuzzy
+#~| msgid "Дата регистрации:"
+#~ msgid "Дней с загрузки:"
+#~ msgstr "Registrierungsdatum:"
+
+#, fuzzy
+#~| msgid "Отправить на фабрику"
+#~ msgid "Информация о фабрике"
+#~ msgstr "An Fabrik senden"
+
+#, fuzzy
+#~| msgid "Дата регистрации:"
+#~ msgid "Файлы для отправки"
+#~ msgstr "Registrierungsdatum:"
+
+#, fuzzy
+#~| msgid "Рекомендуется отправить"
+#~ msgid "дней назад. Рекомендуется отправить его как можно скорее."
+#~ msgstr "Empfohlen zu senden"
+
+#, fuzzy
+#~| msgid "Создать заказ"
+#~ msgid "Да, отправить заказ"
+#~ msgstr "Bestellung erstellen"
+
+#~ msgid "Подтверждение загрузки инвойса"
+#~ msgstr "Rechnung hochladen bestätigen"
+
+#~ msgid "Что произойдет при загрузке инвойса?"
+#~ msgstr "Was passiert beim Hochladen der Rechnung?"
+
+#~ msgid "PDF файл инвойса будет прикреплен к заказу"
+#~ msgstr "Die PDF-Rechnungsdatei wird an die Bestellung angehängt"
+
+#~ msgid "Статус заказа изменится на 'Инвойс получен'"
+#~ msgstr "Der Bestellstatus ändert sich zu 'Rechnung erhalten'"
+
+#, fuzzy
+#~| msgid "Дата регистрации:"
+#~ msgid "Дней с отправки:"
+#~ msgstr "Registrierungsdatum:"
+
+#, fuzzy
+#~| msgid "Excel файл заказа"
+#~ msgid "Excel файл:"
+#~ msgstr "Excel-Bestelldatei"
+
+#, fuzzy
+#~| msgid "Инвойс"
+#~ msgid "PDF инвойс:"
+#~ msgstr "Rechnung"
+
+#, fuzzy
+#~| msgid "Ожидается инвойс"
+#~ msgid "Ожидается"
+#~ msgstr "Rechnung erwartet"
+
+#, fuzzy
+#~| msgid "Заказ завершен"
+#~ msgid "Заказ отправлен"
+#~ msgstr "Bestellung abgeschlossen"
+
+#, fuzzy
+#~| msgid "Уведомления о получении инвойса"
+#~ msgid "дней назад. Ожидается получение инвойса от фабрики."
+#~ msgstr "Benachrichtigungen über Rechnungsempfang"
+
+#, fuzzy
+#~| msgid "Загрузить инвойс"
+#~ msgid "Да, загрузить инвойс"
+#~ msgstr "Rechnung hochladen"
+
 #~ msgid "Привет"
 #~ msgstr "Hallo"
-
-#~ msgid "Выйти из системы"
-#~ msgstr "Aus dem System abmelden"
 
 #~ msgid "Вы вошли как:"
 #~ msgstr "Angemeldet als:"
