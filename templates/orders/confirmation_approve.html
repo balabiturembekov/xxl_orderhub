@@ -103,6 +103,32 @@
                         </h5>
                     </div>
                     <div class="card-body">
+                        <!-- Специфичная информация для каждого типа операции -->
+                        {% if confirmation.action == 'send_order' %}
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-paper-plane"></i> {% trans "Отправка заказа на фабрику" %}</h6>
+                            <p class="mb-0">
+                                {% trans "При подтверждении заказ будет отправлен на email фабрики" %} 
+                                <strong>{{ confirmation.order.factory.email }}</strong> 
+                                {% trans "с прикрепленным Excel файлом. Статус заказа изменится на 'Отправлен'." %}
+                            </p>
+                        </div>
+                        {% elif confirmation.action == 'upload_invoice' %}
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-file-invoice"></i> {% trans "Загрузка инвойса" %}</h6>
+                            <p class="mb-0">
+                                {% trans "При подтверждении вы сможете загрузить PDF файл инвойса. Статус заказа изменится на 'Инвойс получен'." %}
+                            </p>
+                        </div>
+                        {% elif confirmation.action == 'complete_order' %}
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-check-circle"></i> {% trans "Завершение заказа" %}</h6>
+                            <p class="mb-0">
+                                {% trans "При подтверждении заказ будет помечен как завершенный и больше не будет участвовать в системе напоминаний." %}
+                            </p>
+                        </div>
+                        {% endif %}
+
                         <div class="alert alert-warning">
                             <i class="fas fa-exclamation-triangle"></i>
                             <strong>{% trans "Внимание!" %}</strong>
