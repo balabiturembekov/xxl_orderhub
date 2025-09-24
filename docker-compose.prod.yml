@@ -94,19 +94,34 @@ services:
     build: .
     env_file:
       - docker.env
-    ports:
-      - "5555:5555"
+    # Убираем внешний порт - доступ только через nginx
     depends_on:
       - redis
-    command: celery -A xxl_orderhub flower --port=5555
+    command: celery -A xxl_orderhub flower --port=5555 --broker=redis://redis:6379/0 --basic_auth=admin:admin123
     networks:
       - xxl_orderhub_network
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: xxl_orderhub_nginx
+    ports:
+      - "8280:80"  # 👉 только этот порт наружу (изменен на 8280)
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./media:/app/media:ro  # Только для чтения
+      - static_files:/app/static:ro  # Только для чтения
+    depends_on:
+      - web
+      - flower
+    networks:
+      - xxl_orderhub_network
+
+networks:
+  xxl_orderhub_network:
+    driver: bridge
 
 volumes:
   postgres_data:
   redis_data:
   static_files:
-
-networks:
-  xxl_orderhub_network:
-    driver: bridge
