@@ -1,10 +1,28 @@
 from django.urls import path
 from django.contrib.auth import views as auth_views
-from . import views
+from .views import (
+    # Order views
+    OrderListView, OrderDetailView, create_order, download_file, preview_file, preview_file_modal,
+    # Confirmation views
+    ConfirmationListView, confirmation_detail, send_order, upload_invoice, upload_invoice_form,
+    upload_invoice_execute, complete_order, confirmation_approve, confirmation_reject,
+    # Notification views
+    NotificationListView, mark_notification_read, mark_all_notifications_read,
+    notification_settings, test_notification,
+    # Analytics views
+    AnalyticsDashboardView, analytics_export, analytics_api,
+    # Management views
+    CountryListView, CountryCreateView, CountryUpdateView, country_delete,
+    FactoryListView, FactoryCreateView, FactoryUpdateView, factory_delete,
+    # Auth views
+    SignUpView, HomeView,
+    # API views
+    get_factories, get_countries, create_country_ajax, create_factory_ajax
+)
 
 urlpatterns = [
     # Аутентификация
-    path("accounts/signup/", views.SignUpView.as_view(), name="signup"),
+    path("accounts/signup/", SignUpView.as_view(), name="signup"),
     path("accounts/login/", auth_views.LoginView.as_view(), name="login"),
     path("logout/", auth_views.LogoutView.as_view(next_page='/'), name="logout"),
     path("accounts/password_reset/", auth_views.PasswordResetView.as_view(), name="password_reset"),
@@ -13,67 +31,58 @@ urlpatterns = [
     path("accounts/reset/done/", auth_views.PasswordResetCompleteView.as_view(), name="password_reset_complete"),
     
     # Основные страницы
-    path("", views.HomeView.as_view(), name="home"),
+    path("", HomeView.as_view(), name="home"),
     
     # Заказы
-    path("orders/", views.OrderListView.as_view(), name="order_list"),
-    path("orders/create/", views.create_order, name="create_order"),
-    path("orders/<int:pk>/", views.OrderDetailView.as_view(), name="order_detail"),
-    path("orders/<int:pk>/send/", views.send_order, name="send_order"),
-    path("orders/<int:pk>/send-execute/", views.send_order_execute, name="send_order_execute"),
-    path("orders/<int:pk>/upload-invoice/", views.upload_invoice, name="upload_invoice"),
-    path("orders/<int:pk>/upload-invoice-form/", views.upload_invoice_form, name="upload_invoice_form"),
-    path("orders/<int:pk>/upload-invoice-execute/", views.upload_invoice_execute, name="upload_invoice_execute"),
-    path("orders/<int:pk>/complete/", views.complete_order, name="complete_order"),
-    path("orders/<int:pk>/download/<str:file_type>/", views.download_file, name="download_file"),
+    path("orders/", OrderListView.as_view(), name="order_list"),
+    path("orders/create/", create_order, name="create_order"),
+    path("orders/<int:pk>/", OrderDetailView.as_view(), name="order_detail"),
+    path("orders/<int:pk>/send/", send_order, name="send_order"),
+    path("orders/<int:pk>/upload-invoice/", upload_invoice, name="upload_invoice"),
+    path("orders/<int:pk>/upload-invoice-form/", upload_invoice_form, name="upload_invoice_form"),
+    path("orders/<int:pk>/upload-invoice-execute/", upload_invoice_execute, name="upload_invoice_execute"),
+    path("orders/<int:pk>/complete/", complete_order, name="complete_order"),
+    path("orders/<int:pk>/download/<str:file_type>/", download_file, name="download_file"),
     
     # AJAX endpoints
-    path("api/factories/", views.get_factories, name="get_factories"),
+    path("api/factories/", get_factories, name="get_factories"),
     
     # Уведомления
-    path("notifications/", views.notification_list, name="notification_list"),
-    path("notifications/<int:pk>/read/", views.mark_notification_read, name="mark_notification_read"),
-    path("notifications/mark-all-read/", views.mark_all_notifications_read, name="mark_all_notifications_read"),
-    path("notifications/settings/", views.notification_settings, name="notification_settings"),
+    path("notifications/", NotificationListView.as_view(), name="notification_list"),
+    path("notifications/<int:pk>/read/", mark_notification_read, name="mark_notification_read"),
+    path("notifications/mark-all-read/", mark_all_notifications_read, name="mark_all_notifications_read"),
+    path("notifications/settings/", notification_settings, name="notification_settings"),
+    path("notifications/test/", test_notification, name="test_notification"),
     
     # Аналитика
-    path("analytics/", views.AnalyticsDashboardView.as_view(), name="analytics_dashboard"),
+    path("analytics/", AnalyticsDashboardView.as_view(), name="analytics_dashboard"),
+    path("analytics/export/", analytics_export, name="analytics_export"),
+    path("api/analytics/", analytics_api, name="analytics_api"),
     
     # Подтверждения
-    path("confirmations/", views.confirmation_list, name="confirmation_list"),
-    path("confirmations/<int:pk>/", views.confirmation_detail, name="confirmation_detail"),
-    path("confirmations/<int:pk>/approve/", views.confirmation_approve, name="confirmation_approve"),
-    path("confirmations/<int:pk>/reject/", views.confirmation_reject, name="confirmation_reject"),
-    path("analytics/export/", views.analytics_export, name="analytics_export"),
-    path("api/analytics/", views.analytics_api, name="analytics_api"),
-    
-    # Утилиты
-    path("clear-messages/", views.clear_messages, name="clear_messages"),
+    path("confirmations/", ConfirmationListView.as_view(), name="confirmation_list"),
+    path("confirmations/<int:pk>/", confirmation_detail, name="confirmation_detail"),
+    path("confirmations/<int:pk>/approve/", confirmation_approve, name="confirmation_approve"),
+    path("confirmations/<int:pk>/reject/", confirmation_reject, name="confirmation_reject"),
     
     # Управление странами
-    path("countries/", views.CountryListView.as_view(), name="country_list"),
-    path("countries/create/", views.CountryCreateView.as_view(), name="country_create"),
-    path("countries/<int:pk>/edit/", views.CountryUpdateView.as_view(), name="country_edit"),
-    path("countries/<int:pk>/delete/", views.country_delete, name="country_delete"),
+    path("countries/", CountryListView.as_view(), name="country_list"),
+    path("countries/create/", CountryCreateView.as_view(), name="country_create"),
+    path("countries/<int:pk>/edit/", CountryUpdateView.as_view(), name="country_edit"),
+    path("countries/<int:pk>/delete/", country_delete, name="country_delete"),
     
     # Управление фабриками
-    path("factories/", views.FactoryListView.as_view(), name="factory_list"),
-    path("factories/create/", views.FactoryCreateView.as_view(), name="factory_create"),
-    path("factories/<int:pk>/edit/", views.FactoryUpdateView.as_view(), name="factory_edit"),
-    path("factories/<int:pk>/delete/", views.factory_delete, name="factory_delete"),
+    path("factories/", FactoryListView.as_view(), name="factory_list"),
+    path("factories/create/", FactoryCreateView.as_view(), name="factory_create"),
+    path("factories/<int:pk>/edit/", FactoryUpdateView.as_view(), name="factory_edit"),
+    path("factories/<int:pk>/delete/", factory_delete, name="factory_delete"),
     
     # AJAX endpoints для управления
-    path("api/countries/", views.get_countries, name="get_countries"),
-    path("api/countries/create/", views.create_country_ajax, name="create_country_ajax"),
-    path("api/factories/create/", views.create_factory_ajax, name="create_factory_ajax"),
+    path("api/countries/", get_countries, name="get_countries"),
+    path("api/countries/create/", create_country_ajax, name="create_country_ajax"),
+    path("api/factories/create/", create_factory_ajax, name="create_factory_ajax"),
     
     # Предварительный просмотр файлов
-    path("orders/<int:pk>/preview/<str:file_type>/", views.preview_file, name="preview_file"),
-    path("orders/<int:pk>/preview-modal/<str:file_type>/", views.preview_file_modal, name="preview_file_modal"),
-    
-    # Тестирование уведомлений
-    path("notifications/test/", views.test_notification, name="test_notification"),
-    
-    # Завершение заказа
-    path("orders/<int:pk>/complete/", views.complete_order, name="complete_order"),
+    path("orders/<int:pk>/preview/<str:file_type>/", preview_file, name="preview_file"),
+    path("orders/<int:pk>/preview-modal/<str:file_type>/", preview_file_modal, name="preview_file_modal"),
 ]
