@@ -412,6 +412,8 @@ class InvoicePaymentForm(forms.ModelForm):
         
         # Проверка, что сумма не превышает остаток по инвойсу
         if self.invoice and amount:
+            # Обновляем remaining_amount перед проверкой
+            self.invoice.refresh_from_db()
             remaining = self.invoice.remaining_amount
             if amount > remaining:
                 raise forms.ValidationError(
@@ -467,6 +469,14 @@ class InvoiceWithPaymentForm(forms.Form):
         widget=forms.DateInput(attrs={
             'class': 'form-control',
             'type': 'date'
+        })
+    )
+    invoice_file = forms.FileField(
+        label="PDF файл инвойса",
+        help_text="PDF файл инвойса от фабрики",
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': '.pdf'
         })
     )
     invoice_notes = forms.CharField(
@@ -535,6 +545,19 @@ class InvoiceWithPaymentForm(forms.Form):
         if balance is not None and balance <= 0:
             raise forms.ValidationError("Сумма инвойса должна быть больше нуля.")
         return balance
+    
+    def clean_invoice_file(self):
+        """Валидация файла инвойса"""
+        invoice_file = self.cleaned_data.get('invoice_file')
+        if invoice_file:
+            # Проверка расширения файла
+            if not invoice_file.name.lower().endswith('.pdf'):
+                raise forms.ValidationError("Файл инвойса должен быть в формате PDF.")
+            
+            # Проверка размера файла (максимум 50MB)
+            if invoice_file.size > 50 * 1024 * 1024:
+                raise forms.ValidationError("Размер файла инвойса не должен превышать 50MB.")
+        return invoice_file
     
     def clean_payment_amount(self):
         """Валидация суммы платежа"""

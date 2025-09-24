@@ -620,8 +620,8 @@ class Invoice(models.Model):
         else:
             self.status = 'partial'
             
-        # Проверка просрочки
-        if self.due_date and timezone.now().date() > self.due_date and self.status != 'paid':
+        # Проверка просрочки (только если статус не 'paid')
+        if self.status != 'paid' and self.due_date and timezone.now().date() > self.due_date:
             self.status = 'overdue'
             
         super().save(*args, **kwargs)
@@ -714,12 +714,7 @@ class InvoicePayment(models.Model):
         super().save(*args, **kwargs)
         
         # Пересчет общей суммы оплаты
-        total_paid = self.invoice.payments.aggregate(
-            total=models.Sum('amount')
-        )['total'] or 0
-        
-        self.invoice.total_paid = total_paid
-        self.invoice.save()
+        self._update_invoice_total()
     
     def delete(self, *args, **kwargs):
         """Обновление общей суммы оплаты при удалении платежа"""
@@ -727,9 +722,17 @@ class InvoicePayment(models.Model):
         super().delete(*args, **kwargs)
         
         # Пересчет общей суммы оплаты
+        self._update_invoice_total_for_invoice(invoice)
+    
+    def _update_invoice_total(self):
+        """Обновление общей суммы оплаты для текущего инвойса"""
+        self._update_invoice_total_for_invoice(self.invoice)
+    
+    def _update_invoice_total_for_invoice(self, invoice):
+        """Обновление общей суммы оплаты для указанного инвойса"""
         total_paid = invoice.payments.aggregate(
             total=models.Sum('amount')
         )['total'] or 0
         
         invoice.total_paid = total_paid
-        invoice.save()
+        invoice.save(update_fields=['total_paid', 'remaining_amount', 'status'])
