@@ -178,6 +178,11 @@ def send_order_notification(order_id, notification_type):
                 return "Уведомления о получении инвойсов отключены"
             title = f"Инвойс получен для заказа '{order.title}'"
             message = f"Инвойс для заказа '{order.title}' от фабрики '{order.factory.name}' успешно получен и прикреплен к заказу."
+        elif notification_type == 'payment_received':
+            if not settings_obj.notify_invoice_received:
+                return "Уведомления о получении инвойсов отключены"
+            title = f"Платеж получен для заказа '{order.title}'"
+            message = f"Новый платеж для заказа '{order.title}' от фабрики '{order.factory.name}' успешно добавлен."
         elif notification_type == 'order_completed':
             title = f"Заказ '{order.title}' завершен"
             message = f"Заказ '{order.title}' от фабрики '{order.factory.name}' успешно завершен."
@@ -263,6 +268,23 @@ def create_default_notification_templates():
             Здравствуйте, {{ user.first_name|default:user.username }}!
             
             Инвойс для заказа "{{ order.title }}" от фабрики "{{ order.factory.name }}" успешно получен и прикреплен к заказу.
+            '''
+        },
+        {
+            'template_type': 'payment_received',
+            'subject': 'Платеж получен',
+            'html_template': '''
+            <h2>Платеж получен</h2>
+            <p>Здравствуйте, {{ user.first_name|default:user.username }}!</p>
+            <p>Новый платеж для заказа <strong>{{ order.title }}</strong> от фабрики <strong>{{ order.factory.name }}</strong> успешно добавлен.</p>
+            <p><a href="{{ order.get_absolute_url }}">Перейти к заказу</a></p>
+            ''',
+            'text_template': '''
+            Платеж получен
+            
+            Здравствуйте, {{ user.first_name|default:user.username }}!
+            
+            Новый платеж для заказа "{{ order.title }}" от фабрики "{{ order.factory.name }}" успешно добавлен.
             '''
         }
     ]
