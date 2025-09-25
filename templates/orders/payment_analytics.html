@@ -3,6 +3,14 @@
 
 {% block title %}{% trans "Аналитика платежей" %}{% endblock %}
 
+{% block extra_css %}
+<style>
+    .payment-progress-bar {
+        transition: width 0.3s ease;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
     <div class="row">
@@ -66,10 +74,10 @@
                         <div class="card-body">
                             <div class="text-center mb-3">
                                 <div class="progress" style="height: 30px;">
-                                    <div class="progress-bar bg-success" 
+                                    <div class="progress-bar bg-success payment-progress-bar" 
                                          role="progressbar" 
-                                         style="width: {{ payment_progress }}%"
-                                         aria-valuenow="{{ payment_progress }}" 
+                                         data-progress="{{ payment_progress|default:0 }}"
+                                         aria-valuenow="{{ payment_progress|default:0 }}" 
                                          aria-valuemin="0" 
                                          aria-valuemax="100">
                                         {{ payment_progress|floatformat:1 }}%
@@ -259,4 +267,16 @@
         </div>
     </div>
 </div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const progressBar = document.querySelector('.payment-progress-bar');
+    if (progressBar) {
+        const progressValue = parseFloat(progressBar.getAttribute('data-progress')) || 0;
+        progressBar.style.width = progressValue + '%';
+    }
+});
+</script>
+{% endblock %}
 {% endblock %}

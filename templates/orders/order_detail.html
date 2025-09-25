@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load i18n %}
 {% load file_utils %}
+{% load time_utils %}
 
 {% block title %}{{ order.title }} - XXL OrderHub{% endblock %}
 
@@ -43,15 +44,15 @@
                             </div>
                             <div class="col-md-6">
                                 <p><strong>{% trans "Статус:" %}</strong> {{ order.get_status_display }}</p>
-                                <p><strong>{% trans "Дата загрузки:" %}</strong> {{ order.uploaded_at|date:"d.m.Y H:i" }}</p>
+                                <p><strong>{% trans "Дата загрузки:" %}</strong> {{ order.uploaded_at|european_datetime_full }}</p>
                                 {% if order.sent_at %}
-                                <p><strong>{% trans "Дата отправки:" %}</strong> {{ order.sent_at|date:"d.m.Y H:i" }}</p>
+                                <p><strong>{% trans "Дата отправки:" %}</strong> {{ order.sent_at|european_datetime_full }}</p>
                                 {% endif %}
                                 {% if order.invoice_received_at %}
-                                <p><strong>{% trans "Дата получения инвойса:" %}</strong> {{ order.invoice_received_at|date:"d.m.Y H:i" }}</p>
+                                <p><strong>{% trans "Дата получения инвойса:" %}</strong> {{ order.invoice_received_at|european_datetime_full }}</p>
                                 {% endif %}
                                 {% if order.completed_at %}
-                                <p><strong>{% trans "Дата завершения:" %}</strong> {{ order.completed_at|date:"d.m.Y H:i" }}</p>
+                                <p><strong>{% trans "Дата завершения:" %}</strong> {{ order.completed_at|european_datetime_full }}</p>
                                 {% endif %}
                             </div>
                         </div>

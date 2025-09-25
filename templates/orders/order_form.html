@@ -35,6 +35,9 @@
                                     {% trans "Название заказа" %} <span class="text-danger">*</span>
                                 </label>
                                 {{ form.title }}
+                                {% if form.title.help_text %}
+                                    <div class="form-text">{{ form.title.help_text }}</div>
+                                {% endif %}
                                 {% if form.title.errors %}
                                     <div class="text-danger">
                                         {% for error in form.title.errors %}
@@ -53,6 +56,9 @@
                                     {% trans "Описание заказа" %}
                                 </label>
                                 {{ form.description }}
+                                {% if form.description.help_text %}
+                                    <div class="form-text">{{ form.description.help_text }}</div>
+                                {% endif %}
                                 {% if form.description.errors %}
                                     <div class="text-danger">
                                         {% for error in form.description.errors %}
@@ -84,7 +90,7 @@
                                     </div>
                                 {% endif %}
                                 <div class="form-text">
-                                    {% trans "Выберите фабрику, на которую будет отправлен заказ" %}
+                                    {% trans "Выберите фабрику-исполнителя заказа. Excel файл будет отправлен на email выбранной фабрики." %}
                                     <a href="{% url 'factory_list' %}" target="_blank" class="ms-2">
                                         <i class="bi bi-gear"></i> {% trans "Управление фабриками" %}
                                     </a>
@@ -108,7 +114,7 @@
                                     </div>
                                 {% endif %}
                                 <div class="form-text">
-                                    {% trans "Загрузите Excel файл с деталями заказа (.xlsx или .xls)" %}
+                                    {% trans "Загрузите Excel файл с деталями заказа (.xlsx или .xls). Файл должен содержать спецификацию товаров, количество, цены и другие детали заказа." %}
                                 </div>
                             </div>
                         </div>
@@ -118,7 +124,7 @@
                         <div class="col-md-12">
                             <div class="mb-3">
                                 <label for="{{ form.comments.id_for_label }}" class="form-label">
-                                    {% trans "Комментарии" %}
+                                    {% trans "Дополнительная информация" %}
                                 </label>
                                 {{ form.comments }}
                                 {% if form.comments.errors %}
@@ -129,7 +135,7 @@
                                     </div>
                                 {% endif %}
                                 <div class="form-text">
-                                    {% trans "Дополнительная информация о заказе (необязательно)" %}
+                                    {% trans "Дополнительные комментарии, заметки, особые требования к заказу. Это поле необязательно для заполнения." %}
                                 </div>
                             </div>
                         </div>
