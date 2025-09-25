@@ -611,15 +611,26 @@ class Invoice(models.Model):
     
     def save(self, *args, **kwargs):
         """Автоматический расчет остатка при сохранении"""
-        self.remaining_amount = self.balance - self.total_paid
+        from decimal import Decimal
+        self.remaining_amount = Decimal(str(self.balance)) - self.total_paid
         
-        # Обновление статуса
+        # Обновление статуса на основе типа последнего платежа
         if self.total_paid == 0:
             self.status = 'pending'
-        elif self.total_paid >= self.balance:
+        elif self.total_paid >= Decimal(str(self.balance)):
             self.status = 'paid'
         else:
-            self.status = 'partial'
+            # Определяем статус на основе типа последнего платежа
+            last_payment = self.payments.order_by('-created_at').first()
+            if last_payment:
+                if last_payment.payment_type == 'deposit':
+                    self.status = 'pending'  # Депозит - ожидает доплаты
+                elif last_payment.payment_type == 'final_payment':
+                    self.status = 'paid'  # Финальный платеж - полностью оплачен
+                else:
+                    self.status = 'partial'  # Частичный платеж
+            else:
+                self.status = 'partial'
             
         # Проверка просрочки (только если статус не 'paid')
         if self.status != 'paid' and self.due_date and timezone.now().date() > self.due_date:

@@ -208,11 +208,56 @@ def upload_invoice_form(request, pk: int):
     
     # Используем новую форму для создания инвойса с платежом
     from ..forms import InvoiceWithPaymentForm
-    form = InvoiceWithPaymentForm()
+    
+    # Проверяем, есть ли уже инвойс у заказа
+    initial_data = {}
+    if hasattr(order, 'invoice'):
+        invoice = order.invoice
+        initial_data = {
+            'invoice_number': invoice.invoice_number,
+            'balance': invoice.balance,
+            'due_date': invoice.due_date,
+            'invoice_notes': invoice.notes,
+            'payment_date': timezone.now().date(),
+            'payment_type': 'partial_payment',
+        }
+        
+        # Если есть платежи, предзаполняем сумму остатка
+        if invoice.payments.exists():
+            initial_data['payment_amount'] = invoice.remaining_amount
+    
+    form = InvoiceWithPaymentForm(initial=initial_data)
+    
+    # Добавляем информацию о существующем файле инвойса
+    invoice_file_info = None
+    has_existing_file = False
+    if hasattr(order, 'invoice') and order.invoice_file:
+        has_existing_file = True
+        invoice_file_info = {
+            'name': order.invoice_file.name.split('/')[-1],  # Только имя файла
+            'size': order.invoice_file.size,
+            'url': order.invoice_file.url if hasattr(order.invoice_file, 'url') else None
+        }
+        
+        # Делаем поле файла необязательным, если файл уже есть
+        form.fields['invoice_file'].required = False
+        
+        # Делаем поля инвойса неактивными, если инвойс уже создан
+        form.fields['invoice_number'].widget.attrs['readonly'] = True
+        form.fields['invoice_number'].widget.attrs['class'] = 'form-control-plaintext'
+        form.fields['balance'].widget.attrs['readonly'] = True
+        form.fields['balance'].widget.attrs['class'] = 'form-control-plaintext'
+        form.fields['due_date'].widget.attrs['readonly'] = True
+        form.fields['due_date'].widget.attrs['class'] = 'form-control-plaintext'
+        form.fields['invoice_notes'].widget.attrs['readonly'] = True
+        form.fields['invoice_notes'].widget.attrs['class'] = 'form-control-plaintext'
+    
     return render(request, 'orders/upload_invoice_form.html', {
         'form': form,
         'order': order,
-        'confirmation': active_confirmation
+        'confirmation': active_confirmation,
+        'invoice_file_info': invoice_file_info,
+        'has_existing_file': has_existing_file
     })
 
 
@@ -249,43 +294,149 @@ def upload_invoice_execute(request, pk: int):
     if request.method != 'POST':
         return redirect('upload_invoice_form', pk=pk)
     
-    form = InvoiceUploadForm(request.POST, request.FILES)
+    from ..forms import InvoiceWithPaymentForm
+    
+    # Проверяем, существует ли уже инвойс
+    existing_invoice = getattr(order, 'invoice', None)
+    
+    # Если инвойс уже существует, делаем поля инвойса необязательными
+    if existing_invoice:
+        form = InvoiceWithPaymentForm(request.POST, request.FILES)
+        # Делаем поля инвойса необязательными
+        form.fields['invoice_number'].required = False
+        form.fields['balance'].required = False
+        form.fields['due_date'].required = False
+        form.fields['invoice_notes'].required = False
+        form.fields['invoice_file'].required = False
+    else:
+        form = InvoiceWithPaymentForm(request.POST, request.FILES)
+    
     if form.is_valid():
         try:
-            invoice_file = form.cleaned_data['invoice_file']
+            from django.db import transaction
+            from ..models import Invoice, InvoicePayment
+            
             old_status = order.status
             
-            # Update confirmation data
-            active_confirmation.confirmation_data.update({
-                'invoice_file_name': invoice_file.name,
-                'invoice_file_size': invoice_file.size,
-            })
-            active_confirmation.save()
-            
-            # Update order status
-            order.mark_invoice_received(invoice_file)
-            
-            # Confirm operation
-            active_confirmation.confirm(request.user, f"Инвойс {invoice_file.name} успешно загружен")
-            
-            # Create audit log
-            OrderAuditLog.objects.create(
-                order=order,
-                action='file_uploaded',
-                user=request.user,
-                old_value=old_status,
-                new_value='invoice_received',
-                field_name='status',
-                comments=f'Загружен инвойс: {invoice_file.name}'
-            )
-            
-            # Send notification
-            try:
-                send_order_notification.delay(order.id, 'invoice_received')
-            except Exception as e:
-                print(f"Ошибка отправки уведомления: {e}")
-            
-            messages.success(request, f'Инвойс "{invoice_file.name}" успешно загружен!')
+            with transaction.atomic():
+                if existing_invoice:
+                    # Инвойс уже существует - только добавляем платеж
+                    payment = InvoicePayment.objects.create(
+                        invoice=existing_invoice,
+                        amount=form.cleaned_data['payment_amount'],
+                        payment_date=form.cleaned_data['payment_date'],
+                        payment_type=form.cleaned_data['payment_type'],
+                        payment_receipt=form.cleaned_data.get('payment_receipt'),
+                        notes=form.cleaned_data.get('payment_notes', ''),
+                        created_by=request.user
+                    )
+                    
+                    # Обновляем файл инвойса, если новый файл загружен
+                    if 'invoice_file' in form.cleaned_data and form.cleaned_data['invoice_file']:
+                        invoice_file = form.cleaned_data['invoice_file']
+                        order.invoice_file = invoice_file
+                        order.save()
+                        
+                        # Update confirmation data
+                        active_confirmation.confirmation_data.update({
+                            'invoice_file_name': invoice_file.name,
+                            'invoice_file_size': invoice_file.size,
+                        })
+                        active_confirmation.save()
+                        
+                        # Confirm operation
+                        active_confirmation.confirm(request.user, f"Дополнительный платеж добавлен и файл инвойса обновлен: {invoice_file.name}")
+                    else:
+                        # Confirm operation
+                        active_confirmation.confirm(request.user, f"Дополнительный платеж добавлен")
+                    
+                    # Update confirmation data для дополнительного платежа
+                    active_confirmation.confirmation_data.update({
+                        'payment_amount': str(payment.amount),
+                        'payment_type': payment.payment_type,
+                    })
+                    active_confirmation.save()
+                    
+                    # Create audit log для дополнительного платежа
+                    OrderAuditLog.objects.create(
+                        order=order,
+                        action='payment_added',
+                        user=request.user,
+                        old_value=old_status,
+                        new_value=order.status,
+                        field_name='payments',
+                        comments=f'Добавлен платеж: {payment.amount} ({payment.payment_type})'
+                    )
+                        
+                else:
+                    # Создаем новый инвойс
+                    invoice = Invoice.objects.create(
+                        order=order,
+                        invoice_number=form.cleaned_data['invoice_number'],
+                        balance=form.cleaned_data['balance'],
+                        due_date=form.cleaned_data.get('due_date'),
+                        notes=form.cleaned_data.get('invoice_notes', '')
+                    )
+                    
+                    # Создаем первый платеж
+                    payment = InvoicePayment.objects.create(
+                        invoice=invoice,
+                        amount=form.cleaned_data['payment_amount'],
+                        payment_date=form.cleaned_data['payment_date'],
+                        payment_type=form.cleaned_data['payment_type'],
+                        payment_receipt=form.cleaned_data.get('payment_receipt'),
+                        notes=form.cleaned_data.get('payment_notes', ''),
+                        created_by=request.user
+                    )
+                    
+                    # Сохраняем файл инвойса в заказ
+                    invoice_file = form.cleaned_data['invoice_file']
+                    order.invoice_file = invoice_file
+                    
+                    # Обновляем статус заказа для нового инвойса
+                    order.status = 'invoice_received'
+                    order.invoice_received_at = timezone.now()
+                    order.save()
+                    
+                    # Update confirmation data для нового инвойса
+                    active_confirmation.confirmation_data.update({
+                        'invoice_file_name': invoice_file.name,
+                        'invoice_file_size': invoice_file.size,
+                        'invoice_number': invoice.invoice_number,
+                        'balance': str(invoice.balance),
+                        'payment_amount': str(payment.amount),
+                        'payment_type': payment.payment_type,
+                    })
+                    active_confirmation.save()
+                    
+                    # Confirm operation для нового инвойса
+                    active_confirmation.confirm(request.user, f"Инвойс {invoice_file.name} успешно загружен")
+                    
+                    # Create audit log для нового инвойса
+                    OrderAuditLog.objects.create(
+                        order=order,
+                        action='file_uploaded',
+                        user=request.user,
+                        old_value=old_status,
+                        new_value='invoice_received',
+                        field_name='status',
+                        comments=f'Загружен инвойс: {invoice_file.name}'
+                    )
+                
+                # Send notification
+                try:
+                    if not existing_invoice:
+                        send_order_notification.delay(order.id, 'invoice_received')
+                    else:
+                        send_order_notification.delay(order.id, 'payment_received')
+                except Exception as e:
+                    print(f"Ошибка отправки уведомления: {e}")
+                
+                # Сообщение об успехе в зависимости от действия
+                if not existing_invoice:
+                    messages.success(request, f'Инвойс "{invoice_file.name}" успешно загружен!')
+                else:
+                    messages.success(request, f'Дополнительный платеж успешно добавлен!')
             
         except Exception as e:
             messages.error(request, f'Ошибка при загрузке инвойса: {str(e)}')

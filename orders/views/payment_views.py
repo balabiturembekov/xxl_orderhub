@@ -215,13 +215,34 @@ class PaymentCreateView(CreateView):
     
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['invoice'] = self.get_invoice()
+        invoice = self.get_invoice()
+        kwargs['invoice'] = invoice
+        
+        # Предзаполняем форму данными из инвойса
+        if not self.request.POST:
+            kwargs['initial'] = {
+                'payment_date': timezone.now().date(),
+                'payment_type': 'partial_payment',  # По умолчанию частичный платеж
+                'amount': invoice.remaining_amount,  # Предзаполняем остаток к доплате
+            }
+        
         return kwargs
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['invoice'] = self.get_invoice()
+        invoice = self.get_invoice()
+        context['invoice'] = invoice
         context['title'] = _('Добавить платеж')
+        
+        # Добавляем информацию об инвойсе для отображения
+        context['invoice_info'] = {
+            'invoice_number': invoice.invoice_number,
+            'balance': invoice.balance,
+            'total_paid': invoice.total_paid,
+            'remaining_amount': invoice.remaining_amount,
+            'status': invoice.get_status_display(),
+        }
+        
         return context
     
     def form_valid(self, form):
@@ -273,7 +294,19 @@ class PaymentUpdateView(UpdateView):
     
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['invoice'] = self.get_object().invoice
+        payment = self.get_object()
+        invoice = payment.invoice
+        kwargs['invoice'] = invoice
+        
+        # Предзаполняем форму данными из существующего платежа
+        if not self.request.POST:
+            kwargs['initial'] = {
+                'amount': payment.amount,
+                'payment_date': payment.payment_date,
+                'payment_type': payment.payment_type,
+                'notes': payment.notes,
+            }
+        
         return kwargs
     
     def get_context_data(self, **kwargs):

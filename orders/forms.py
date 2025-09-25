@@ -585,6 +585,13 @@ class InvoiceWithPaymentForm(forms.Form):
         super().__init__(*args, **kwargs)
         # Устанавливаем текущую дату по умолчанию
         self.fields['payment_date'].initial = timezone.now().date()
+        
+        # Если переданы initial данные, устанавливаем их
+        if 'initial' in kwargs:
+            initial_data = kwargs['initial']
+            for field_name, value in initial_data.items():
+                if field_name in self.fields and value is not None:
+                    self.fields[field_name].initial = value
     
     def clean_balance(self):
         """Валидация суммы инвойса"""
