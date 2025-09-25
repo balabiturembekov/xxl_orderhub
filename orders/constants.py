@@ -106,11 +106,11 @@ class FileConstants:
     IMAGE_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif']
 
 # ============================================================================
-# КОНСТАНТЫ ДЛЯ УВЕДОМЛЕНИЙ
+# КОНСТАНТЫ ДЛЯ ВРЕМЕНИ
 # ============================================================================
 
-class NotificationConstants:
-    """Константы для системы уведомлений"""
+class TimeConstants:
+    """Константы для работы с временем"""
     
     # Частота напоминаний (в днях)
     DEFAULT_REMINDER_FREQUENCY = 7
@@ -127,6 +127,17 @@ class NotificationConstants:
     
     # Время для статистики (в днях)
     STATS_DAYS = 3
+    
+    # Время хранения данных (в днях)
+    METRICS_RETENTION_DAYS = 30
+    LOG_RETENTION_DAYS = 7
+
+# ============================================================================
+# КОНСТАНТЫ ДЛЯ УВЕДОМЛЕНИЙ
+# ============================================================================
+
+class NotificationConstants:
+    """Константы для системы уведомлений"""
     
     # Типы уведомлений
     NOTIFICATION_TYPE_ORDER_UPLOADED = 'order_uploaded'
@@ -377,7 +388,6 @@ class MonitoringConstants:
     
     # Метрики
     METRICS_COLLECTION_INTERVAL = 60  # секунды
-    METRICS_RETENTION_DAYS = 30
     
     # Алерты
     HIGH_CPU_THRESHOLD = 80  # процентов
@@ -386,7 +396,6 @@ class MonitoringConstants:
     
     # Логи
     LOG_ROTATION_SIZE = 10 * 1024 * 1024  # 10MB
-    LOG_RETENTION_DAYS = 7
 
 # ============================================================================
 # КОНСТАНТЫ ДЛЯ РАЗВЕРТЫВАНИЯ
