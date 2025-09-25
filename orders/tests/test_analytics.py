@@ -131,8 +131,7 @@ class AnalyticsTestCase(TestCase):
         
         response = client.get(reverse('analytics_export'), {'type': 'overview'})
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response['Content-Type'], 
-                        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        self.assertEqual(response['Content-Type'], 'text/csv')
     
     def test_analytics_api_view(self):
         """Тест API аналитики"""
@@ -143,8 +142,9 @@ class AnalyticsTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         
         data = response.json()
-        self.assertIn('overview', data)
-        self.assertIn('kpi_metrics', data)
+        self.assertIn('orders_by_status', data)
+        self.assertIn('orders_by_factory', data)
+        self.assertIn('performance_metrics', data)
     
     def test_get_analytics_data_function(self):
         """Тест функции get_analytics_data"""
