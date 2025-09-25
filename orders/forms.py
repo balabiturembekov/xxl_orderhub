@@ -473,9 +473,9 @@ class InvoicePaymentForm(forms.ModelForm):
         """Валидация файла чека оплаты"""
         receipt = self.cleaned_data.get('payment_receipt')
         if receipt:
-            # Проверка размера файла (максимум 2GB)
+            # Проверка размера файла (максимум 100MB)
             if receipt.size > FileConstants.MAX_IMAGE_SIZE:
-                raise forms.ValidationError("Размер файла не должен превышать 2GB.")
+                raise forms.ValidationError("Размер файла не должен превышать 100MB.")
         return receipt
 
 
@@ -608,9 +608,9 @@ class InvoiceWithPaymentForm(forms.Form):
             if not invoice_file.name.lower().endswith('.pdf'):
                 raise forms.ValidationError("Файл инвойса должен быть в формате PDF.")
             
-            # Проверка размера файла (максимум 2GB)
+            # Проверка размера файла (максимум 500MB)
             if invoice_file.size > FileConstants.MAX_PDF_SIZE:
-                raise forms.ValidationError("Размер файла инвойса не должен превышать 2GB.")
+                raise forms.ValidationError("Размер файла инвойса не должен превышать 500MB.")
         return invoice_file
     
     def clean_payment_amount(self):
@@ -632,7 +632,7 @@ class InvoiceWithPaymentForm(forms.Form):
         """Валидация файла чека оплаты"""
         receipt = self.cleaned_data.get('payment_receipt')
         if receipt:
-            # Проверка размера файла (максимум 2GB)
+            # Проверка размера файла (максимум 100MB)
             if receipt.size > FileConstants.MAX_IMAGE_SIZE:
-                raise forms.ValidationError("Размер файла не должен превышать 2GB.")
+                raise forms.ValidationError("Размер файла не должен превышать 100MB.")
         return receipt

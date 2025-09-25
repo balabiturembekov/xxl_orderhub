@@ -55,11 +55,11 @@ def validate_file_type(file):
 
 def validate_file_size(file):
     """Валидация размера файла"""
-    max_size = FileConstants.MAX_EXCEL_SIZE  # 2GB
+    max_size = FileConstants.MAX_EXCEL_SIZE  # 500MB
     
     if file.size > max_size:
         raise ValidationError(
-            _('Файл слишком большой. Максимальный размер: 2GB.'),
+            _('Файл слишком большой. Максимальный размер: 500MB.'),
             code='file_too_large'
         )
 
