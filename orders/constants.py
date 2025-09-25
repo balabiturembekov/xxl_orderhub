@@ -119,6 +119,14 @@ class NotificationConstants:
     
     # Время жизни подтверждений (в часах)
     CONFIRMATION_EXPIRATION_HOURS = 24
+    CONFIRMATION_EXPIRATION_HOURS_INVOICE = 48  # 2 дня для инвойса
+    CONFIRMATION_EXPIRATION_HOURS_SEND = 72    # 3 дня для отправки
+    
+    # Минимальное время для напоминаний (в днях)
+    MIN_REMINDER_DAYS = 1
+    
+    # Время для статистики (в днях)
+    STATS_DAYS = 3
     
     # Типы уведомлений
     NOTIFICATION_TYPE_ORDER_UPLOADED = 'order_uploaded'

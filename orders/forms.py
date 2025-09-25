@@ -3,6 +3,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.utils import timezone
 from .models import UserProfile, Order, Factory, NotificationSettings, Notification, Country, Invoice, InvoicePayment
+from .constants import FileConstants
 
 
 class CustomUserCreationForm(UserCreationForm):
@@ -472,9 +473,9 @@ class InvoicePaymentForm(forms.ModelForm):
         """Валидация файла чека оплаты"""
         receipt = self.cleaned_data.get('payment_receipt')
         if receipt:
-            # Проверка размера файла (максимум 10MB)
-            if receipt.size > 10 * 1024 * 1024:
-                raise forms.ValidationError("Размер файла не должен превышать 10MB.")
+            # Проверка размера файла (максимум 2GB)
+            if receipt.size > FileConstants.MAX_IMAGE_SIZE:
+                raise forms.ValidationError("Размер файла не должен превышать 2GB.")
         return receipt
 
 
@@ -601,7 +602,7 @@ class InvoiceWithPaymentForm(forms.Form):
                 raise forms.ValidationError("Файл инвойса должен быть в формате PDF.")
             
             # Проверка размера файла (максимум 2GB)
-            if invoice_file.size > 2 * 1024 * 1024 * 1024:
+            if invoice_file.size > FileConstants.MAX_PDF_SIZE:
                 raise forms.ValidationError("Размер файла инвойса не должен превышать 2GB.")
         return invoice_file
     
@@ -624,7 +625,7 @@ class InvoiceWithPaymentForm(forms.Form):
         """Валидация файла чека оплаты"""
         receipt = self.cleaned_data.get('payment_receipt')
         if receipt:
-            # Проверка размера файла (максимум 10MB)
-            if receipt.size > 10 * 1024 * 1024:
-                raise forms.ValidationError("Размер файла не должен превышать 10MB.")
+            # Проверка размера файла (максимум 2GB)
+            if receipt.size > FileConstants.MAX_IMAGE_SIZE:
+                raise forms.ValidationError("Размер файла не должен превышать 2GB.")
         return receipt

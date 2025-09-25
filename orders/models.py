@@ -6,6 +6,7 @@ from django.core.validators import FileExtensionValidator
 from django.template.loader import render_to_string
 from django.conf import settings
 from .validators import validate_excel_file, validate_pdf_file, validate_safe_filename
+from .constants import TimeConstants
 
 
 class UserProfile(models.Model):
@@ -434,13 +435,13 @@ class OrderConfirmation(models.Model):
             from datetime import timedelta
             # Разные сроки для разных операций
             if self.action == 'send_order':
-                self.expires_at = timezone.now() + timedelta(hours=72)  # 3 дня для отправки
+                self.expires_at = timezone.now() + timedelta(hours=TimeConstants.CONFIRMATION_EXPIRATION_HOURS_SEND)  # 3 дня для отправки
             elif self.action == 'upload_invoice':
-                self.expires_at = timezone.now() + timedelta(hours=48)  # 2 дня для инвойса
+                self.expires_at = timezone.now() + timedelta(hours=TimeConstants.CONFIRMATION_EXPIRATION_HOURS_INVOICE)  # 2 дня для инвойса
             elif self.action in ['complete_order', 'cancel_order', 'delete_order']:
-                self.expires_at = timezone.now() + timedelta(hours=24)  # 1 день для критических
+                self.expires_at = timezone.now() + timedelta(hours=TimeConstants.CONFIRMATION_EXPIRATION_HOURS)  # 1 день для критических
             else:
-                self.expires_at = timezone.now() + timedelta(hours=24)  # По умолчанию 1 день
+                self.expires_at = timezone.now() + timedelta(hours=TimeConstants.CONFIRMATION_EXPIRATION_HOURS)  # По умолчанию 1 день
         super().save(*args, **kwargs)
     
     def is_expired(self):

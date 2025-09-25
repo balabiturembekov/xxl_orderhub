@@ -2,6 +2,7 @@ from django.db.models import Count, Q, Avg
 from django.utils import timezone
 from datetime import timedelta, datetime
 from .models import Order, Factory, Country, Notification
+from .constants import TimeConstants
 
 
 class AnalyticsService:
@@ -9,7 +10,7 @@ class AnalyticsService:
     
     def __init__(self, user=None, date_from=None, date_to=None):
         self.user = user
-        self.date_from = date_from or timezone.now() - timedelta(days=30)
+        self.date_from = date_from or timezone.now() - timedelta(days=TimeConstants.METRICS_RETENTION_DAYS)
         self.date_to = date_to or timezone.now()
         
         # Конвертируем в date объекты если нужно
@@ -126,10 +127,10 @@ class AnalyticsService:
         overdue_orders = self.orders_queryset.filter(
             Q(
                 status='uploaded',
-                uploaded_at__lte=now - timedelta(days=7)
+                uploaded_at__lte=now - timedelta(days=TimeConstants.LOG_RETENTION_DAYS)
             ) | Q(
                 status='sent',
-                sent_at__lte=now - timedelta(days=7)
+                sent_at__lte=now - timedelta(days=TimeConstants.LOG_RETENTION_DAYS)
             )
         ).select_related('factory', 'employee')
         

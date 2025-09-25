@@ -16,6 +16,13 @@ from decouple import config, Csv
 import os
 import sys
 
+# Импорт констант для использования в настройках
+try:
+    from orders.constants import FileConstants
+except ImportError:
+    # Fallback для случаев, когда приложение orders еще не загружено
+    FileConstants = None
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -258,8 +265,8 @@ CSRF_USE_SESSIONS = False  # Используем cookies, не сессии
 CSRF_COOKIE_NAME = 'csrftoken'  # Явно указываем имя cookie
 
 # File Upload Security
-FILE_UPLOAD_MAX_MEMORY_SIZE = config('FILE_UPLOAD_MAX_MEMORY_SIZE', default=2147483648, cast=int)  # 2GB
-DATA_UPLOAD_MAX_MEMORY_SIZE = config('DATA_UPLOAD_MAX_MEMORY_SIZE', default=2147483648, cast=int)  # 2GB
+FILE_UPLOAD_MAX_MEMORY_SIZE = config('FILE_UPLOAD_MAX_MEMORY_SIZE', default=FileConstants.MAX_EXCEL_SIZE if FileConstants else 2147483648, cast=int)  # 2GB
+DATA_UPLOAD_MAX_MEMORY_SIZE = config('DATA_UPLOAD_MAX_MEMORY_SIZE', default=FileConstants.MAX_EXCEL_SIZE if FileConstants else 2147483648, cast=int)  # 2GB
 
 # Logging
 LOGGING = {

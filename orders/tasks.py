@@ -6,6 +6,7 @@ from django.utils import timezone
 from django.db import models
 from datetime import timedelta
 from .models import Order, Notification, NotificationSettings, NotificationTemplate, Invoice
+from .constants import TimeConstants
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
@@ -92,10 +93,10 @@ def check_overdue_orders():
     overdue_orders = Order.objects.filter(
         models.Q(
             status='uploaded',
-            uploaded_at__lte=now - timedelta(days=1)  # Минимум 1 день
+            uploaded_at__lte=now - timedelta(days=TimeConstants.MIN_REMINDER_DAYS)  # Минимум 1 день
         ) | models.Q(
             status='sent',
-            sent_at__lte=now - timedelta(days=1)  # Минимум 1 день
+            sent_at__lte=now - timedelta(days=TimeConstants.MIN_REMINDER_DAYS)  # Минимум 1 день
         )
     ).select_related('employee', 'factory')
     
@@ -283,7 +284,7 @@ def cleanup_old_notifications():
     """Очистка старых уведомлений (старше 30 дней)"""
     from datetime import timedelta
     
-    cutoff_date = timezone.now() - timedelta(days=30)
+    cutoff_date = timezone.now() - timedelta(days=TimeConstants.METRICS_RETENTION_DAYS)
     old_notifications = Notification.objects.filter(
         created_at__lt=cutoff_date,
         is_read=True  # Удаляем только прочитанные
@@ -303,7 +304,7 @@ def generate_system_statistics():
     from datetime import timedelta
     
     now = timezone.now()
-    yesterday = now - timedelta(days=1)
+    yesterday = now - timedelta(days=TimeConstants.MIN_REMINDER_DAYS)
     
     # Статистика за вчера
     stats = {
@@ -314,8 +315,8 @@ def generate_system_statistics():
             completed_at__date=yesterday.date()
         ).count(),
         'overdue_orders': Order.objects.filter(
-            Q(status='uploaded', uploaded_at__lte=now - timedelta(days=7)) |
-            Q(status='sent', sent_at__lte=now - timedelta(days=7))
+            Q(status='uploaded', uploaded_at__lte=now - timedelta(days=TimeConstants.LOG_RETENTION_DAYS)) |
+            Q(status='sent', sent_at__lte=now - timedelta(days=TimeConstants.LOG_RETENTION_DAYS))
         ).count(),
         'active_users': User.objects.filter(
             last_login__date=yesterday.date()

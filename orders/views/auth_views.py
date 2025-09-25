@@ -19,6 +19,7 @@ from django.utils import timezone
 from datetime import timedelta
 
 from ..models import Order, Factory, Country
+from ..constants import TimeConstants
 
 
 class SignUpView(CreateView):
@@ -127,7 +128,7 @@ class HomeView(TemplateView):
             Dictionary with user statistics
         """
         now = timezone.now()
-        week_ago = now - timedelta(days=7)
+        week_ago = now - timedelta(days=TimeConstants.LOG_RETENTION_DAYS)
         
         # Get user orders with optimized query
         user_orders = Order.objects.filter(employee=self.request.user)
@@ -148,7 +149,7 @@ class HomeView(TemplateView):
         recent_orders_list = user_orders.select_related('factory', 'factory__country').order_by('-uploaded_at')[:5]
         
         # Get urgent orders (uploaded more than 3 days ago and still not sent)
-        three_days_ago = now - timedelta(days=3)
+        three_days_ago = now - timedelta(days=TimeConstants.STATS_DAYS)
         urgent_orders_list = user_orders.filter(
             status='uploaded',
             uploaded_at__lt=three_days_ago

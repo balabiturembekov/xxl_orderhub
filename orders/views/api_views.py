@@ -19,6 +19,7 @@ from django.db.models import Q
 import json
 
 from ..models import Order, Factory, Country
+from ..constants import TimeConstants
 
 
 @login_required
@@ -246,7 +247,7 @@ def get_user_statistics(request):
         orders_by_status[status] = count
     
     # Calculate recent activity (last 7 days)
-    week_ago = timezone.now() - timezone.timedelta(days=7)
+    week_ago = timezone.now() - timezone.timedelta(days=TimeConstants.LOG_RETENTION_DAYS)
     recent_orders = user_orders.filter(uploaded_at__gte=week_ago).count()
     
     return JsonResponse({
