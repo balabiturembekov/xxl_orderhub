@@ -2,6 +2,7 @@ import os
 import magic
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
+from .constants import FileConstants
 
 
 def validate_file_type(file):
@@ -54,11 +55,11 @@ def validate_file_type(file):
 
 def validate_file_size(file):
     """Валидация размера файла"""
-    max_size = 500 * 1024 * 1024  # 500MB
+    max_size = FileConstants.MAX_EXCEL_SIZE  # 2GB
     
     if file.size > max_size:
         raise ValidationError(
-            _('Файл слишком большой. Максимальный размер: 500MB.'),
+            _('Файл слишком большой. Максимальный размер: 2GB.'),
             code='file_too_large'
         )
 

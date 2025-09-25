@@ -78,14 +78,14 @@ class FileConstants:
     """Константы для работы с файлами"""
     
     # Размеры файлов (в байтах)
-    MAX_EXCEL_SIZE = 10 * 1024 * 1024  # 10MB
-    MAX_PDF_SIZE = 5 * 1024 * 1024     # 5MB
-    MAX_IMAGE_SIZE = 2 * 1024 * 1024   # 2MB
+    MAX_EXCEL_SIZE = 2 * 1024 * 1024 * 1024  # 2GB
+    MAX_PDF_SIZE = 2 * 1024 * 1024 * 1024    # 2GB
+    MAX_IMAGE_SIZE = 2 * 1024 * 1024 * 1024  # 2GB
     
     # Размеры файлов (в MB для отображения)
-    MAX_EXCEL_SIZE_MB = 10
-    MAX_PDF_SIZE_MB = 5
-    MAX_IMAGE_SIZE_MB = 2
+    MAX_EXCEL_SIZE_MB = 2048
+    MAX_PDF_SIZE_MB = 2048
+    MAX_IMAGE_SIZE_MB = 2048
     
     # Разрешенные расширения
     ALLOWED_EXCEL_EXTENSIONS = ['xlsx', 'xls']

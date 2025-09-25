@@ -38,10 +38,10 @@ class FileValidatorsTestCase(TestCase):
             content_type="text/plain"
         )
         
-        # Создаем большой файл (больше 500MB)
+        # Создаем большой файл (больше 2GB)
         self.large_file = SimpleUploadedFile(
             "large.xlsx",
-            b"x" * (600 * 1024 * 1024),  # 600MB
+            b"x" * (3 * 1024 * 1024 * 1024),  # 3GB
             content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
@@ -159,7 +159,7 @@ startxref
             validate_file_size(self.large_file)
         
         self.assertIn('Файл слишком большой', str(context.exception))
-        self.assertIn('500MB', str(context.exception))
+        self.assertIn('2GB', str(context.exception))
 
     def test_validate_file_type_excel_valid(self):
         """Тест валидации типа файла - валидный Excel"""
@@ -274,20 +274,20 @@ startxref
 
     def test_file_size_edge_cases(self):
         """Тест граничных случаев размера файла"""
-        # Файл размером ровно 500MB
+        # Файл размером ровно 2GB
         exact_size_file = SimpleUploadedFile(
             "exact.xlsx",
-            b"x" * (500 * 1024 * 1024),  # Ровно 500MB
+            b"x" * (2 * 1024 * 1024 * 1024),  # Ровно 2GB
             content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
         
         # Не должно вызывать исключение
         validate_file_size(exact_size_file)
         
-        # Файл размером 500MB + 1 байт
+        # Файл размером 2GB + 1 байт
         too_large_file = SimpleUploadedFile(
             "too_large.xlsx",
-            b"x" * (500 * 1024 * 1024) + b"x",  # 500MB + 1 байт
+            b"x" * (2 * 1024 * 1024 * 1024) + b"x",  # 2GB + 1 байт
             content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
         
@@ -353,7 +353,7 @@ class FileValidatorsPytestTestCase:
         # Создаем файл размером 600MB
         large_file = SimpleUploadedFile(
             "large.xlsx",
-            b"x" * (600 * 1024 * 1024),  # 600MB
+            b"x" * (3 * 1024 * 1024 * 1024),  # 3GB
             content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
         
@@ -362,7 +362,7 @@ class FileValidatorsPytestTestCase:
             validate_file_size(large_file)
         
         assert 'Файл слишком большой' in str(exc_info.value)
-        assert '500MB' in str(exc_info.value)
+        assert '2GB' in str(exc_info.value)
 
     def test_file_type_validation_pytest(self):
         """Тест валидации типа файла с pytest"""
