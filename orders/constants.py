@@ -340,7 +340,8 @@ class ApiConstants:
     API_PREFIX = 'api'
     
     # Лимиты API
-    API_RATE_LIMIT = 100  # запросов в час
+    API_RATE_LIMIT = 500  # запросов в час
+    FILE_UPLOAD_RATE_LIMIT = 100  # загрузок файлов в час
     API_MAX_PAGE_SIZE = 100
     API_DEFAULT_PAGE_SIZE = 20
     

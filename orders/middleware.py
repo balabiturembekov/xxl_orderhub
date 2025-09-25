@@ -3,6 +3,7 @@ import logging
 from django.core.cache import cache
 from django.http import HttpResponse
 from django.utils.deprecation import MiddlewareMixin
+from .constants import ApiConstants
 
 logger = logging.getLogger('orders')
 
@@ -58,13 +59,13 @@ class RateLimitMiddleware(MiddlewareMixin):
         
         # Проверяем лимит только для загрузки файлов
         if request.path in ['/orders/create/', '/orders/upload-invoice/']:
-            if self.is_rate_limited(ip, 'file_upload', limit=20, window=3600):  # 20 загрузок в час
+            if self.is_rate_limited(ip, 'file_upload', limit=ApiConstants.FILE_UPLOAD_RATE_LIMIT, window=3600):
                 logger.warning(f"Rate limit exceeded for file upload from IP: {ip}")
                 return HttpResponse("Слишком много загрузок файлов. Попробуйте позже.", status=429)
         
         # Проверяем общий лимит запросов только для API endpoints
         if request.path.startswith('/api/'):
-            if self.is_rate_limited(ip, 'api', limit=200, window=3600):  # 200 API запросов в час
+            if self.is_rate_limited(ip, 'api', limit=ApiConstants.API_RATE_LIMIT, window=3600):
                 logger.warning(f"Rate limit exceeded for API requests from IP: {ip}")
                 return HttpResponse("Слишком много запросов. Попробуйте позже.", status=429)
         
