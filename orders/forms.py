@@ -135,22 +135,35 @@ class OrderForm(forms.ModelForm):
     Позволяет пользователю создавать и редактировать заказы.
     """
     
+    # Переопределяем поле factory для добавления пустой опции
+    factory = forms.ModelChoiceField(
+        queryset=Factory.objects.filter(is_active=True).select_related('country'),
+        empty_label="Выберите фабрику из списка",
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label="Фабрика"
+    )
+    
     class Meta:
         model = Order
-        fields = ['title', 'description', 'factory', 'excel_file', 'invoice_file']
+        fields = ['title', 'description', 'factory', 'excel_file', 'invoice_file', 'comments']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'factory': forms.Select(attrs={'class': 'form-control'}),
             'excel_file': forms.FileInput(attrs={'class': 'form-control'}),
             'invoice_file': forms.FileInput(attrs={'class': 'form-control'}),
+            'comments': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
         labels = {
             'title': 'Название заказа',
-            'description': 'Описание',
-            'factory': 'Фабрика',
-            'excel_file': 'Excel файл',
-            'invoice_file': 'Инвойс',
+            'description': 'Описание заказа',
+            'excel_file': 'Excel файл заказа',
+            'invoice_file': 'PDF файл инвойса',
+            'comments': 'Дополнительная информация',
+        }
+        help_texts = {
+            'title': 'Краткое название заказа для идентификации',
+            'description': 'Подробное описание заказа, требования, спецификации',
+            'invoice_file': 'Загрузите PDF файл инвойса (опционально)',
         }
 
 
@@ -179,22 +192,39 @@ class NotificationSettingsForm(forms.ModelForm):
     Позволяет пользователю настраивать параметры уведомлений.
     """
     
+    reminder_frequency = forms.ChoiceField(
+        choices=[
+            (1, 'Каждый день'),
+            (3, 'Каждые 3 дня'),
+            (7, 'Каждую неделю'),
+            (14, 'Каждые 2 недели'),
+            (30, 'Каждый месяц'),
+        ],
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label='Частота напоминаний',
+        help_text='Как часто отправлять напоминания о заказах'
+    )
+    
     class Meta:
         model = NotificationSettings
         fields = ['email_notifications', 'reminder_frequency', 'notify_uploaded_reminder', 'notify_sent_reminder', 'notify_invoice_received']
         widgets = {
             'email_notifications': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'reminder_frequency': forms.Select(attrs={'class': 'form-control'}),
             'notify_uploaded_reminder': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'notify_sent_reminder': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'notify_invoice_received': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
         labels = {
             'email_notifications': 'Email уведомления',
-            'reminder_frequency': 'Частота напоминаний',
             'notify_uploaded_reminder': 'Напоминания о загруженных заказах',
             'notify_sent_reminder': 'Напоминания об отправленных заказах',
             'notify_invoice_received': 'Уведомления о получении инвойсов',
+        }
+        help_texts = {
+            'email_notifications': 'Получать уведомления по email',
+            'notify_uploaded_reminder': 'Получать напоминания о заказах, которые загружены но не отправлены',
+            'notify_sent_reminder': 'Получать напоминания о заказах, которые отправлены но инвойс не получен',
+            'notify_invoice_received': 'Получать уведомления когда фабрика загружает инвойс',
         }
 
 
@@ -205,6 +235,15 @@ class NotificationFilterForm(forms.Form):
     Позволяет пользователю фильтровать уведомления по различным критериям.
     """
     
+    search = forms.CharField(
+        max_length=100,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Поиск по заголовку или сообщению'
+        })
+    )
+    
     notification_type = forms.ChoiceField(
         choices=[
             ('', 'Все типы'),
@@ -214,17 +253,17 @@ class NotificationFilterForm(forms.Form):
             ('order_completed', 'Заказ завершен'),
         ],
         required=False,
-        widget=forms.Select(attrs={'class': 'form-control'})
+        widget=forms.Select(attrs={'class': 'form-select'})
     )
     
-    is_read = forms.ChoiceField(
+    status = forms.ChoiceField(
         choices=[
             ('', 'Все'),
-            ('true', 'Прочитанные'),
-            ('false', 'Непрочитанные'),
+            ('read', 'Прочитанные'),
+            ('unread', 'Непрочитанные'),
         ],
         required=False,
-        widget=forms.Select(attrs={'class': 'form-control'})
+        widget=forms.Select(attrs={'class': 'form-select'})
     )
     
     date_from = forms.DateField(
@@ -265,12 +304,20 @@ class FactoryForm(forms.ModelForm):
     Позволяет администратору управлять фабриками.
     """
     
+    # Переопределяем поле country для добавления пустой опции
+    country = forms.ModelChoiceField(
+        queryset=Country.objects.all(),
+        empty_label="Выберите страну",
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label="Страна",
+        help_text="Выберите страну, где находится фабрика"
+    )
+    
     class Meta:
         model = Factory
         fields = ['name', 'country', 'email', 'contact_person', 'phone', 'address', 'is_active']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
-            'country': forms.Select(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
             'contact_person': forms.TextInput(attrs={'class': 'form-control'}),
             'phone': forms.TextInput(attrs={'class': 'form-control'}),
@@ -279,7 +326,6 @@ class FactoryForm(forms.ModelForm):
         }
         labels = {
             'name': 'Название фабрики',
-            'country': 'Страна',
             'email': 'Email',
             'contact_person': 'Контактное лицо',
             'phone': 'Телефон',

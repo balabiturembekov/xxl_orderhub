@@ -5,12 +5,12 @@ from django.conf import settings
 from django.utils import timezone
 from django.db import models
 from datetime import timedelta
-from .models import Order, Notification, NotificationSettings, NotificationTemplate
+from .models import Order, Notification, NotificationSettings, NotificationTemplate, Invoice
 
 
-@shared_task
-def send_notification_email(notification_id):
-    """Отправка email уведомления"""
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def send_notification_email(self, notification_id):
+    """Отправка email уведомления с retry механизмом"""
     try:
         notification = Notification.objects.get(id=notification_id)
         user = notification.user
@@ -69,7 +69,16 @@ def send_notification_email(notification_id):
         return f"Email отправлен пользователю {user.username} для заказа {notification.order.title}"
         
     except Exception as e:
-        return f"Ошибка при отправке email: {str(e)}"
+        # Логируем ошибку
+        import logging
+        logger = logging.getLogger('orders')
+        logger.error(f"Ошибка при отправке email для уведомления {notification_id}: {str(e)}")
+        
+        # Retry при временных ошибках
+        if self.request.retries < self.max_retries:
+            raise self.retry(countdown=60 * (2 ** self.request.retries))
+        
+        return f"Ошибка при отправке email после {self.max_retries} попыток: {str(e)}"
 
 
 @shared_task
@@ -79,13 +88,14 @@ def check_overdue_orders():
     notifications_sent = 0
     
     # Получаем все заказы, которые нуждаются в напоминаниях
+    # Используем настройки пользователя для определения периода
     overdue_orders = Order.objects.filter(
         models.Q(
             status='uploaded',
-            uploaded_at__lte=now - timedelta(days=7)
+            uploaded_at__lte=now - timedelta(days=1)  # Минимум 1 день
         ) | models.Q(
             status='sent',
-            sent_at__lte=now - timedelta(days=7)
+            sent_at__lte=now - timedelta(days=1)  # Минимум 1 день
         )
     ).select_related('employee', 'factory')
     
@@ -321,3 +331,57 @@ def generate_system_statistics():
     logger.info(f"Daily statistics for {yesterday.date()}: {stats}")
     
     return f"Generated statistics for {yesterday.date()}: {stats['total_orders']} orders, {stats['completed_orders']} completed"
+
+
+@shared_task
+def check_overdue_payments():
+    """Проверка просроченных платежей и отправка уведомлений"""
+    now = timezone.now()
+    notifications_sent = 0
+    
+    # Получаем все просроченные инвойсы
+    overdue_invoices = Invoice.objects.filter(
+        status='overdue',
+        due_date__lt=now.date()
+    ).select_related('order', 'order__employee', 'order__factory')
+    
+    for invoice in overdue_invoices:
+        user = invoice.order.employee
+        
+        # Проверяем настройки пользователя
+        try:
+            settings_obj = NotificationSettings.objects.get(user=user)
+            if not settings_obj.email_notifications:
+                continue
+        except NotificationSettings.DoesNotExist:
+            settings_obj = NotificationSettings.objects.create(user=user)
+        
+        # Проверяем, не отправляли ли мы уже напоминание недавно
+        last_reminder = Notification.objects.filter(
+            user=user,
+            order=invoice.order,
+            notification_type='payment_overdue',
+            created_at__gte=now - timedelta(days=settings_obj.reminder_frequency)
+        ).first()
+        
+        if last_reminder:
+            continue
+        
+        # Создаем уведомление
+        days_overdue = (now.date() - invoice.due_date).days
+        title = f"Просроченный платеж: инвойс {invoice.invoice_number}"
+        message = f"Инвойс {invoice.invoice_number} для заказа '{invoice.order.title}' просрочен на {days_overdue} дней. Сумма к доплате: {invoice.remaining_amount}€"
+        
+        notification = Notification.objects.create(
+            user=user,
+            order=invoice.order,
+            notification_type='payment_overdue',
+            title=title,
+            message=message
+        )
+        
+        # Отправляем email асинхронно
+        send_notification_email.delay(notification.id)
+        notifications_sent += 1
+    
+    return f"Отправлено {notifications_sent} уведомлений о просроченных платежах"

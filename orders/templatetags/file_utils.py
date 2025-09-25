@@ -18,21 +18,30 @@ def filesize(value):
         return "0 B"
     
     try:
+        # Если это SimpleUploadedFile или объект с атрибутом size
+        if hasattr(value, 'size'):
+            size_bytes = value.size
         # Если это FileField, получаем путь к файлу
-        if hasattr(value, 'path'):
+        elif hasattr(value, 'path'):
             file_path = value.path
+            if os.path.exists(file_path):
+                size_bytes = os.path.getsize(file_path)
+            else:
+                return "Файл не найден"
         elif hasattr(value, 'url'):
             # Если файл существует, получаем его размер
             if os.path.exists(value.path):
                 file_path = value.path
+                size_bytes = os.path.getsize(file_path)
             else:
                 return "Файл не найден"
         else:
             # Если это строка с путем
             file_path = str(value)
-        
-        # Получаем размер файла в байтах
-        size_bytes = os.path.getsize(file_path)
+            if os.path.exists(file_path):
+                size_bytes = os.path.getsize(file_path)
+            else:
+                return "Файл не найден"
         
         # Форматируем размер
         return format_file_size(size_bytes)

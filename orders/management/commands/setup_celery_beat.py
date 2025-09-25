@@ -103,6 +103,30 @@ class Command(BaseCommand):
         else:
             self.stdout.write(self.style.WARNING('⚠ Task already exists: Generate System Statistics'))
         
+        # 5. Проверка просроченных платежей - каждый день в 10:00
+        schedule_payments, created = CrontabSchedule.objects.get_or_create(
+            minute='0',
+            hour='10',
+            day_of_week='*',
+            day_of_month='*',
+            month_of_year='*',
+        )
+        
+        task_payments, created = PeriodicTask.objects.get_or_create(
+            name='Check Overdue Payments',
+            defaults={
+                'task': 'orders.tasks.check_overdue_payments',
+                'crontab': schedule_payments,
+                'enabled': True,
+                'description': 'Проверка просроченных платежей и отправка уведомлений',
+            }
+        )
+        
+        if created:
+            self.stdout.write(self.style.SUCCESS('✓ Created task: Check Overdue Payments'))
+        else:
+            self.stdout.write(self.style.WARNING('⚠ Task already exists: Check Overdue Payments'))
+        
         self.stdout.write(self.style.SUCCESS('Successfully set up Celery Beat periodic tasks!'))
         
         # Показываем список всех задач
