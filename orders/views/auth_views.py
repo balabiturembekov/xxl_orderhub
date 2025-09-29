@@ -130,8 +130,8 @@ class HomeView(TemplateView):
         now = timezone.now()
         week_ago = now - timedelta(days=TimeConstants.LOG_RETENTION_DAYS)
         
-        # Get user orders with optimized query
-        user_orders = Order.objects.filter(employee=self.request.user)
+        # Get all orders with optimized query
+        user_orders = Order.objects.all()
         
         # Calculate status statistics
         status_stats = user_orders.aggregate(
@@ -146,14 +146,14 @@ class HomeView(TemplateView):
         recent_orders = user_orders.filter(uploaded_at__gte=week_ago).count()
         
         # Get recent orders for display
-        recent_orders_list = user_orders.select_related('factory', 'factory__country').order_by('-uploaded_at')[:5]
+        recent_orders_list = user_orders.select_related('factory', 'factory__country', 'employee').order_by('-uploaded_at')[:5]
         
         # Get urgent orders (uploaded more than 3 days ago and still not sent)
         three_days_ago = now - timedelta(days=TimeConstants.STATS_DAYS)
         urgent_orders_list = user_orders.filter(
             status='uploaded',
             uploaded_at__lt=three_days_ago
-        ).select_related('factory', 'factory__country').order_by('uploaded_at')[:5]
+        ).select_related('factory', 'factory__country', 'employee').order_by('uploaded_at')[:5]
         
         # Count overdue orders
         overdue_orders_count = urgent_orders_list.count()

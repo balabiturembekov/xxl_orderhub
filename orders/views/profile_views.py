@@ -47,7 +47,7 @@ class ProfileView(TemplateView):
         
         # Статистика пользователя
         from ..models import Order, Notification
-        user_orders = Order.objects.filter(employee=user)
+        user_orders = Order.objects.all()
         user_notifications = Notification.objects.filter(user=user)
         
         context.update({
@@ -55,7 +55,7 @@ class ProfileView(TemplateView):
             'user_orders_count': user_orders.count(),
             'user_notifications_count': user_notifications.count(),
             'unread_notifications_count': user_notifications.filter(is_read=False).count(),
-            'recent_orders': user_orders.order_by('-uploaded_at')[:5],
+            'recent_orders': user_orders.select_related('factory', 'factory__country', 'employee').order_by('-uploaded_at')[:5],
             'recent_notifications': user_notifications.order_by('-created_at')[:5],
         })
         

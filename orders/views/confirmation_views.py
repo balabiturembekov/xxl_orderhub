@@ -40,7 +40,6 @@ class ConfirmationListView(ListView):
     def get_queryset(self):
         """Get confirmations for orders belonging to the current user."""
         queryset = OrderConfirmation.objects.filter(
-            order__employee=self.request.user
         ).select_related('order', 'requested_by', 'confirmed_by').order_by('-requested_at')
         
         # Apply status filter
@@ -69,7 +68,7 @@ def confirmation_detail(request, pk: int):
     Returns:
         Rendered confirmation detail template
     """
-    confirmation = get_object_or_404(OrderConfirmation, pk=pk, order__employee=request.user)
+    confirmation = get_object_or_404(OrderConfirmation, pk=pk)
     
     return render(request, 'orders/confirmation_detail.html', {
         'confirmation': confirmation,
@@ -93,7 +92,7 @@ def send_order(request, pk: int):
     Returns:
         Redirect to confirmation approval page
     """
-    order = get_object_or_404(Order, pk=pk, employee=request.user)
+    order = get_object_or_404(Order, pk=pk)
     
     # Validate order status
     if order.status != 'uploaded':
@@ -140,7 +139,7 @@ def upload_invoice(request, pk: int):
     Returns:
         Redirect to confirmation approval page
     """
-    order = get_object_or_404(Order, pk=pk, employee=request.user)
+    order = get_object_or_404(Order, pk=pk)
     
     # Validate order status
     if order.status not in ['sent', 'invoice_received']:
@@ -187,7 +186,7 @@ def upload_invoice_form(request, pk: int):
     Returns:
         Rendered invoice upload form template
     """
-    order = get_object_or_404(Order, pk=pk, employee=request.user)
+    order = get_object_or_404(Order, pk=pk)
     
     # Validate order status
     if order.status not in ['sent', 'invoice_received']:
@@ -272,7 +271,7 @@ def upload_invoice_execute(request, pk: int):
     Returns:
         Redirect to order detail page
     """
-    order = get_object_or_404(Order, pk=pk, employee=request.user)
+    order = get_object_or_404(Order, pk=pk)
     
     # Validate order status
     if order.status not in ['sent', 'invoice_received']:
@@ -457,7 +456,7 @@ def complete_order(request, pk: int):
     Returns:
         Redirect to confirmation approval page
     """
-    order = get_object_or_404(Order, pk=pk, employee=request.user)
+    order = get_object_or_404(Order, pk=pk)
     
     # Validate order status
     if order.status not in ['invoice_received']:
@@ -512,7 +511,7 @@ def confirmation_approve(request, pk: int):
     Returns:
         Redirect to confirmation detail or appropriate page
     """
-    confirmation = get_object_or_404(OrderConfirmation, pk=pk, order__employee=request.user)
+    confirmation = get_object_or_404(OrderConfirmation, pk=pk)
     
     if confirmation.status != 'pending':
         messages.error(request, 'Это подтверждение уже обработано!')
@@ -563,7 +562,7 @@ def confirmation_reject(request, pk: int):
     Returns:
         Redirect to confirmation detail page
     """
-    confirmation = get_object_or_404(OrderConfirmation, pk=pk, order__employee=request.user)
+    confirmation = get_object_or_404(OrderConfirmation, pk=pk)
     
     if confirmation.status != 'pending':
         messages.error(request, 'Это подтверждение уже обработано!')

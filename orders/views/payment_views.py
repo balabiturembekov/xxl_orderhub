@@ -34,7 +34,7 @@ def upload_invoice_with_payment(request, pk):
     
     Создает инвойс и первый платеж одновременно.
     """
-    order = get_object_or_404(Order, id=pk, employee=request.user)
+    order = get_object_or_404(Order, id=pk)
     
     # Проверяем активное подтверждение (если вызывается через старый URL)
     active_confirmation = None
@@ -170,7 +170,7 @@ class InvoiceDetailView(DetailView):
     
     def get_queryset(self):
         """Фильтруем инвойсы по пользователю"""
-        return Invoice.objects.filter(order__employee=self.request.user)
+        return Invoice.objects.all()
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -210,7 +210,6 @@ class PaymentCreateView(CreateView):
         return get_object_or_404(
             Invoice, 
             id=invoice_id, 
-            order__employee=self.request.user
         )
     
     def get_form_kwargs(self):
@@ -289,7 +288,6 @@ class PaymentUpdateView(UpdateView):
     def get_queryset(self):
         """Фильтруем платежи по пользователю"""
         return InvoicePayment.objects.filter(
-            invoice__order__employee=self.request.user
         )
     
     def get_form_kwargs(self):
@@ -350,7 +348,6 @@ def delete_payment(request, payment_id):
     payment = get_object_or_404(
         InvoicePayment,
         id=payment_id,
-        invoice__order__employee=request.user
     )
     
     invoice = payment.invoice
@@ -396,7 +393,6 @@ class InvoiceListView(ListView):
     def get_queryset(self):
         """Фильтруем инвойсы по пользователю и статусу"""
         queryset = Invoice.objects.filter(
-            order__employee=self.request.user
         ).select_related('order', 'order__factory').prefetch_related('payments')
         
         # Фильтрация по статусу
@@ -449,7 +445,7 @@ def payment_analytics(request):
     """
     Аналитика по платежам пользователя.
     """
-    user_invoices = Invoice.objects.filter(order__employee=request.user)
+    user_invoices = Invoice.objects.all()
     
     # Общая статистика
     total_invoices = user_invoices.count()
@@ -479,7 +475,6 @@ def payment_analytics(request):
     
     # Статистика по типам платежей
     payment_stats_raw = InvoicePayment.objects.filter(
-        invoice__order__employee=request.user
     ).values('payment_type').annotate(
         count=Count('id'),
         total_amount=Sum('amount')

@@ -41,8 +41,8 @@ class OrderListView(ListView):
     paginate_by = 20
     
     def get_queryset(self):
-        """Get filtered orders for the current user."""
-        queryset = Order.objects.filter(employee=self.request.user).select_related('factory', 'factory__country')
+        """Get filtered orders for all users."""
+        queryset = Order.objects.select_related('factory', 'factory__country', 'employee')
         
         # Apply filters
         status_filter = self.request.GET.get('status')
@@ -67,9 +67,7 @@ class OrderListView(ListView):
     def get_context_data(self, **kwargs):
         """Add filter options to context."""
         context = super().get_context_data(**kwargs)
-        context['factories'] = Factory.objects.filter(
-            country__in=self.request.user.order_set.values_list('factory__country', flat=True).distinct()
-        ).select_related('country')
+        context['factories'] = Factory.objects.select_related('country')
         context['status_choices'] = Order.STATUS_CHOICES
         return context
 
@@ -90,8 +88,8 @@ class OrderDetailView(DetailView):
     context_object_name = 'order'
     
     def get_queryset(self):
-        """Only show orders belonging to the current user."""
-        return Order.objects.filter(employee=self.request.user).select_related('factory', 'factory__country')
+        """Show all orders."""
+        return Order.objects.select_related('factory', 'factory__country', 'employee')
     
     def get_context_data(self, **kwargs):
         """Add additional context for order detail view."""
@@ -147,7 +145,7 @@ def download_file(request, pk: int, file_type: str):
     Returns:
         HttpResponse with file content or 404 if file not found
     """
-    order = get_object_or_404(Order, pk=pk, employee=request.user)
+    order = get_object_or_404(Order, pk=pk)
     
     if file_type == 'excel' and order.excel_file:
         file_path = order.excel_file.path
@@ -179,7 +177,7 @@ def preview_file(request, pk: int, file_type: str):
     Returns:
         JsonResponse with preview data or error message
     """
-    order = get_object_or_404(Order, pk=pk, employee=request.user)
+    order = get_object_or_404(Order, pk=pk)
     
     try:
         # Get file path based on file type
@@ -208,7 +206,7 @@ def preview_file_modal(request, pk: int, file_type: str):
     Returns:
         Rendered modal template with preview data
     """
-    order = get_object_or_404(Order, pk=pk, employee=request.user)
+    order = get_object_or_404(Order, pk=pk)
     
     try:
         # Get file path based on file type

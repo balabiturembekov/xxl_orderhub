@@ -214,7 +214,7 @@ def get_order_status(request, pk: int):
     Returns:
         JsonResponse with order status information
     """
-    order = get_object_or_404(Order, pk=pk, employee=request.user)
+    order = get_object_or_404(Order, pk=pk)
     
     return JsonResponse({
         'id': order.id,
@@ -236,7 +236,7 @@ def get_user_statistics(request):
     Returns:
         JsonResponse with user statistics
     """
-    user_orders = Order.objects.filter(employee=request.user)
+    user_orders = Order.objects.all()
     
     # Calculate basic statistics
     total_orders = user_orders.count()
