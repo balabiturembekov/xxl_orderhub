@@ -565,7 +565,7 @@ class EmailTemplate(models.Model):
     template_type = models.CharField(
         max_length=20,
         choices=TEMPLATE_TYPES,
-        default='factory_order',
+        default='order_confirmation',
         verbose_name="Тип шаблона"
     )
     language = models.CharField(
