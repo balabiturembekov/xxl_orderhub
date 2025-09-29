@@ -48,6 +48,10 @@ msgstr ""
 msgid "Имя файла содержит недопустимые символы: {}"
 msgstr ""
 
+#: templates/base.html:455
+msgid "Email шаблоны"
+msgstr "Email шаблоны"
+
 #: orders/validators.py:130
 msgid "Имя файла слишком длинное. Максимум 255 символов."
 msgstr ""
