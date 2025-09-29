@@ -119,26 +119,27 @@ def get_email_template_from_db(template_type, language_code):
         )
         return template
     except EmailTemplate.DoesNotExist:
+        # Если не найден по умолчанию, ищем любой активный шаблон
+        template = EmailTemplate.objects.filter(
+            template_type=template_type,
+            language=language_code,
+            is_active=True
+        ).first()
+        
+        if template:
+            return template
+        
+        # Если не найден для данного языка, ищем русский как fallback
         try:
-            # Если не найден по умолчанию, ищем любой активный шаблон
-            template = EmailTemplate.objects.filter(
+            template = EmailTemplate.objects.get(
                 template_type=template_type,
-                language=language_code,
-                is_active=True
-            ).first()
+                language='ru',
+                is_active=True,
+                is_default=True
+            )
             return template
         except EmailTemplate.DoesNotExist:
-            # Если не найден для данного языка, ищем русский как fallback
-            try:
-                template = EmailTemplate.objects.get(
-                    template_type=template_type,
-                    language='ru',
-                    is_active=True,
-                    is_default=True
-                )
-                return template
-            except EmailTemplate.DoesNotExist:
-                return None
+            return None
 
 
 def get_supported_languages():
