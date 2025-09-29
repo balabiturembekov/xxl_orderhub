@@ -617,6 +617,10 @@ def _execute_send_order(confirmation: OrderConfirmation, user, comments: str) ->
         
         if template:
             # Use database template
+            import logging
+            logger = logging.getLogger('orders')
+            logger.info(f'Using database template: {template.name} (ID: {template.id}) for order {order.id}')
+            
             context = {
                 'order': order,
                 'factory': order.factory,
@@ -631,8 +635,13 @@ def _execute_send_order(confirmation: OrderConfirmation, user, comments: str) ->
             
             # Mark template as used
             template.mark_as_used()
+            logger.info(f'Template {template.name} marked as used')
         else:
             # Fallback to static templates
+            import logging
+            logger = logging.getLogger('orders')
+            logger.warning(f'No database template found for language {language_code}, using static templates for order {order.id}')
+            
             from ..email_utils import get_email_subject, get_email_template_paths
             
             # Get template paths
@@ -671,8 +680,15 @@ def _execute_send_order(confirmation: OrderConfirmation, user, comments: str) ->
         
         email.send()
         
+        # Log successful email sending
+        import logging
+        logger = logging.getLogger('orders')
+        logger.info(f'Email successfully sent to {order.factory.email} for order {order.id} using template: {template.name if template else "static"}')
+        
     except Exception as e:
-        print(f"Ошибка отправки email: {e}")
+        import logging
+        logger = logging.getLogger('orders')
+        logger.error(f"Ошибка отправки email для заказа {order.id}: {e}")
         raise ValueError(f'Ошибка при отправке email: {str(e)}')
     
     # Update order status
