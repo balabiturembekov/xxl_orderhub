@@ -6,6 +6,7 @@ from django.core.files.storage import default_storage
 from django.http import JsonResponse, HttpResponse
 import openpyxl
 from openpyxl.utils import get_column_letter
+import xlrd
 import io
 import base64
 from PIL import Image
@@ -19,11 +20,7 @@ class FilePreviewGenerator:
     def preview_excel(file_path: str, max_rows: int = 10) -> Dict[str, Any]:
         """Предварительный просмотр Excel файла"""
         try:
-            # Открываем файл
-            workbook = openpyxl.load_workbook(file_path, read_only=True)
-            
-            # Получаем первый лист
-            worksheet = workbook.active
+            file_extension = os.path.splitext(file_path)[1].lower()
             
             # Собираем данные
             data = {
@@ -33,32 +30,78 @@ class FilePreviewGenerator:
                 'preview_data': []
             }
             
-            # Информация о листах
-            for sheet_name in workbook.sheetnames:
-                sheet = workbook[sheet_name]
-                data['sheets'].append({
-                    'name': sheet_name,
-                    'max_row': sheet.max_row,
-                    'max_column': sheet.max_column
-                })
-            
-            # Предварительный просмотр данных (первые строки)
-            preview_rows = []
-            for row_num in range(1, min(max_rows + 1, worksheet.max_row + 1)):
-                row_data = []
-                for col_num in range(1, min(11, worksheet.max_column + 1)):  # Максимум 10 колонок
-                    cell = worksheet.cell(row=row_num, column=col_num)
-                    row_data.append({
-                        'value': str(cell.value) if cell.value is not None else '',
-                        'column': get_column_letter(col_num)
+            if file_extension == '.xlsx':
+                # Используем openpyxl для .xlsx файлов
+                workbook = openpyxl.load_workbook(file_path, read_only=True)
+                worksheet = workbook.active
+                
+                # Информация о листах
+                for sheet_name in workbook.sheetnames:
+                    sheet = workbook[sheet_name]
+                    data['sheets'].append({
+                        'name': sheet_name,
+                        'max_row': sheet.max_row,
+                        'max_column': sheet.max_column
                     })
-                preview_rows.append(row_data)
+                
+                # Предварительный просмотр данных (первые строки)
+                preview_rows = []
+                for row_num in range(1, min(max_rows + 1, worksheet.max_row + 1)):
+                    row_data = []
+                    for col_num in range(1, min(11, worksheet.max_column + 1)):  # Максимум 10 колонок
+                        cell = worksheet.cell(row=row_num, column=col_num)
+                        row_data.append({
+                            'value': str(cell.value) if cell.value is not None else '',
+                            'column': get_column_letter(col_num)
+                        })
+                    preview_rows.append(row_data)
+                
+                data['preview_data'] = preview_rows
+                data['total_rows'] = worksheet.max_row
+                data['total_columns'] = worksheet.max_column
+                
+                workbook.close()
+                
+            elif file_extension == '.xls':
+                # Используем xlrd для .xls файлов
+                workbook = xlrd.open_workbook(file_path)
+                worksheet = workbook.sheet_by_index(0)  # Первый лист
+                
+                # Информация о листах
+                for i in range(workbook.nsheets):
+                    sheet = workbook.sheet_by_index(i)
+                    data['sheets'].append({
+                        'name': sheet.name,
+                        'max_row': sheet.nrows,
+                        'max_column': sheet.ncols
+                    })
+                
+                # Предварительный просмотр данных (первые строки)
+                preview_rows = []
+                for row_num in range(min(max_rows, worksheet.nrows)):
+                    row_data = []
+                    for col_num in range(min(10, worksheet.ncols)):  # Максимум 10 колонок
+                        cell_value = worksheet.cell_value(row_num, col_num)
+                        # Конвертируем в строку и обрабатываем типы
+                        if isinstance(cell_value, float):
+                            # Проверяем, является ли это датой
+                            if xlrd.xldate.xldate_as_datetime(cell_value, workbook.datemode):
+                                cell_value = xlrd.xldate.xldate_as_datetime(cell_value, workbook.datemode).strftime('%Y-%m-%d %H:%M:%S')
+                            else:
+                                cell_value = str(int(cell_value)) if cell_value.is_integer() else str(cell_value)
+                        else:
+                            cell_value = str(cell_value) if cell_value is not None else ''
+                        
+                        row_data.append({
+                            'value': cell_value,
+                            'column': xlrd.colname(col_num)
+                        })
+                    preview_rows.append(row_data)
+                
+                data['preview_data'] = preview_rows
+                data['total_rows'] = worksheet.nrows
+                data['total_columns'] = worksheet.ncols
             
-            data['preview_data'] = preview_rows
-            data['total_rows'] = worksheet.max_row
-            data['total_columns'] = worksheet.max_column
-            
-            workbook.close()
             return data
             
         except Exception as e:
