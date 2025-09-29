@@ -60,7 +60,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const container = document.getElementById('preview-container');
     const fileType = '{{ file_type }}';
-    const orderId = {{ order.pk }};
+    const orderId = {{ order.pk|default:"null" }};
     
     // Загружаем предварительный просмотр
     fetch(`/orders/${orderId}/preview/${fileType}/`)
@@ -101,6 +101,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     
     function renderExcelPreview(data) {
+        console.log('Excel preview data:', data);
         let html = `
             <div class="excel-preview">
                 <div class="row mb-3">
@@ -129,6 +130,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         if (data.preview_data && data.preview_data.length > 0) {
+            console.log('Preview data found:', data.preview_data);
             html += `
                 <div class="table-responsive">
                     <table class="table table-bordered table-sm">
@@ -155,6 +157,9 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             html += `</tbody></table></div>`;
+        } else {
+            console.log('No preview data found');
+            html += `<div class="alert alert-warning">Нет данных для отображения</div>`;
         }
         
         html += `

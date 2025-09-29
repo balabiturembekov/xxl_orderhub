@@ -218,18 +218,22 @@ def preview_file_modal(request, pk: int, file_type: str):
             return render(request, 'orders/file_preview_modal.html', {
                 'order': order,
                 'file_type': file_type,
+                'file_name': 'Неизвестный файл',
                 'error': 'Файл не найден'
             })
         
         preview_data = generate_file_preview(file_path, file_type)
+        file_name = os.path.basename(file_path)
         return render(request, 'orders/file_preview_modal.html', {
             'order': order,
             'file_type': file_type,
+            'file_name': file_name,
             'preview_data': preview_data
         })
     except Exception as e:
         return render(request, 'orders/file_preview_modal.html', {
             'order': order,
             'file_type': file_type,
+            'file_name': 'Неизвестный файл',
             'error': str(e)
         })

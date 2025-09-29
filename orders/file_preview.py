@@ -64,7 +64,7 @@ class FilePreviewGenerator:
                 
             elif file_extension == '.xls':
                 # Используем xlrd для .xls файлов
-                workbook = xlrd.open_workbook(file_path)
+                workbook = xlrd.open_workbook(file_path, formatting_info=False)
                 worksheet = workbook.sheet_by_index(0)  # Первый лист
                 
                 # Информация о листах
@@ -84,11 +84,8 @@ class FilePreviewGenerator:
                         cell_value = worksheet.cell_value(row_num, col_num)
                         # Конвертируем в строку и обрабатываем типы
                         if isinstance(cell_value, float):
-                            # Проверяем, является ли это датой
-                            if xlrd.xldate.xldate_as_datetime(cell_value, workbook.datemode):
-                                cell_value = xlrd.xldate.xldate_as_datetime(cell_value, workbook.datemode).strftime('%Y-%m-%d %H:%M:%S')
-                            else:
-                                cell_value = str(int(cell_value)) if cell_value.is_integer() else str(cell_value)
+                            # Просто конвертируем числа в строку
+                            cell_value = str(int(cell_value)) if cell_value.is_integer() else str(cell_value)
                         else:
                             cell_value = str(cell_value) if cell_value is not None else ''
                         
