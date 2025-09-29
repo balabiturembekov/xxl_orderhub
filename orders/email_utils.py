@@ -96,6 +96,51 @@ def get_email_template_paths(language_code):
     return html_path, txt_path
 
 
+def get_email_template_from_db(template_type, language_code):
+    """
+    Получить email шаблон из базы данных
+    
+    Args:
+        template_type (str): Тип шаблона ('order_confirmation', 'order_notification', etc.)
+        language_code (str): Код языка
+    
+    Returns:
+        EmailTemplate: Шаблон из БД или None если не найден
+    """
+    from .models import EmailTemplate
+    
+    try:
+        # Сначала ищем активный шаблон по умолчанию для данного типа и языка
+        template = EmailTemplate.objects.get(
+            template_type=template_type,
+            language=language_code,
+            is_active=True,
+            is_default=True
+        )
+        return template
+    except EmailTemplate.DoesNotExist:
+        try:
+            # Если не найден по умолчанию, ищем любой активный шаблон
+            template = EmailTemplate.objects.filter(
+                template_type=template_type,
+                language=language_code,
+                is_active=True
+            ).first()
+            return template
+        except EmailTemplate.DoesNotExist:
+            # Если не найден для данного языка, ищем русский как fallback
+            try:
+                template = EmailTemplate.objects.get(
+                    template_type=template_type,
+                    language='ru',
+                    is_active=True,
+                    is_default=True
+                )
+                return template
+            except EmailTemplate.DoesNotExist:
+                return None
+
+
 def get_supported_languages():
     """
     Получить список поддерживаемых языков

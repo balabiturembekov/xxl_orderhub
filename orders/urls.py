@@ -21,7 +21,15 @@ from .views import (
     # Payment views
     InvoiceDetailView, InvoiceListView, PaymentCreateView, PaymentUpdateView,
     upload_invoice_with_payment, delete_payment, payment_analytics,
-    # API views
+)
+from .views.email_template_views import (
+    EmailTemplateListView, EmailTemplateDetailView, EmailTemplateCreateView,
+    EmailTemplateUpdateView, EmailTemplateDeleteView, email_template_preview,
+    email_template_duplicate, email_template_activate, email_template_set_default,
+    email_template_export, email_template_import, email_template_variables_help,
+    email_template_preview_ajax
+)
+from .views.api_views import (
     get_factories, get_countries, create_country_ajax, create_factory_ajax
 )
 
@@ -105,4 +113,19 @@ urlpatterns = [
     path("payments/<int:payment_id>/delete/", delete_payment, name="payment_delete"),
     path("orders/<int:order_id>/upload-invoice-with-payment/", upload_invoice_with_payment, name="upload_invoice_with_payment"),
     path("payment-analytics/", payment_analytics, name="payment_analytics"),
+    
+    # Управление email шаблонами
+    path("email-templates/", EmailTemplateListView.as_view(), name="email_template_list"),
+    path("email-templates/create/", EmailTemplateCreateView.as_view(), name="email_template_create"),
+    path("email-templates/<int:pk>/", EmailTemplateDetailView.as_view(), name="email_template_detail"),
+    path("email-templates/<int:pk>/edit/", EmailTemplateUpdateView.as_view(), name="email_template_update"),
+    path("email-templates/<int:pk>/delete/", EmailTemplateDeleteView.as_view(), name="email_template_delete"),
+    path("email-templates/<int:pk>/preview/", email_template_preview, name="email_template_preview"),
+    path("email-templates/<int:pk>/duplicate/", email_template_duplicate, name="email_template_duplicate"),
+    path("email-templates/<int:pk>/activate/", email_template_activate, name="email_template_activate"),
+    path("email-templates/<int:pk>/set-default/", email_template_set_default, name="email_template_set_default"),
+    path("email-templates/<int:pk>/export/", email_template_export, name="email_template_export"),
+    path("email-templates/import/", email_template_import, name="email_template_import"),
+    path("email-templates/variables-help/", email_template_variables_help, name="email_template_variables_help"),
+    path("email-templates/preview-ajax/", email_template_preview_ajax, name="email_template_preview_ajax"),
 ]

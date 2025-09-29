@@ -1,0 +1,332 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{{ template.name }} - XXL OrderHub{% endblock %}
+
+{% block content %}
+<form method="post" style="display: none;">
+    {% csrf_token %}
+</form>
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Главная" %}</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'email_template_list' %}">{% trans "Email шаблоны" %}</a></li>
+                <li class="breadcrumb-item active">{{ template.name }}</li>
+            </ol>
+        </nav>
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>{{ template.name }}</h2>
+            <div>
+                <a href="{% url 'email_template_update' template.pk %}" class="btn btn-primary">
+                    <i class="fas fa-edit me-1"></i>{% trans "Редактировать" %}
+                </a>
+                <a href="{% url 'email_template_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>{% trans "Назад к списку" %}
+                </a>
+            </div>
+        </div>
+
+        <!-- Информация о шаблоне -->
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">{% trans "Информация о шаблоне" %}</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>{% trans "Название" %}:</strong> {{ template.name }}</p>
+                                <p><strong>{% trans "Тип" %}:</strong> 
+                                    <span class="badge bg-info">{{ template.get_template_type_display }}</span>
+                                </p>
+                                <p><strong>{% trans "Язык" %}:</strong> 
+                                    <span class="badge bg-secondary">{{ template.get_language_display }}</span>
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>{% trans "Статус" %}:</strong> 
+                                    {% if template.is_active %}
+                                        <span class="badge bg-success">{% trans "Активен" %}</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">{% trans "Неактивен" %}</span>
+                                    {% endif %}
+                                </p>
+                                {% if template.is_default %}
+                                    <p><strong>{% trans "По умолчанию" %}:</strong> 
+                                        <span class="badge bg-success">{% trans "Да" %}</span>
+                                    </p>
+                                {% endif %}
+                                <p><strong>{% trans "Создан" %}:</strong> {{ template.created_at|date:"d.m.Y H:i" }}</p>
+                                {% if template.created_by %}
+                                    <p><strong>{% trans "Создал" %}:</strong> {{ template.created_by.username }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        {% if template.description %}
+                            <div class="mt-3">
+                                <strong>{% trans "Описание" %}:</strong>
+                                <p class="mt-2">{{ template.description }}</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Содержимое шаблона -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">{% trans "Содержимое шаблона" %}</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <strong>{% trans "Тема письма" %}:</strong>
+                            <div class="alert alert-info mt-2">{{ template.subject }}</div>
+                        </div>
+
+                        <ul class="nav nav-tabs" id="contentTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="html-tab" data-bs-toggle="tab" data-bs-target="#html-content" type="button" role="tab">
+                                    {% trans "HTML версия" %}
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="text-tab" data-bs-toggle="tab" data-bs-target="#text-content" type="button" role="tab">
+                                    {% trans "Текстовая версия" %}
+                                </button>
+                            </li>
+                        </ul>
+                        
+                        <div class="tab-content mt-3" id="contentTabsContent">
+                            <div class="tab-pane fade show active" id="html-content" role="tabpanel">
+                                <div class="border p-3" style="max-height: 400px; overflow-y: auto;">
+                                    <pre><code>{{ template.html_content }}</code></pre>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="text-content" role="tabpanel">
+                                <div class="border p-3" style="max-height: 400px; overflow-y: auto;">
+                                    <pre><code>{{ template.text_content }}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <!-- Действия -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">{% trans "Действия" %}</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'email_template_update' template.pk %}" class="btn btn-primary">
+                                <i class="fas fa-edit me-1"></i>{% trans "Редактировать" %}
+                            </a>
+                            <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#previewModal">
+                                <i class="fas fa-eye me-1"></i>{% trans "Предварительный просмотр" %}
+                            </button>
+                            <a href="{% url 'email_template_duplicate' template.pk %}" class="btn btn-outline-info">
+                                <i class="fas fa-copy me-1"></i>{% trans "Дублировать" %}
+                            </a>
+                            {% if not template.is_active %}
+                                <a href="{% url 'email_template_activate' template.pk %}" class="btn btn-outline-success">
+                                    <i class="fas fa-check me-1"></i>{% trans "Активировать" %}
+                                </a>
+                            {% else %}
+                                <a href="{% url 'email_template_activate' template.pk %}" class="btn btn-outline-warning">
+                                    <i class="fas fa-pause me-1"></i>{% trans "Деактивировать" %}
+                                </a>
+                            {% endif %}
+                            {% if not template.is_default %}
+                                <a href="{% url 'email_template_set_default' template.pk %}" class="btn btn-outline-primary">
+                                    <i class="fas fa-star me-1"></i>{% trans "Сделать по умолчанию" %}
+                                </a>
+                            {% endif %}
+                            <a href="{% url 'email_template_export' template.pk %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-download me-1"></i>{% trans "Экспорт" %}
+                            </a>
+                            <a href="{% url 'email_template_delete' template.pk %}" class="btn btn-outline-danger">
+                                <i class="fas fa-trash me-1"></i>{% trans "Удалить" %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Переменные -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">{% trans "Доступные переменные" %}</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="accordion" id="variablesAccordion">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="orderHeading">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#orderCollapse">
+                                        {% trans "Заказ" %}
+                                    </button>
+                                </h2>
+                                <div id="orderCollapse" class="accordion-collapse collapse" data-bs-parent="#variablesAccordion">
+                                    <div class="accordion-body">
+                                        <ul class="list-unstyled">
+                                            <li><code>{% templatetag openvariable %} order.title {% templatetag closevariable %}</code> - {% trans "Название заказа" %}</li>
+                                            <li><code>{% templatetag openvariable %} order.description {% templatetag closevariable %}</code> - {% trans "Описание заказа" %}</li>
+                                            <li><code>{% templatetag openvariable %} order.uploaded_at|date:"d.m.Y H:i" {% templatetag closevariable %}</code> - {% trans "Дата заказа" %}</li>
+                                            <li><code>{% templatetag openvariable %} order.status {% templatetag closevariable %}</code> - {% trans "Статус заказа" %}</li>
+                                            <li><code>{% templatetag openvariable %} order.comments {% templatetag closevariable %}</code> - {% trans "Комментарии к заказу" %}</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="factoryHeading">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#factoryCollapse">
+                                        {% trans "Фабрика" %}
+                                    </button>
+                                </h2>
+                                <div id="factoryCollapse" class="accordion-collapse collapse" data-bs-parent="#variablesAccordion">
+                                    <div class="accordion-body">
+                                        <ul class="list-unstyled">
+                                            <li><code>{% templatetag openvariable %} factory.name {% templatetag closevariable %}</code> - {% trans "Название фабрики" %}</li>
+                                            <li><code>{% templatetag openvariable %} factory.email {% templatetag closevariable %}</code> - {% trans "Email фабрики" %}</li>
+                                            <li><code>{% templatetag openvariable %} factory.contact_person {% templatetag closevariable %}</code> - {% trans "Контактное лицо" %}</li>
+                                            <li><code>{% templatetag openvariable %} factory.phone {% templatetag closevariable %}</code> - {% trans "Телефон фабрики" %}</li>
+                                            <li><code>{% templatetag openvariable %} factory.address {% templatetag closevariable %}</code> - {% trans "Адрес фабрики" %}</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="employeeHeading">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#employeeCollapse">
+                                        {% trans "Сотрудник" %}
+                                    </button>
+                                </h2>
+                                <div id="employeeCollapse" class="accordion-collapse collapse" data-bs-parent="#variablesAccordion">
+                                    <div class="accordion-body">
+                                        <ul class="list-unstyled">
+                                            <li><code>{% templatetag openvariable %} employee.get_full_name {% templatetag closevariable %}</code> - {% trans "Полное имя сотрудника" %}</li>
+                                            <li><code>{% templatetag openvariable %} employee.username {% templatetag closevariable %}</code> - {% trans "Имя пользователя" %}</li>
+                                            <li><code>{% templatetag openvariable %} employee.email {% templatetag closevariable %}</code> - {% trans "Email сотрудника" %}</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="countryHeading">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#countryCollapse">
+                                        {% trans "Страна" %}
+                                    </button>
+                                </h2>
+                                <div id="countryCollapse" class="accordion-collapse collapse" data-bs-parent="#variablesAccordion">
+                                    <div class="accordion-body">
+                                        <ul class="list-unstyled">
+                                            <li><code>{% templatetag openvariable %} country.name {% templatetag closevariable %}</code> - {% trans "Название страны" %}</li>
+                                            <li><code>{% templatetag openvariable %} country.code {% templatetag closevariable %}</code> - {% trans "Код страны" %}</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно предварительного просмотра -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="previewModalLabel">{% trans "Предварительный просмотр" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="previewContent">
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">{% trans "Загрузка..." %}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Закрыть" %}</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
+    const previewContent = document.getElementById('previewContent');
+    
+    // Обработчик для кнопки предварительного просмотра
+    document.querySelector('[data-bs-target="#previewModal"]').addEventListener('click', function() {
+        previewModal.show();
+        
+        // Создаем форму с данными текущего шаблона
+        const formData = new FormData();
+        formData.append('subject', '{{ template.subject|escapejs }}');
+        formData.append('html_content', '{{ template.html_content|escapejs }}');
+        formData.append('text_content', '{{ template.text_content|escapejs }}');
+        
+        // Отправляем AJAX запрос для предварительного просмотра
+        fetch('{% url "email_template_preview_ajax" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                previewContent.innerHTML = `
+                    <div class="row">
+                        <div class="col-12">
+                            <h6>{% trans "Тема письма" %}</h6>
+                            <div class="alert alert-info">${data.subject}</div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>{% trans "HTML версия" %}</h6>
+                            <div class="border p-3" style="max-height: 300px; overflow-y: auto;">
+                                ${data.html_content}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>{% trans "Текстовая версия" %}</h6>
+                            <pre class="bg-light p-3" style="max-height: 300px; overflow-y: auto;">${data.text_content}</pre>
+                        </div>
+                    </div>
+                `;
+            } else {
+                previewContent.innerHTML = `
+                    <div class="alert alert-danger">
+                        <h6>{% trans "Ошибка предварительного просмотра" %}</h6>
+                        <p>${data.error}</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            previewContent.innerHTML = `
+                <div class="alert alert-danger">
+                    <h6>{% trans "Ошибка загрузки" %}</h6>
+                    <p>{% trans "Не удалось загрузить предварительный просмотр" %}</p>
+                </div>
+            `;
+        });
+    });
+});
+</script>
+{% endblock %}

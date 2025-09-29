@@ -1,0 +1,377 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{{ title }} - XXL OrderHub{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Главная" %}</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'email_template_list' %}">{% trans "Email шаблоны" %}</a></li>
+                <li class="breadcrumb-item active">{{ title }}</li>
+            </ol>
+        </nav>
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>{{ title }}</h2>
+            <div>
+                <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#variablesModal">
+                    <i class="fas fa-question-circle me-1"></i>{% trans "Переменные" %}
+                </button>
+                <button type="button" class="btn btn-outline-success" id="previewBtn">
+                    <i class="fas fa-eye me-1"></i>{% trans "Предварительный просмотр" %}
+                </button>
+            </div>
+        </div>
+
+        <form method="post" id="templateForm">
+            {% csrf_token %}
+            
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">{% trans "Основные настройки" %}</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.name.id_for_label }}" class="form-label">
+                                            {{ form.name.label }}
+                                            {% if form.name.field.required %}<span class="text-danger">*</span>{% endif %}
+                                        </label>
+                                        {{ form.name }}
+                                        {% if form.name.help_text %}
+                                            <div class="form-text">{{ form.name.help_text }}</div>
+                                        {% endif %}
+                                        {% if form.name.errors %}
+                                            <div class="text-danger">{{ form.name.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label for="{{ form.template_type.id_for_label }}" class="form-label">
+                                            {{ form.template_type.label }}
+                                            {% if form.template_type.field.required %}<span class="text-danger">*</span>{% endif %}
+                                        </label>
+                                        {{ form.template_type }}
+                                        {% if form.template_type.errors %}
+                                            <div class="text-danger">{{ form.template_type.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label for="{{ form.language.id_for_label }}" class="form-label">
+                                            {{ form.language.label }}
+                                            {% if form.language.field.required %}<span class="text-danger">*</span>{% endif %}
+                                        </label>
+                                        {{ form.language }}
+                                        {% if form.language.errors %}
+                                            <div class="text-danger">{{ form.language.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.subject.id_for_label }}" class="form-label">
+                                    {{ form.subject.label }}
+                                    {% if form.subject.field.required %}<span class="text-danger">*</span>{% endif %}
+                                </label>
+                                {{ form.subject }}
+                                {% if form.subject.help_text %}
+                                    <div class="form-text">{{ form.subject.help_text }}</div>
+                                {% endif %}
+                                {% if form.subject.errors %}
+                                    <div class="text-danger">{{ form.subject.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.description.id_for_label }}" class="form-label">
+                                    {{ form.description.label }}
+                                </label>
+                                {{ form.description }}
+                                {% if form.description.errors %}
+                                    <div class="text-danger">{{ form.description.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">{% trans "Содержимое шаблона" %}</h5>
+                        </div>
+                        <div class="card-body">
+                            <ul class="nav nav-tabs" id="contentTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="html-tab" data-bs-toggle="tab" data-bs-target="#html-content" type="button" role="tab">
+                                        {% trans "HTML версия" %}
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="text-tab" data-bs-toggle="tab" data-bs-target="#text-content" type="button" role="tab">
+                                        {% trans "Текстовая версия" %}
+                                    </button>
+                                </li>
+                            </ul>
+                            <div class="tab-content mt-3" id="contentTabsContent">
+                                <div class="tab-pane fade show active" id="html-content" role="tabpanel">
+                                    <div class="mb-3">
+                                        <label for="{{ form.html_content.id_for_label }}" class="form-label">
+                                            {{ form.html_content.label }}
+                                            {% if form.html_content.field.required %}<span class="text-danger">*</span>{% endif %}
+                                        </label>
+                                        {{ form.html_content }}
+                                        {% if form.html_content.help_text %}
+                                            <div class="form-text">{{ form.html_content.help_text }}</div>
+                                        {% endif %}
+                                        {% if form.html_content.errors %}
+                                            <div class="text-danger">{{ form.html_content.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="text-content" role="tabpanel">
+                                    <div class="mb-3">
+                                        <label for="{{ form.text_content.id_for_label }}" class="form-label">
+                                            {{ form.text_content.label }}
+                                            {% if form.text_content.field.required %}<span class="text-danger">*</span>{% endif %}
+                                        </label>
+                                        {{ form.text_content }}
+                                        {% if form.text_content.help_text %}
+                                            <div class="form-text">{{ form.text_content.help_text }}</div>
+                                        {% endif %}
+                                        {% if form.text_content.errors %}
+                                            <div class="text-danger">{{ form.text_content.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">{% trans "Настройки" %}</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-check mb-3">
+                                {{ form.is_active }}
+                                <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                    {{ form.is_active.label }}
+                                </label>
+                                {% if form.is_active.help_text %}
+                                    <div class="form-text">{{ form.is_active.help_text }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-check mb-3">
+                                {{ form.is_default }}
+                                <label class="form-check-label" for="{{ form.is_default.id_for_label }}">
+                                    {{ form.is_default.label }}
+                                </label>
+                                {% if form.is_default.help_text %}
+                                    <div class="form-text">{{ form.is_default.help_text }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">{% trans "Справка по переменным" %}</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="{{ form.variables_help.id_for_label }}" class="form-label">
+                                    {{ form.variables_help.label }}
+                                </label>
+                                {{ form.variables_help }}
+                                {% if form.variables_help.errors %}
+                                    <div class="text-danger">{{ form.variables_help.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'email_template_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>{% trans "Назад к списку" %}
+                        </a>
+                        <div>
+                            <button type="button" class="btn btn-outline-info me-2" data-bs-toggle="modal" data-bs-target="#variablesModal">
+                                <i class="fas fa-question-circle me-1"></i>{% trans "Переменные" %}
+                            </button>
+                            <button type="button" class="btn btn-outline-success me-2" id="previewBtn">
+                                <i class="fas fa-eye me-1"></i>{% trans "Предварительный просмотр" %}
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>{{ submit_text }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Модальное окно переменных -->
+<div class="modal fade" id="variablesModal" tabindex="-1" aria-labelledby="variablesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="variablesModalLabel">{% trans "Доступные переменные" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>{% trans "Заказ" %}</h6>
+                        <ul class="list-unstyled">
+                            <li><code>{% templatetag openvariable %} order.title {% templatetag closevariable %}</code> - {% trans "Название заказа" %}</li>
+                            <li><code>{% templatetag openvariable %} order.description {% templatetag closevariable %}</code> - {% trans "Описание заказа" %}</li>
+                            <li><code>{% templatetag openvariable %} order.uploaded_at|date:"d.m.Y H:i" {% templatetag closevariable %}</code> - {% trans "Дата заказа" %}</li>
+                            <li><code>{% templatetag openvariable %} order.status {% templatetag closevariable %}</code> - {% trans "Статус заказа" %}</li>
+                            <li><code>{% templatetag openvariable %} order.comments {% templatetag closevariable %}</code> - {% trans "Комментарии к заказу" %}</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>{% trans "Фабрика" %}</h6>
+                        <ul class="list-unstyled">
+                            <li><code>{% templatetag openvariable %} factory.name {% templatetag closevariable %}</code> - {% trans "Название фабрики" %}</li>
+                            <li><code>{% templatetag openvariable %} factory.email {% templatetag closevariable %}</code> - {% trans "Email фабрики" %}</li>
+                            <li><code>{% templatetag openvariable %} factory.contact_person {% templatetag closevariable %}</code> - {% trans "Контактное лицо" %}</li>
+                            <li><code>{% templatetag openvariable %} factory.phone {% templatetag closevariable %}</code> - {% trans "Телефон фабрики" %}</li>
+                            <li><code>{% templatetag openvariable %} factory.address {% templatetag closevariable %}</code> - {% trans "Адрес фабрики" %}</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <h6>{% trans "Сотрудник" %}</h6>
+                        <ul class="list-unstyled">
+                            <li><code>{% templatetag openvariable %} employee.get_full_name {% templatetag closevariable %}</code> - {% trans "Полное имя сотрудника" %}</li>
+                            <li><code>{% templatetag openvariable %} employee.username {% templatetag closevariable %}</code> - {% trans "Имя пользователя" %}</li>
+                            <li><code>{% templatetag openvariable %} employee.email {% templatetag closevariable %}</code> - {% trans "Email сотрудника" %}</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>{% trans "Страна" %}</h6>
+                        <ul class="list-unstyled">
+                            <li><code>{% templatetag openvariable %} country.name {% templatetag closevariable %}</code> - {% trans "Название страны" %}</li>
+                            <li><code>{% templatetag openvariable %} country.code {% templatetag closevariable %}</code> - {% trans "Код страны" %}</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Закрыть" %}</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно предварительного просмотра -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="previewModalLabel">{% trans "Предварительный просмотр" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="previewContent">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">{% trans "Загрузка..." %}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Закрыть" %}</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const previewBtn = document.getElementById('previewBtn');
+    const previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
+    const previewContent = document.getElementById('previewContent');
+    
+    previewBtn.addEventListener('click', function() {
+        // Собираем данные формы
+        const formData = new FormData(document.getElementById('templateForm'));
+        
+        // Показываем модальное окно
+        previewModal.show();
+        
+        // Отправляем AJAX запрос для предварительного просмотра
+        fetch('{% url "email_template_preview_ajax" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                previewContent.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>{% trans "Тема письма" %}</h6>
+                            <div class="alert alert-info">${data.subject}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>{% trans "HTML версия" %}</h6>
+                            <div class="border p-3" style="max-height: 300px; overflow-y: auto;">
+                                ${data.html_content}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6>{% trans "Текстовая версия" %}</h6>
+                            <pre class="bg-light p-3" style="max-height: 200px; overflow-y: auto;">${data.text_content}</pre>
+                        </div>
+                    </div>
+                `;
+            } else {
+                previewContent.innerHTML = `
+                    <div class="alert alert-danger">
+                        <h6>{% trans "Ошибка предварительного просмотра" %}</h6>
+                        <p>${data.error}</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            previewContent.innerHTML = `
+                <div class="alert alert-danger">
+                    <h6>{% trans "Ошибка загрузки" %}</h6>
+                    <p>{% trans "Не удалось загрузить предварительный просмотр" %}</p>
+                </div>
+            `;
+        });
+    });
+});
+</script>
+{% endblock %}

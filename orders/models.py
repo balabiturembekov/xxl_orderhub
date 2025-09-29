@@ -533,6 +533,219 @@ class OrderAuditLog(models.Model):
         )
 
 
+class EmailTemplate(models.Model):
+    """Шаблоны email для отправки заказов фабрикам"""
+    
+    TEMPLATE_TYPES = [
+        ('factory_order', 'Заказ на фабрику'),
+        ('order_confirmation', 'Подтверждение заказа'),
+        ('order_notification', 'Уведомление о заказе'),
+        ('reminder', 'Напоминание'),
+        ('confirmation', 'Подтверждение'),
+        ('invoice_request', 'Запрос инвойса'),
+    ]
+    
+    LANGUAGE_CHOICES = [
+        ('ru', 'Русский'),
+        ('en', 'English'),
+        ('de', 'Deutsch'),
+        ('it', 'Italiano'),
+        ('tr', 'Türkçe'),
+        ('pl', 'Polski'),
+        ('cz', 'Čeština'),
+        ('cn', '中文'),
+        ('lt', 'Lietuvių'),
+    ]
+    
+    name = models.CharField(
+        max_length=100,
+        verbose_name="Название шаблона",
+        help_text="Удобное название для идентификации шаблона"
+    )
+    template_type = models.CharField(
+        max_length=20,
+        choices=TEMPLATE_TYPES,
+        default='factory_order',
+        verbose_name="Тип шаблона"
+    )
+    language = models.CharField(
+        max_length=5,
+        choices=LANGUAGE_CHOICES,
+        default='ru',
+        verbose_name="Язык"
+    )
+    
+    # Содержимое шаблона
+    subject = models.CharField(
+        max_length=200,
+        verbose_name="Тема письма",
+        help_text="Используйте переменные: {{ order.title }}, {{ factory.name }}"
+    )
+    html_content = models.TextField(
+        verbose_name="HTML содержимое",
+        help_text="HTML версия письма с поддержкой переменных"
+    )
+    text_content = models.TextField(
+        verbose_name="Текстовое содержимое",
+        help_text="Текстовая версия письма для клиентов без поддержки HTML"
+    )
+    
+    # Настройки
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="Активен",
+        help_text="Только активные шаблоны используются при отправке"
+    )
+    is_default = models.BooleanField(
+        default=False,
+        verbose_name="По умолчанию",
+        help_text="Шаблон по умолчанию для данного типа и языка"
+    )
+    
+    # Метаданные
+    description = models.TextField(
+        blank=True,
+        verbose_name="Описание",
+        help_text="Описание назначения и особенностей шаблона"
+    )
+    variables_help = models.TextField(
+        blank=True,
+        verbose_name="Справка по переменным",
+        help_text="Список доступных переменных для использования в шаблоне"
+    )
+    
+    # Аудит
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Создал"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления")
+    last_used_at = models.DateTimeField(null=True, blank=True, verbose_name="Последнее использование")
+    
+    class Meta:
+        verbose_name = "Email шаблон"
+        verbose_name_plural = "Email шаблоны"
+        ordering = ['template_type', 'language', 'name']
+    
+    def __str__(self):
+        return f"{self.name} ({self.get_language_display()})"
+    
+    def save(self, *args, **kwargs):
+        # Если устанавливаем как шаблон по умолчанию, снимаем флаг с других
+        if self.is_default:
+            EmailTemplate.objects.filter(
+                template_type=self.template_type,
+                language=self.language,
+                is_default=True
+            ).exclude(pk=self.pk).update(is_default=False)
+        super().save(*args, **kwargs)
+    
+    def get_available_variables(self):
+        """Получить список доступных переменных для шаблона"""
+        return {
+            'order': {
+                'title': 'Название заказа',
+                'description': 'Описание заказа',
+                'uploaded_at': 'Дата заказа',
+                'status': 'Статус заказа',
+                'comments': 'Комментарии к заказу',
+            },
+            'factory': {
+                'name': 'Название фабрики',
+                'email': 'Email фабрики',
+                'contact_person': 'Контактное лицо',
+                'phone': 'Телефон фабрики',
+                'address': 'Адрес фабрики',
+            },
+            'employee': {
+                'get_full_name': 'Полное имя сотрудника',
+                'username': 'Имя пользователя',
+                'email': 'Email сотрудника',
+            },
+            'country': {
+                'name': 'Название страны',
+                'code': 'Код страны',
+            }
+        }
+    
+    def render_template(self, context):
+        """Рендеринг шаблона с переданным контекстом"""
+        from django.template import Template, Context
+        from django.template.loader import render_to_string
+        
+        try:
+            # Рендерим HTML версию
+            html_template = Template(self.html_content)
+            html_rendered = html_template.render(Context(context))
+            
+            # Рендерим текстовую версию
+            text_template = Template(self.text_content)
+            text_rendered = text_template.render(Context(context))
+            
+            return {
+                'subject': Template(self.subject).render(Context(context)),
+                'html_content': html_rendered,
+                'text_content': text_rendered
+            }
+        except Exception as e:
+            raise ValueError(f"Ошибка рендеринга шаблона: {str(e)}")
+    
+    def get_absolute_url(self):
+        """URL для детального просмотра шаблона"""
+        from django.urls import reverse
+        return reverse('email_template_detail', kwargs={'pk': self.pk})
+    
+    def mark_as_used(self):
+        """Отметить шаблон как использованный"""
+        from django.utils import timezone
+        self.last_used_at = timezone.now()
+        self.save(update_fields=['last_used_at'])
+
+
+class EmailTemplateVersion(models.Model):
+    """Версии email шаблонов для отслеживания изменений"""
+    
+    template = models.ForeignKey(
+        EmailTemplate,
+        on_delete=models.CASCADE,
+        related_name='versions',
+        verbose_name="Шаблон"
+    )
+    version_number = models.PositiveIntegerField(verbose_name="Номер версии")
+    
+    # Содержимое версии
+    subject = models.CharField(max_length=200, verbose_name="Тема письма")
+    html_content = models.TextField(verbose_name="HTML содержимое")
+    text_content = models.TextField(verbose_name="Текстовое содержимое")
+    
+    # Метаданные версии
+    change_description = models.TextField(
+        blank=True,
+        verbose_name="Описание изменений"
+    )
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Создал"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+    
+    class Meta:
+        verbose_name = "Версия шаблона"
+        verbose_name_plural = "Версии шаблонов"
+        ordering = ['-version_number']
+        unique_together = [['template', 'version_number']]
+    
+    def __str__(self):
+        return f"Версия {self.version_number} шаблона {self.template.name}"
+
+
 class Invoice(models.Model):
     """
     Модель для инвойсов с детальной информацией о платежах.

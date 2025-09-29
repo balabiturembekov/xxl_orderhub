@@ -1190,31 +1190,54 @@ def confirmation_approve(request, pk):
                 # Отправляем email фабрике
                 try:
                     # Определяем язык по стране фабрики
-                    from .email_utils import get_language_by_country_code, get_email_subject, get_email_template_paths
+                    from .email_utils import get_language_by_country_code, get_email_template_from_db
                     
                     country_code = order.factory.country.code
                     language_code = get_language_by_country_code(country_code)
                     
-                    # Получаем пути к шаблонам
-                    html_template_path, txt_template_path = get_email_template_paths(language_code)
+                    # Получаем шаблон из базы данных
+                    template = get_email_template_from_db('order_confirmation', language_code)
                     
-                    # Формируем заголовок письма
-                    subject_prefix = get_email_subject(language_code)
-                    subject = f'{subject_prefix}: {order.title}'
-                    
-                    # Рендерим HTML шаблон
-                    html_message = render_to_string(html_template_path, {
-                        'order': order,
-                        'factory': order.factory,
-                        'employee': order.employee,
-                    })
-                    
-                    # Рендерим текстовый шаблон
-                    text_message = render_to_string(txt_template_path, {
-                        'order': order,
-                        'factory': order.factory,
-                        'employee': order.employee,
-                    })
+                    if template:
+                        # Используем шаблон из БД
+                        context = {
+                            'order': order,
+                            'factory': order.factory,
+                            'employee': order.employee,
+                            'country': order.factory.country,
+                        }
+                        
+                        rendered = template.render_template(context)
+                        subject = rendered['subject']
+                        html_message = rendered['html_content']
+                        text_message = rendered['text_content']
+                        
+                        # Отмечаем шаблон как использованный
+                        template.mark_as_used()
+                    else:
+                        # Fallback к статическим шаблонам
+                        from .email_utils import get_email_subject, get_email_template_paths
+                        
+                        # Получаем пути к шаблонам
+                        html_template_path, txt_template_path = get_email_template_paths(language_code)
+                        
+                        # Формируем заголовок письма
+                        subject_prefix = get_email_subject(language_code)
+                        subject = f'{subject_prefix}: {order.title}'
+                        
+                        # Рендерим HTML шаблон
+                        html_message = render_to_string(html_template_path, {
+                            'order': order,
+                            'factory': order.factory,
+                            'employee': order.employee,
+                        })
+                        
+                        # Рендерим текстовый шаблон
+                        text_message = render_to_string(txt_template_path, {
+                            'order': order,
+                            'factory': order.factory,
+                            'employee': order.employee,
+                        })
                     
                     email = EmailMessage(
                         subject=subject,
