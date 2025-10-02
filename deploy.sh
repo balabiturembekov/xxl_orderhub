@@ -111,6 +111,8 @@ echo "   • Статус:             docker-compose -f docker-compose.prod.yml
 echo "   • Проверить данные:   docker-compose -f docker-compose.prod.yml exec web python manage.py check_data_integrity"
 echo "   • Перезагрузить данные: docker-compose -f docker-compose.prod.yml exec --user root web python manage.py setup_initial_data --clear"
 echo "   • Очистить справочники: docker-compose -f docker-compose.prod.yml exec web python manage.py clear_reference_data --force"
+echo "   • Проверить email:    docker-compose -f docker-compose.prod.yml exec web python manage.py check_email_settings"
+echo "   • Тест email:         docker-compose -f docker-compose.prod.yml exec web python manage.py check_email_settings --send-test --test-email your@email.com"
 echo ""
 echo "⚠️  Важно:"
 echo "   • Только порт 8280 доступен снаружи"
