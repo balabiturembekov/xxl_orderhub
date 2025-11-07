@@ -122,15 +122,53 @@ def create_order(request):
     Handles both GET (show form) and POST (process form) requests.
     Creates order with uploaded Excel file and associates it with the current user.
     """
+    import logging
+    from django.db import transaction
+    from ..models import OrderAuditLog
+    
+    logger = logging.getLogger('orders')
+    
     if request.method == 'POST':
-        form = OrderForm(request.POST, request.FILES)
-        if form.is_valid():
-            order = form.save(commit=False)
-            order.employee = request.user
-            order.save()
-            
-            messages.success(request, f'Заказ "{order.title}" успешно создан!')
-            return redirect('order_detail', pk=order.pk)
+        try:
+            form = OrderForm(request.POST, request.FILES)
+            if form.is_valid():
+                try:
+                    # Используем транзакцию для атомарности операции
+                    with transaction.atomic():
+                        order = form.save(commit=False)
+                        order.employee = request.user
+                        # Убеждаемся, что invoice_file не установлен при создании
+                        if order.invoice_file:
+                            order.invoice_file = None
+                        order.save()
+                        
+                        # Создаем аудит-лог
+                        OrderAuditLog.log_action(
+                            order=order,
+                            user=request.user,
+                            action='created',
+                            field_name='order',
+                            comments=f'Заказ "{order.title}" создан пользователем {request.user.username}'
+                        )
+                        
+                        logger.info(f'Order created: {order.id} by user {request.user.username}')
+                        messages.success(request, f'Заказ "{order.title}" успешно создан!')
+                        return redirect('order_detail', pk=order.pk)
+                except Exception as e:
+                    logger.error(f'Error saving order: {e}', exc_info=True)
+                    messages.error(request, f'Ошибка при сохранении заказа: {str(e)}')
+            else:
+                # Логируем ошибки валидации
+                logger.warning(f'Order form validation failed: {form.errors}')
+                if 'excel_file' in form.errors:
+                    messages.error(request, f'Ошибка в файле: {form.errors["excel_file"][0]}')
+                elif 'factory' in form.errors:
+                    messages.error(request, 'Пожалуйста, выберите фабрику.')
+                else:
+                    messages.error(request, 'Пожалуйста, исправьте ошибки в форме.')
+        except Exception as e:
+            logger.error(f'Unexpected error in create_order: {e}', exc_info=True)
+            messages.error(request, 'Произошла неожиданная ошибка при создании заказа. Обратитесь к администратору.')
     else:
         form = OrderForm()
     

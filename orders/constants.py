@@ -78,13 +78,14 @@ class FileConstants:
     """Константы для работы с файлами"""
     
     # Размеры файлов (в байтах)
-    MAX_EXCEL_SIZE = 500 * 1024 * 1024  # 500MB
-    MAX_PDF_SIZE = 500 * 1024 * 1024    # 500MB
+    # Обновлено до 2GB для соответствия настройкам Django
+    MAX_EXCEL_SIZE = 2 * 1024 * 1024 * 1024  # 2GB
+    MAX_PDF_SIZE = 2 * 1024 * 1024 * 1024    # 2GB
     MAX_IMAGE_SIZE = 100 * 1024 * 1024  # 100MB
     
     # Размеры файлов (в MB для отображения)
-    MAX_EXCEL_SIZE_MB = 500
-    MAX_PDF_SIZE_MB = 500
+    MAX_EXCEL_SIZE_MB = 2048  # 2GB
+    MAX_PDF_SIZE_MB = 2048  # 2GB
     MAX_IMAGE_SIZE_MB = 100
     
     # Разрешенные расширения

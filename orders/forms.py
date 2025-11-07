@@ -164,8 +164,39 @@ class OrderForm(forms.ModelForm):
         help_texts = {
             'title': 'Краткое название заказа для идентификации',
             'description': 'Подробное описание заказа, требования, спецификации',
-            'invoice_file': 'Загрузите PDF файл инвойса (опционально)',
+            'invoice_file': 'Инвойс загружается после отправки заказа на фабрику',
         }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Делаем invoice_file необязательным и скрываем при создании нового заказа
+        self.fields['invoice_file'].required = False
+        # Если это новый заказ (нет instance или instance без pk), скрываем invoice_file
+        if not self.instance or not self.instance.pk:
+            self.fields['invoice_file'].widget = forms.HiddenInput()
+    
+    def clean_invoice_file(self):
+        """Валидация: invoice_file не должен загружаться при создании нового заказа"""
+        invoice_file = self.cleaned_data.get('invoice_file')
+        
+        # Если это новый заказ (нет instance или instance без pk)
+        if not self.instance or not self.instance.pk:
+            if invoice_file:
+                raise forms.ValidationError(
+                    'Инвойс нельзя загружать при создании заказа. Он загружается после отправки заказа на фабрику.'
+                )
+        
+        return invoice_file
+    
+    def clean_excel_file(self):
+        """Валидация: excel_file обязателен"""
+        excel_file = self.cleaned_data.get('excel_file')
+        
+        # Если это новый заказ и файл не загружен
+        if (not self.instance or not self.instance.pk) and not excel_file:
+            raise forms.ValidationError('Excel файл обязателен для создания заказа.')
+        
+        return excel_file
 
 
 class InvoiceUploadForm(forms.ModelForm):

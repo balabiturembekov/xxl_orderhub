@@ -239,10 +239,10 @@ class Order(models.Model):
         """Валидация модели"""
         super().clean()
 
-        # Валидация имени файла
-        if self.excel_file:
+        # Валидация имени файла (только если файл загружен)
+        if self.excel_file and hasattr(self.excel_file, 'name') and self.excel_file.name:
             validate_safe_filename(self.excel_file.name)
-        if self.invoice_file:
+        if self.invoice_file and hasattr(self.invoice_file, 'name') and self.invoice_file.name:
             validate_safe_filename(self.invoice_file.name)
     
     def get_absolute_url(self) -> str:

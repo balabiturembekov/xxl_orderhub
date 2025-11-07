@@ -12,8 +12,12 @@ def validate_file_type(file):
     file_content = file.read(1024)
     file.seek(0)  # Возвращаем указатель в начало
     
-    # Определяем MIME тип
-    mime_type = magic.from_buffer(file_content, mime=True)
+    # Определяем MIME тип с обработкой ошибок
+    try:
+        mime_type = magic.from_buffer(file_content, mime=True)
+    except Exception:
+        # Если magic не работает, используем только проверку сигнатур
+        mime_type = None
     
     # Проверяем расширение файла
     file_extension = file.name.lower().split('.')[-1] if '.' in file.name else ''
@@ -22,31 +26,38 @@ def validate_file_type(file):
     
     # Проверка для Excel файлов
     if is_excel_extension:
-        # Проверяем сигнатуры Excel файлов
+        # Проверяем сигнатуры Excel файлов (приоритет сигнатурам, они быстрее)
         if (file_content.startswith(b'PK\x03\x04') or  # ZIP/Office signature (.xlsx)
-            file_content.startswith(b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1') or  # OLE signature (.xls)
-            mime_type in ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                         'application/vnd.ms-excel',
-                         'application/octet-stream',
-                         'application/zip']):
+            file_content.startswith(b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1')):  # OLE signature (.xls)
+            return
+        # Если сигнатуры не подошли, проверяем MIME тип
+        if mime_type and mime_type in ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                       'application/vnd.ms-excel',
+                                       'application/octet-stream',
+                                       'application/zip']:
             return
     
     # Проверка для PDF файлов
     if is_pdf_extension:
-        if (mime_type == 'application/pdf' or
-            file_content.startswith(b'%PDF')):
+        # Проверяем сигнатуру PDF (приоритет сигнатуре)
+        if file_content.startswith(b'%PDF'):
+            return
+        # Если сигнатура не подошла, проверяем MIME тип
+        if mime_type == 'application/pdf':
             return
     
     # Если MIME тип в списке разрешенных (для обратной совместимости)
-    allowed_mime_types = {
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',  # .xlsx
-        'application/vnd.ms-excel',  # .xls
-        'application/pdf',  # .pdf
-    }
+    if mime_type:
+        allowed_mime_types = {
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',  # .xlsx
+            'application/vnd.ms-excel',  # .xls
+            'application/pdf',  # .pdf
+        }
+        
+        if mime_type in allowed_mime_types:
+            return
     
-    if mime_type in allowed_mime_types:
-        return
-    
+    # Если ничего не подошло - ошибка
     raise ValidationError(
         _('Недопустимый тип файла. Разрешены только Excel (.xlsx, .xls) и PDF файлы.'),
         code='invalid_file_type'
@@ -55,17 +66,39 @@ def validate_file_type(file):
 
 def validate_file_size(file):
     """Валидация размера файла"""
-    max_size = FileConstants.MAX_EXCEL_SIZE  # 500MB
+    max_size = FileConstants.MAX_EXCEL_SIZE  # 2GB
+    
+    # Проверка на наличие размера файла
+    if not hasattr(file, 'size') or file.size is None:
+        raise ValidationError(
+            _('Не удалось определить размер файла.'),
+            code='file_size_error'
+        )
     
     if file.size > max_size:
+        max_size_mb = FileConstants.MAX_EXCEL_SIZE_MB
         raise ValidationError(
-            _('Файл слишком большой. Максимальный размер: 500MB.'),
+            _('Файл слишком большой. Максимальный размер: {}MB.').format(max_size_mb),
             code='file_too_large'
         )
 
 
 def validate_excel_file(file):
     """Валидация Excel файла"""
+    # Проверка на наличие файла
+    if not file:
+        raise ValidationError(
+            _('Файл не загружен.'),
+            code='file_missing'
+        )
+    
+    # Проверка на наличие имени файла
+    if not hasattr(file, 'name') or not file.name:
+        raise ValidationError(
+            _('Не удалось определить имя файла.'),
+            code='file_name_error'
+        )
+    
     validate_file_size(file)
     
     # Проверка расширения файла
@@ -76,21 +109,43 @@ def validate_excel_file(file):
         )
     
     # Проверка типа файла по содержимому
-    file.seek(0)
-    file_content = file.read(1024)
-    file.seek(0)  # Возвращаем указатель в начало
-    
-    # Проверяем сигнатуры Excel файлов
-    if not (file_content.startswith(b'PK\x03\x04') or  # ZIP/Office signature (.xlsx)
-            file_content.startswith(b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1')):  # OLE signature (.xls)
+    try:
+        file.seek(0)
+        file_content = file.read(1024)
+        file.seek(0)  # Возвращаем указатель в начало
+        
+        # Проверяем сигнатуры Excel файлов
+        if not (file_content.startswith(b'PK\x03\x04') or  # ZIP/Office signature (.xlsx)
+                file_content.startswith(b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1')):  # OLE signature (.xls)
+            raise ValidationError(
+                _('Файл не является корректным Excel файлом'),
+                code='invalid_excel_file'
+            )
+    except Exception as e:
+        # Если не удалось прочитать файл, это может быть проблема с большим файлом
+        # Но мы уже проверили размер, так что это скорее всего ошибка чтения
         raise ValidationError(
-            _('Файл не является корректным Excel файлом'),
-            code='invalid_excel_file'
+            _('Ошибка при чтении файла: {}').format(str(e)),
+            code='file_read_error'
         )
 
 
 def validate_pdf_file(file):
     """Валидация PDF файла"""
+    # Проверка на наличие файла
+    if not file:
+        raise ValidationError(
+            _('Файл не загружен.'),
+            code='file_missing'
+        )
+    
+    # Проверка на наличие имени файла
+    if not hasattr(file, 'name') or not file.name:
+        raise ValidationError(
+            _('Не удалось определить имя файла.'),
+            code='file_name_error'
+        )
+    
     validate_file_size(file)
     
     # Проверка расширения файла
@@ -101,15 +156,22 @@ def validate_pdf_file(file):
         )
     
     # Проверка типа файла по содержимому
-    file.seek(0)
-    file_content = file.read(1024)
-    file.seek(0)  # Возвращаем указатель в начало
-    
-    # Проверяем сигнатуру PDF файла
-    if not file_content.startswith(b'%PDF'):
+    try:
+        file.seek(0)
+        file_content = file.read(1024)
+        file.seek(0)  # Возвращаем указатель в начало
+        
+        # Проверяем сигнатуру PDF файла
+        if not file_content.startswith(b'%PDF'):
+            raise ValidationError(
+                _('Файл не является корректным PDF файлом'),
+                code='invalid_pdf_file'
+            )
+    except Exception as e:
+        # Если не удалось прочитать файл
         raise ValidationError(
-            _('Файл не является корректным PDF файлом'),
-            code='invalid_pdf_file'
+            _('Ошибка при чтении файла: {}').format(str(e)),
+            code='file_read_error'
         )
 
 
