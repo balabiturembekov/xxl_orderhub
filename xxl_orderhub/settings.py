@@ -31,114 +31,120 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-i+1p%&$$l%5iks9x@1b!k=zsk@74*1(y0ya(&%!+8*ho9n4c7g')
+SECRET_KEY = config(
+    "SECRET_KEY",
+    default="django-insecure-i+1p%&$$l%5iks9x@1b!k=zsk@74*1(y0ya(&%!+8*ho9n4c7g",
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', default=True, cast=bool)
+DEBUG = config("DEBUG", default=True, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,testserver,192.168.0.100,web,worker,beat,flower,orderhub.automatonsoft.de', cast=Csv())
+ALLOWED_HOSTS = config(
+    "ALLOWED_HOSTS",
+    default="localhost,127.0.0.1,testserver,192.168.0.100,web,worker,beat,flower,orderhub.automatonsoft.de",
+    cast=Csv(),
+)
 
 
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'django_celery_beat',
-    'widget_tweaks',
-    'orders',
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "django_celery_beat",
+    "widget_tweaks",
+    "orders",
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'orders.compression_middleware.CompressionMiddleware',  # Сжатие ответов
-    'orders.middleware.RateLimitMiddleware',
-    'orders.middleware.RequestLoggingMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.locale.LocaleMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',  # Включаем CSRF
-    'orders.csrf_middleware.EnsureCSRFCookieMiddleware',  # Принудительная установка CSRF cookie
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'orders.message_middleware.MessageCleanupMiddleware',  # Очистка сообщений
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "orders.compression_middleware.CompressionMiddleware",  # Сжатие ответов
+    "orders.middleware.RateLimitMiddleware",
+    "orders.middleware.RequestLoggingMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.locale.LocaleMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",  # Включаем CSRF
+    "orders.csrf_middleware.EnsureCSRFCookieMiddleware",  # Принудительная установка CSRF cookie
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "orders.message_middleware.MessageCleanupMiddleware",  # Очистка сообщений
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = 'xxl_orderhub.urls'
+ROOT_URLCONF = "xxl_orderhub.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-                'orders.context_processors.notification_count',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+                "orders.context_processors.notification_count",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'xxl_orderhub.wsgi.application'
+WSGI_APPLICATION = "xxl_orderhub.wsgi.application"
 
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 # Database configuration
-DATABASE_URL = config('DATABASE_URL', default='sqlite:///db.sqlite3')
+DATABASE_URL = config("DATABASE_URL", default="sqlite:///db.sqlite3")
 
-if DATABASE_URL.startswith('postgresql://'):
+if DATABASE_URL.startswith("postgresql://"):
     # PostgreSQL configuration
     import dj_database_url
-    DATABASES = {
-        'default': dj_database_url.parse(DATABASE_URL)
-    }
+
+    DATABASES = {"default": dj_database_url.parse(DATABASE_URL)}
 else:
     # SQLite configuration (for development)
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
         }
     }
 
 # Cache
-if 'test' in sys.argv or 'pytest' in sys.argv[0]:
+if "test" in sys.argv or "pytest" in sys.argv[0]:
     # Используем локальный кэш для тестов
     CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-            'LOCATION': 'unique-snowflake',
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "unique-snowflake",
         }
     }
 elif DEBUG:
     # Для разработки используем локальный кэш, если Redis недоступен
     CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-            'LOCATION': 'unique-snowflake',
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "unique-snowflake",
         }
     }
 else:
     # Используем Redis для production
     CACHES = {
-        'default': {
-            'BACKEND': 'django_redis.cache.RedisCache',
-            'LOCATION': config('REDIS_URL', default='redis://127.0.0.1:6379/1'),
-            'OPTIONS': {
-                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": config("REDIS_URL", default="redis://127.0.0.1:6379/1"),
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
             },
-            'KEY_PREFIX': 'xxl_orderhub',
-            'TIMEOUT': 300,  # 5 minutes
+            "KEY_PREFIX": "xxl_orderhub",
+            "TIMEOUT": 300,  # 5 minutes
         }
     }
 
@@ -148,16 +154,16 @@ else:
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
@@ -165,9 +171,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'ru'
+LANGUAGE_CODE = "ru"
 
-TIME_ZONE = 'Europe/Berlin'
+TIME_ZONE = "Europe/Berlin"
 
 USE_I18N = True
 
@@ -181,26 +187,26 @@ LANGUAGES = [
 ]
 
 LOCALE_PATHS = [
-    BASE_DIR / "locale",    # сюда будут складываться переводы
+    BASE_DIR / "locale",  # сюда будут складываться переводы
 ]
 
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_URL = "static/"
+STATICFILES_DIRS = [BASE_DIR / "static"]
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Media files (user uploads)
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 # Static files optimization
-STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
 STATICFILES_FINDERS = [
-    'django.contrib.staticfiles.finders.FileSystemFinder',
-    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+    "django.contrib.staticfiles.finders.FileSystemFinder",
+    "django.contrib.staticfiles.finders.AppDirectoriesFinder",
 ]
 
 # CDN settings (не используется)
@@ -208,104 +214,114 @@ STATICFILES_FINDERS = [
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Authentication settings
-LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'home'
-LOGOUT_REDIRECT_URL = 'login'
+LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "home"
+LOGOUT_REDIRECT_URL = "login"
 
 # Email settings
-EMAIL_BACKEND = config('EMAIL_BACKEND', default='orders.email_backend.UTF8EmailBackend')
-EMAIL_HOST = config('EMAIL_HOST', default='localhost')
-EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
-EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
-EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
-DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@xxlorderhub.com')
+EMAIL_BACKEND = config("EMAIL_BACKEND", default="orders.email_backend.UTF8EmailBackend")
+EMAIL_HOST = config("EMAIL_HOST", default="localhost")
+EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
+EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
+EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
+DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@xxlorderhub.com")
 
 # Email encoding settings
-EMAIL_CHARSET = 'utf-8'
-EMAIL_CONTENT_TYPE = 'text/plain; charset=utf-8'
+EMAIL_CHARSET = "utf-8"
+EMAIL_CONTENT_TYPE = "text/plain; charset=utf-8"
 
 # Base URL for absolute links in emails
-BASE_URL = config('BASE_URL', default='http://localhost:8280')
+BASE_URL = config("BASE_URL", default="http://localhost:8280")
 
 # File upload settings (удалены - дублируются ниже)
 
 # Celery settings
-CELERY_BROKER_URL = config('REDIS_URL', default='redis://localhost:6379/0')
-CELERY_RESULT_BACKEND = config('REDIS_URL', default='redis://localhost:6379/0')
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
+CELERY_BROKER_URL = config("REDIS_URL", default="redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = config("REDIS_URL", default="redis://localhost:6379/0")
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_ENABLE_UTC = True  # Celery всегда работает в UTC, но отображает в TIME_ZONE
 
 # Celery beat settings for periodic tasks
-CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
 # Security Settings (упрощены)
-X_FRAME_OPTIONS = 'DENY'
+X_FRAME_OPTIONS = "DENY"
 
 # Session Security
-SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=False, cast=bool)
-SESSION_COOKIE_HTTPONLY = config('SESSION_COOKIE_HTTPONLY', default=True, cast=bool)
+SESSION_COOKIE_SECURE = config("SESSION_COOKIE_SECURE", default=False, cast=bool)
+SESSION_COOKIE_HTTPONLY = config("SESSION_COOKIE_HTTPONLY", default=True, cast=bool)
 SESSION_COOKIE_AGE = 3600  # 1 hour
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_COOKIE_DOMAIN = None  # Позволяет работать с разными портами
 
 # CSRF Security
-CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='http://192.168.0.100:8280,http://localhost:8280,https://orderhub.automatonsoft.de', cast=Csv())
-CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=False, cast=bool)
+CSRF_TRUSTED_ORIGINS = config(
+    "CSRF_TRUSTED_ORIGINS",
+    default="http://192.168.0.100:8280,http://localhost:8280,https://orderhub.automatonsoft.de",
+    cast=Csv(),
+)
+CSRF_COOKIE_SECURE = config("CSRF_COOKIE_SECURE", default=False, cast=bool)
 CSRF_COOKIE_HTTPONLY = False  # Для AJAX
-CSRF_COOKIE_SAMESITE = 'Lax'  # Для работы с разными портами
+CSRF_COOKIE_SAMESITE = "Lax"  # Для работы с разными портами
 CSRF_COOKIE_DOMAIN = None  # Позволяет работать с разными портами
 CSRF_USE_SESSIONS = False  # Используем cookies, не сессии
-CSRF_COOKIE_NAME = 'csrftoken'  # Явно указываем имя cookie
+CSRF_COOKIE_NAME = "csrftoken"  # Явно указываем имя cookie
 
 # File Upload Security
-FILE_UPLOAD_MAX_MEMORY_SIZE = config('FILE_UPLOAD_MAX_MEMORY_SIZE', default=500 * 1024 * 1024, cast=int)  # 500MB
-DATA_UPLOAD_MAX_MEMORY_SIZE = config('DATA_UPLOAD_MAX_MEMORY_SIZE', default=500 * 1024 * 1024, cast=int)  # 500MB
+# Лимиты для загрузки больших файлов (Excel, PDF, изображения)
+# По умолчанию 2GB, можно переопределить через переменные окружения
+FILE_UPLOAD_MAX_MEMORY_SIZE = config(
+    "FILE_UPLOAD_MAX_MEMORY_SIZE", default=2 * 1024 * 1024 * 1024, cast=int
+)  # 2GB по умолчанию
+DATA_UPLOAD_MAX_MEMORY_SIZE = config(
+    "DATA_UPLOAD_MAX_MEMORY_SIZE", default=2 * 1024 * 1024 * 1024, cast=int
+)  # 2GB по умолчанию
 
 # Logging
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
-            'style': '{',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+            "style": "{",
         },
-        'simple': {
-            'format': '{levelname} {message}',
-            'style': '{',
-        },
-    },
-    'handlers': {
-        'console': {
-            'level': 'INFO' if not DEBUG else 'DEBUG',
-            'class': 'logging.StreamHandler',
-            'formatter': 'simple',
+        "simple": {
+            "format": "{levelname} {message}",
+            "style": "{",
         },
     },
-    'root': {
-        'handlers': ['console'],
-        'level': 'INFO',
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': False,
+    "handlers": {
+        "console": {
+            "level": "INFO" if not DEBUG else "DEBUG",
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
         },
-        'orders': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': False,
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "orders": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
         },
     },
 }
 
 # Messages framework
-MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
+MESSAGE_STORAGE = "django.contrib.messages.storage.session.SessionStorage"
