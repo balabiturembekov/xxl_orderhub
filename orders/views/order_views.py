@@ -180,8 +180,14 @@ def create_order(request):
                         
                         # Сохраняем заказ (файл будет сохранен на диск здесь)
                         logger.info(f'Saving order to database, factory_id={order.factory_id}...')
+                        logger.info(f'Excel file name: {order.excel_file.name if order.excel_file else "None"}, size: {order.excel_file.size if order.excel_file and hasattr(order.excel_file, "size") else "unknown"}')
+                        
+                        # Сохраняем заказ - это может занять время для больших файлов
+                        import time
+                        save_start = time.time()
                         order.save()
-                        logger.info(f'Order saved to database, id={order.id}')
+                        save_duration = time.time() - save_start
+                        logger.info(f'Order saved to database, id={order.id}, save took {save_duration:.2f}s')
                         
                         # Создаем аудит-лог
                         logger.info('Creating audit log...')
