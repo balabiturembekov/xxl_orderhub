@@ -95,14 +95,24 @@ class OrderDetailView(DetailView):
     
     def get_context_data(self, **kwargs):
         """Add additional context for order detail view."""
+        import logging
+        logger = logging.getLogger('orders')
+        
+        logger.info(f'OrderDetailView.get_context_data called for order {self.kwargs.get("pk")}')
         context = super().get_context_data(**kwargs)
         order = self.get_object()
+        logger.info(f'Order object retrieved: {order.id}')
         
         # Add related data with optimized queries to prevent N+1
+        logger.info('Loading confirmations...')
         context['confirmations'] = order.orderconfirmation_set.select_related(
             'requested_by', 'confirmed_by', 'order'
         ).order_by('-requested_at')
+        logger.info(f'Confirmations loaded: {context["confirmations"].count()}')
+        
+        logger.info('Loading audit logs...')
         context['audit_logs'] = order.orderauditlog_set.select_related('user', 'order').order_by('-timestamp')
+        logger.info(f'Audit logs loaded: {context["audit_logs"].count()}')
         
         # Calculate days since upload/sent
         if order.uploaded_at:
@@ -172,7 +182,17 @@ def create_order(request):
                         
                         logger.info(f'Order created successfully: {order.id} by user {request.user.username}')
                         messages.success(request, f'Заказ "{order.title}" успешно создан!')
-                        return redirect('order_detail', pk=order.pk)
+                        
+                        # Логируем перед redirect для диагностики
+                        logger.info(f'About to redirect to order_detail for order {order.id}')
+                        try:
+                            redirect_url = redirect('order_detail', pk=order.pk)
+                            logger.info(f'Redirect URL created successfully: {redirect_url.url if hasattr(redirect_url, "url") else "OK"}')
+                            return redirect_url
+                        except Exception as redirect_error:
+                            logger.error(f'Error creating redirect: {redirect_error}', exc_info=True)
+                            # Fallback: redirect to order list if detail fails
+                            return redirect('order_list')
                 except Exception as e:
                     logger.error(f'Error saving order: {e}', exc_info=True)
                     messages.error(request, f'Ошибка при сохранении заказа: {str(e)}')
