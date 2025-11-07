@@ -15,12 +15,17 @@ class RequestLoggingMiddleware(MiddlewareMixin):
         request.start_time = time.time()
         # Логируем POST запросы сразу, до обработки файлов
         # ВАЖНО: request.FILES может быть еще не доступен здесь, т.к. Django парсит multipart/form-data
-        # только когда к request.FILES обращаются. Поэтому логируем только факт POST запроса.
+        # только когда к request.FILES обращаются. 
+        # ВАЖНО: request.user недоступен в process_request, т.к. аутентификация происходит позже в middleware chain
         if request.method == 'POST' and request.path == '/orders/create/':
             content_length = request.META.get('CONTENT_LENGTH', 'unknown')
+            # Получаем username безопасно - user может быть еще не аутентифицирован
+            username = 'Anonymous'
+            if hasattr(request, 'user') and request.user.is_authenticated:
+                username = request.user.username
             logger.info(
                 f"MIDDLEWARE: POST {request.path} - "
-                f"User: {getattr(request.user, 'username', 'Anonymous')} - "
+                f"User: {username} - "
                 f"Content-Length: {content_length} bytes"
             )
         return None
