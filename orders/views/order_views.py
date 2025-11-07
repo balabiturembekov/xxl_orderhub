@@ -147,14 +147,20 @@ def create_order(request):
                 try:
                     # Используем транзакцию для атомарности операции
                     with transaction.atomic():
+                        logger.info('Starting order save...')
                         order = form.save(commit=False)
                         order.employee = request.user
                         # Убеждаемся, что invoice_file не установлен при создании
                         if order.invoice_file:
                             order.invoice_file = None
+                        
+                        # Сохраняем заказ (файл будет сохранен на диск здесь)
+                        logger.info(f'Saving order to database, factory_id={order.factory_id}...')
                         order.save()
+                        logger.info(f'Order saved to database, id={order.id}')
                         
                         # Создаем аудит-лог
+                        logger.info('Creating audit log...')
                         OrderAuditLog.log_action(
                             order=order,
                             user=request.user,
@@ -162,8 +168,9 @@ def create_order(request):
                             field_name='order',
                             comments=f'Заказ "{order.title}" создан пользователем {request.user.username}'
                         )
+                        logger.info('Audit log created')
                         
-                        logger.info(f'Order created: {order.id} by user {request.user.username}')
+                        logger.info(f'Order created successfully: {order.id} by user {request.user.username}')
                         messages.success(request, f'Заказ "{order.title}" успешно создан!')
                         return redirect('order_detail', pk=order.pk)
                 except Exception as e:

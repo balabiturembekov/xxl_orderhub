@@ -137,8 +137,9 @@ class OrderForm(forms.ModelForm):
     """
     
     # Переопределяем поле factory для добавления пустой опции
+    # Оптимизация: используем select_related для избежания N+1 запросов
     factory = forms.ModelChoiceField(
-        queryset=Factory.objects.filter(is_active=True).select_related('country'),
+        queryset=Factory.objects.filter(is_active=True).select_related('country').only('id', 'name', 'country__name'),
         empty_label="Выберите фабрику из списка",
         widget=forms.Select(attrs={'class': 'form-select'}),
         label="Фабрика"
