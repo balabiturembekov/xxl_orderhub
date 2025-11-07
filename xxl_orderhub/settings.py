@@ -209,6 +209,27 @@ STATICFILES_FINDERS = [
     "django.contrib.staticfiles.finders.AppDirectoriesFinder",
 ]
 
+# Подавление предупреждений о дублирующихся статических файлах
+# Это нормально, когда несколько пакетов содержат одинаковые файлы
+import warnings
+
+# Подавление предупреждений о дублирующихся статических файлах
+warnings.filterwarnings(
+    "ignore",
+    message="Found another file with the destination path",
+    category=UserWarning,
+    module="django.contrib.staticfiles",
+)
+
+# Подавление предупреждения о pkg_resources из widget_tweaks
+# Это известная проблема пакета, которая будет исправлена в будущих версиях
+warnings.filterwarnings(
+    "ignore",
+    message="pkg_resources is deprecated",
+    category=UserWarning,
+    module="widget_tweaks",
+)
+
 # CDN settings (не используется)
 
 # Default primary key field type
