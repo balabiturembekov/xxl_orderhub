@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.utils import timezone
-from .models import UserProfile, Order, Factory, NotificationSettings, Notification, Country, Invoice, InvoicePayment
+from .models import UserProfile, Order, Factory, NotificationSettings, Notification, Country, Invoice, InvoicePayment, OrderCBM
 from .constants import FileConstants
 
 
@@ -509,6 +509,84 @@ class InvoicePaymentForm(forms.ModelForm):
             if receipt.size > FileConstants.MAX_IMAGE_SIZE:
                 raise forms.ValidationError("Размер файла не должен превышать 100MB.")
         return receipt
+
+
+class OrderCBMForm(forms.ModelForm):
+    """
+    Форма для добавления и редактирования записей CBM.
+    
+    Позволяет вводить объем в кубических метрах с датой и комментариями.
+    """
+    
+    class Meta:
+        model = OrderCBM
+        fields = ['cbm_value', 'date', 'notes']
+        widgets = {
+            'cbm_value': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.001',
+                'min': '0',
+                'placeholder': '0.000'
+            }),
+            'date': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'notes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Дополнительная информация о CBM'
+            }),
+        }
+        labels = {
+            'cbm_value': 'CBM (куб. м)',
+            'date': 'Дата',
+            'notes': 'Комментарии',
+        }
+        help_texts = {
+            'cbm_value': 'Объем в кубических метрах',
+            'date': 'Дата добавления CBM',
+            'notes': 'Дополнительная информация о CBM',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.order = kwargs.pop('order', None)
+        super().__init__(*args, **kwargs)
+        
+        # Предзаполняем дату текущей датой, если это новый объект
+        if not self.instance.pk and not self.initial.get('date'):
+            from django.utils import timezone
+            self.initial['date'] = timezone.now().date()
+    
+    def clean_cbm_value(self):
+        """Валидация значения CBM"""
+        from decimal import Decimal
+        cbm_value = self.cleaned_data.get('cbm_value')
+        if cbm_value is not None:
+            if cbm_value <= 0:
+                raise forms.ValidationError("Значение CBM должно быть больше нуля.")
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверка максимального значения (max_digits=10, decimal_places=3)
+            max_value = Decimal('9999999.999')  # 10 цифр всего, 3 после запятой
+            if cbm_value > max_value:
+                raise forms.ValidationError(f"Значение CBM не может превышать {max_value} куб. м.")
+        return cbm_value
+    
+    def clean_date(self):
+        """Валидация даты CBM"""
+        from django.utils import timezone
+        from datetime import timedelta
+        date = self.cleaned_data.get('date')
+        if date is not None:
+            today = timezone.now().date()
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверка на будущие даты (не более 1 года вперед)
+            max_future_date = today + timedelta(days=365)
+            if date > max_future_date:
+                raise forms.ValidationError("Дата не может быть более чем на год в будущем.")
+            # Проверка на слишком старые даты (не более 10 лет назад)
+            min_past_date = today - timedelta(days=3650)
+            if date < min_past_date:
+                raise forms.ValidationError("Дата не может быть более чем 10 лет назад.")
+        return date
 
 
 class InvoiceWithPaymentForm(forms.Form):

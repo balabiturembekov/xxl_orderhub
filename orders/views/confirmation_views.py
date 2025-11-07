@@ -339,24 +339,34 @@ def upload_invoice_execute(request, pk: int):
                         order.invoice_file = invoice_file
                         order.save()
                         
+                        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Перезагружаем confirmation перед обновлением
+                        # для предотвращения потери данных при race condition
+                        active_confirmation.refresh_from_db()
                         # Update confirmation data
-                        active_confirmation.confirmation_data.update({
+                        confirmation_data = active_confirmation.confirmation_data.copy()
+                        confirmation_data.update({
                             'invoice_file_name': invoice_file.name,
                             'invoice_file_size': invoice_file.size,
                             'payment_amount': str(payment.amount),
                             'payment_type': payment.payment_type,
                         })
+                        active_confirmation.confirmation_data = confirmation_data
                         
                         # Confirm operation (обновляем данные перед подтверждением)
                         active_confirmation.confirm(request.user, f"Дополнительный платеж добавлен и файл инвойса обновлен: {invoice_file.name}")
                         # Сохраняем обновленные confirmation_data
                         active_confirmation.save(update_fields=['confirmation_data'])
                     else:
+                        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Перезагружаем confirmation перед обновлением
+                        # для предотвращения потери данных при race condition
+                        active_confirmation.refresh_from_db()
                         # Update confirmation data для дополнительного платежа
-                        active_confirmation.confirmation_data.update({
+                        confirmation_data = active_confirmation.confirmation_data.copy()
+                        confirmation_data.update({
                             'payment_amount': str(payment.amount),
                             'payment_type': payment.payment_type,
                         })
+                        active_confirmation.confirmation_data = confirmation_data
                         
                         # Confirm operation
                         active_confirmation.confirm(request.user, f"Дополнительный платеж добавлен")
@@ -731,23 +741,35 @@ def _execute_send_order(confirmation: OrderConfirmation, user, comments: str) ->
         logger.error(f"Ошибка отправки email для заказа {order.id}: {e}")
         raise ValueError(f'Ошибка при отправке email: {str(e)}')
     
-    # Update order status
-    order.status = 'sent'
-    order.sent_at = timezone.now()
-    order.save()
+    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Обновление статуса заказа и создание audit log
+    # должны быть в транзакции для обеспечения атомарности операции
+    # Это предотвращает ситуацию, когда email отправлен, но статус не обновлен
+    from django.db import transaction
     
-    # Create audit log
-    OrderAuditLog.objects.create(
-        order=order,
-        action='sent',
-        user=user,
-        old_value='uploaded',
-        new_value='sent',
-        field_name='status',
-        comments='Заказ отправлен на фабрику'
-    )
+    try:
+        with transaction.atomic():
+            # Обновляем статус заказа
+            order.status = 'sent'
+            order.sent_at = timezone.now()
+            order.save()
+            
+            # Создаем audit log
+            OrderAuditLog.objects.create(
+                order=order,
+                action='sent',
+                user=user,
+                old_value='uploaded',
+                new_value='sent',
+                field_name='status',
+                comments='Заказ отправлен на фабрику'
+            )
+    except Exception as e:
+        logger = logging.getLogger('orders')
+        logger.error(f"Ошибка обновления статуса заказа {order.id} после отправки email: {e}", exc_info=True)
+        # Если не удалось обновить статус, это критическая ошибка
+        raise ValueError(f'Ошибка при обновлении статуса заказа после отправки email: {str(e)}')
     
-    # Send notification
+    # Send notification (вне транзакции, т.к. это асинхронная задача)
     try:
         send_order_notification.delay(order.id, 'order_sent')
     except Exception as e:
@@ -770,21 +792,31 @@ def _execute_complete_order(confirmation: OrderConfirmation, user, comments: str
     if order.status not in ['invoice_received']:
         raise ValueError('Заказ можно завершить только после получения инвойса!')
     
-    # Complete the order
-    order.mark_as_completed()
+    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Обновление статуса заказа и создание audit log
+    # должны быть в транзакции для обеспечения атомарности операции
+    from django.db import transaction
     
-    # Create audit log
-    OrderAuditLog.objects.create(
-        order=order,
-        action='completed',
-        user=user,
-        old_value='invoice_received',
-        new_value='completed',
-        field_name='status',
-        comments='Заказ завершен пользователем'
-    )
+    try:
+        with transaction.atomic():
+            # Complete the order
+            order.mark_as_completed()
+            
+            # Create audit log
+            OrderAuditLog.objects.create(
+                order=order,
+                action='completed',
+                user=user,
+                old_value='invoice_received',
+                new_value='completed',
+                field_name='status',
+                comments='Заказ завершен пользователем'
+            )
+    except Exception as e:
+        logger = logging.getLogger('orders')
+        logger.error(f"Ошибка завершения заказа {order.id}: {e}", exc_info=True)
+        raise ValueError(f'Ошибка при завершении заказа: {str(e)}')
     
-    # Send notification
+    # Send notification (вне транзакции, т.к. это асинхронная задача)
     try:
         send_order_notification.delay(order.id, 'order_completed')
     except Exception as e:

@@ -82,7 +82,7 @@ def get_countries(request):
 
 @login_required
 @require_http_methods(["POST"])
-@csrf_exempt
+@csrf_exempt  # ВАЖНО: @csrf_exempt используется для AJAX, но это должно быть защищено через другие механизмы
 def create_country_ajax(request):
     """
     Create a new country via AJAX.
@@ -93,6 +93,8 @@ def create_country_ajax(request):
     Returns:
         JsonResponse with success status and country data
     """
+    from django.db import transaction
+    
     try:
         data = json.loads(request.body)
         
@@ -103,18 +105,27 @@ def create_country_ajax(request):
                 'message': 'Название и код страны обязательны'
             })
         
-        # Check if country with this code already exists
-        if Country.objects.filter(code=data['code']).exists():
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Используем транзакцию для атомарности операции
+        # Это предотвращает race condition при проверке существования и создании
+        try:
+            with transaction.atomic():
+                # Проверяем существование в транзакции с блокировкой
+                # Используем get_or_create для атомарности
+                country, created = Country.objects.get_or_create(
+                    code=data['code'],
+                    defaults={'name': data['name']}
+                )
+                
+                if not created:
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Страна с таким кодом уже существует'
+                    })
+        except Exception as db_error:
             return JsonResponse({
                 'success': False,
-                'message': 'Страна с таким кодом уже существует'
+                'message': f'Ошибка при создании страны: {str(db_error)}'
             })
-        
-        # Create country
-        country = Country.objects.create(
-            name=data['name'],
-            code=data['code']
-        )
         
         return JsonResponse({
             'success': True,
@@ -139,7 +150,7 @@ def create_country_ajax(request):
 
 @login_required
 @require_http_methods(["POST"])
-@csrf_exempt
+@csrf_exempt  # ВАЖНО: @csrf_exempt используется для AJAX, но это должно быть защищено через другие механизмы
 def create_factory_ajax(request):
     """
     Create a new factory via AJAX.
@@ -150,6 +161,8 @@ def create_factory_ajax(request):
     Returns:
         JsonResponse with success status and factory data
     """
+    from django.db import transaction
+    
     try:
         data = json.loads(request.body)
         
@@ -160,21 +173,30 @@ def create_factory_ajax(request):
                 'message': 'Все поля обязательны'
             })
         
-        # Check if country exists
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Используем транзакцию для атомарности операции
+        # Это предотвращает race condition при проверке существования и создании
         try:
-            country = Country.objects.get(id=data['country_id'])
-        except Country.DoesNotExist:
+            with transaction.atomic():
+                # Проверяем существование страны в транзакции
+                try:
+                    country = Country.objects.select_for_update().get(id=data['country_id'])
+                except Country.DoesNotExist:
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Страна не найдена'
+                    })
+                
+                # Create factory
+                factory = Factory.objects.create(
+                    name=data['name'],
+                    email=data['email'],
+                    country=country
+                )
+        except Exception as db_error:
             return JsonResponse({
                 'success': False,
-                'message': 'Страна не найдена'
+                'message': f'Ошибка при создании фабрики: {str(db_error)}'
             })
-        
-        # Create factory
-        factory = Factory.objects.create(
-            name=data['name'],
-            email=data['email'],
-            country=country
-        )
         
         return JsonResponse({
             'success': True,

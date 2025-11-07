@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{{ title }} - XXL OrderHub{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Главная" %}</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'order_list' %}">{% trans "Заказы" %}</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'order_detail' order.pk %}">{{ order.title }}</a></li>
+                    {% if order.invoice %}
+                    <li class="breadcrumb-item"><a href="{% url 'invoice_detail' order.invoice.id %}">{% trans "Инвойс" %}</a></li>
+                    {% endif %}
+                    <li class="breadcrumb-item active">{{ title }}</li>
+                </ol>
+            </nav>
+
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-cube"></i> {{ title }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Информация о заказе -->
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle"></i> {% trans "Информация о заказе" %}</h6>
+                        <p class="mb-1"><strong>{% trans "Заказ" %}:</strong> {{ order_info.title }}</p>
+                        <p class="mb-1"><strong>{% trans "Фабрика" %}:</strong> {{ order_info.factory }}</p>
+                        <p class="mb-0"><strong>{% trans "Текущий общий CBM" %}:</strong> 
+                            <span class="badge bg-primary">{{ order_info.total_cbm|floatformat:3 }} {% trans "куб. м" %}</span>
+                        </p>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.cbm_value.id_for_label }}" class="form-label">
+                                        {{ form.cbm_value.label }} <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.cbm_value }}
+                                    {% if form.cbm_value.errors %}
+                                        <div class="text-danger small">{{ form.cbm_value.errors }}</div>
+                                    {% endif %}
+                                    {% if form.cbm_value.help_text %}
+                                        <div class="form-text">{{ form.cbm_value.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.date.id_for_label }}" class="form-label">
+                                        {{ form.date.label }} <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.date }}
+                                    {% if form.date.errors %}
+                                        <div class="text-danger small">{{ form.date.errors }}</div>
+                                    {% endif %}
+                                    {% if form.date.help_text %}
+                                        <div class="form-text">{{ form.date.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label">
+                                {{ form.notes.label }}
+                            </label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                                <div class="text-danger small">{{ form.notes.errors }}</div>
+                            {% endif %}
+                            {% if form.notes.help_text %}
+                                <div class="form-text">{{ form.notes.help_text }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% if order.invoice %}{% url 'invoice_detail' order.invoice.id %}{% else %}{% url 'order_detail' order.pk %}{% endif %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> {% trans "Отмена" %}
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> {% trans "Сохранить" %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -23,8 +23,8 @@ from django.core.paginator import Paginator
 from django.db.models import Q, Sum, Count, Avg
 from django.utils.translation import gettext as _
 
-from ..models import Order, Invoice, InvoicePayment, OrderAuditLog, OrderConfirmation
-from ..forms import InvoiceForm, InvoicePaymentForm, InvoiceWithPaymentForm
+from ..models import Order, Invoice, InvoicePayment, OrderAuditLog, OrderConfirmation, OrderCBM
+from ..forms import InvoiceForm, InvoicePaymentForm, InvoiceWithPaymentForm, OrderCBMForm
 
 
 @login_required
@@ -109,13 +109,18 @@ def upload_invoice_with_payment(request, pk):
                                 request.user,
                                 comments=f'Инвойс {invoice.invoice_number} загружен с платежом {payment.amount}'
                             )
+                            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Перезагружаем confirmation перед обновлением
+                            # для предотвращения потери данных при race condition
+                            active_confirmation.refresh_from_db()
                             # Обновляем confirmation_data
-                            active_confirmation.confirmation_data.update({
+                            confirmation_data = active_confirmation.confirmation_data.copy()
+                            confirmation_data.update({
                                 'invoice_number': invoice.invoice_number,
                                 'balance': str(invoice.balance),
                                 'payment_amount': str(payment.amount),
                                 'payment_type': payment.payment_type,
                             })
+                            active_confirmation.confirmation_data = confirmation_data
                             active_confirmation.save(update_fields=['confirmation_data'])
                         except ValueError as e:
                             # Если подтверждение уже обработано, просто логируем
@@ -186,12 +191,20 @@ class InvoiceDetailView(DetailView):
         page_number = self.request.GET.get('page')
         payments_page = paginator.get_page(page_number)
         
+        # Получаем записи CBM для заказа
+        cbm_records = invoice.order.cbm_records.select_related('created_by').order_by('-date', '-created_at')
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Вычисляем total_cbm из уже загруженных записей вместо запроса к БД
+        # Используем QuerySet до применения order_by для агрегации
+        total_cbm = invoice.order.cbm_records.aggregate(total=Sum('cbm_value'))['total'] or 0
+        
         context.update({
             'payments': payments_page,
             'total_payments': payments.count(),
             'payment_progress': invoice.payment_progress_percentage,
             'is_overdue': invoice.is_overdue,
             'order': invoice.order,
+            'cbm_records': cbm_records,
+            'total_cbm': total_cbm,
         })
         
         return context
@@ -247,25 +260,40 @@ class PaymentCreateView(CreateView):
         return context
     
     def form_valid(self, form):
+        from django.db import transaction
+        
         invoice = self.get_invoice()
         
         # Валидация уже выполнена в форме, дополнительная проверка не нужна
         
-        # Сохраняем платеж
-        payment = form.save(commit=False)
-        payment.invoice = invoice
-        payment.created_by = self.request.user
-        payment.save()
-        
-        # Создаем запись аудита
-        OrderAuditLog.log_action(
-            order=invoice.order,
-            user=self.request.user,
-            action='updated',
-            field_name='payment',
-            new_value=f'Добавлен платеж {payment.amount} ({payment.get_payment_type_display()})',
-            comments=f'Тип платежа: {payment.get_payment_type_display()}, Дата: {payment.payment_date}'
-        )
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Используем транзакцию для атомарности операции
+        # Это предотвращает race condition при создании платежа и обновлении invoice
+        try:
+            with transaction.atomic():
+                # Сохраняем платеж
+                payment = form.save(commit=False)
+                payment.invoice = invoice
+                payment.created_by = self.request.user
+                payment.save()
+                
+                # Создаем запись аудита
+                OrderAuditLog.log_action(
+                    order=invoice.order,
+                    user=self.request.user,
+                    action='updated',
+                    field_name='payment',
+                    new_value=f'Добавлен платеж {payment.amount} ({payment.get_payment_type_display()})',
+                    comments=f'Тип платежа: {payment.get_payment_type_display()}, Дата: {payment.payment_date}'
+                )
+        except Exception as e:
+            import logging
+            logger = logging.getLogger('orders')
+            logger.error(f"Ошибка при создании платежа: {e}", exc_info=True)
+            messages.error(
+                self.request,
+                _('Ошибка при создании платежа: {error}').format(error=str(e))
+            )
+            return self.form_invalid(form)
         
         messages.success(
             self.request,
@@ -316,22 +344,38 @@ class PaymentUpdateView(UpdateView):
         return context
     
     def form_valid(self, form):
+        from django.db import transaction
+        
         payment = self.get_object()
         old_amount = payment.amount
+        invoice = payment.invoice
         
-        # Сохраняем изменения
-        payment = form.save()
-        
-        # Создаем запись аудита
-        OrderAuditLog.log_action(
-            order=payment.invoice.order,
-            user=self.request.user,
-            action='updated',
-            field_name='payment',
-            old_value=f'Платеж {old_amount}',
-            new_value=f'Платеж {payment.amount}',
-            comments=f'Изменен платеж. Старая сумма: {old_amount}, Новая сумма: {payment.amount}'
-        )
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Используем транзакцию для атомарности операции
+        # Это предотвращает race condition при обновлении платежа и пересчете invoice
+        try:
+            with transaction.atomic():
+                # Сохраняем изменения
+                payment = form.save()
+                
+                # Создаем запись аудита
+                OrderAuditLog.log_action(
+                    order=invoice.order,
+                    user=self.request.user,
+                    action='updated',
+                    field_name='payment',
+                    old_value=f'Платеж {old_amount}',
+                    new_value=f'Платеж {payment.amount}',
+                    comments=f'Изменен платеж. Старая сумма: {old_amount}, Новая сумма: {payment.amount}'
+                )
+        except Exception as e:
+            import logging
+            logger = logging.getLogger('orders')
+            logger.error(f"Ошибка при обновлении платежа: {e}", exc_info=True)
+            messages.error(
+                self.request,
+                _('Ошибка при обновлении платежа: {error}').format(error=str(e))
+            )
+            return self.form_invalid(form)
         
         messages.success(
             self.request,
@@ -383,6 +427,249 @@ def delete_payment(request, payment_id):
 
 
 @method_decorator(login_required, name='dispatch')
+class CBMCreateView(CreateView):
+    """
+    Создание новой записи CBM для заказа.
+    """
+    model = OrderCBM
+    form_class = OrderCBMForm
+    template_name = 'orders/cbm_form.html'
+    
+    def get_order(self):
+        """Получаем заказ из URL с оптимизацией запросов"""
+        if not hasattr(self, '_order'):
+            order_id = self.kwargs.get('order_id')
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Используем select_related для оптимизации
+            self._order = get_object_or_404(
+                Order.objects.select_related('factory', 'invoice'),
+                id=order_id
+            )
+        return self._order
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        order = self.get_order()
+        kwargs['order'] = order
+        
+        # Предзаполняем форму данными из заказа
+        if not self.request.POST:
+            from django.utils import timezone
+            kwargs['initial'] = {
+                'date': timezone.now().date(),
+            }
+        
+        return kwargs
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        order = self.get_order()
+        context['order'] = order
+        context['title'] = _('Добавить CBM')
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Вычисляем total_cbm через агрегацию вместо property
+        from django.db.models import Sum
+        total_cbm = order.cbm_records.aggregate(total=Sum('cbm_value'))['total'] or 0
+        
+        # Добавляем информацию о заказе для отображения
+        context['order_info'] = {
+            'title': order.title,
+            'factory': order.factory.name,  # factory уже загружен через select_related
+            'total_cbm': total_cbm,
+        }
+        
+        return context
+    
+    def form_valid(self, form):
+        from django.db import transaction
+        
+        order = self.get_order()
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Используем транзакцию для атомарности операции
+        try:
+            with transaction.atomic():
+                # Сохраняем запись CBM
+                cbm_record = form.save(commit=False)
+                cbm_record.order = order
+                cbm_record.created_by = self.request.user
+                cbm_record.save()
+                
+                # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Вычисляем total_cbm через агрегацию вместо property
+                # Используем агрегацию из уже загруженных записей для производительности
+                from django.db.models import Sum
+                total_cbm = order.cbm_records.aggregate(total=Sum('cbm_value'))['total'] or 0
+                
+                # Создаем запись аудита
+                OrderAuditLog.log_action(
+                    order=order,
+                    user=self.request.user,
+                    action='updated',
+                    field_name='cbm',
+                    new_value=f'Добавлено CBM: {cbm_record.cbm_value} куб. м',
+                    comments=f'Дата: {cbm_record.date}, Общий CBM: {total_cbm} куб. м'
+                )
+        except Exception as e:
+            import logging
+            logger = logging.getLogger('orders')
+            logger.error(f"Ошибка при создании записи CBM: {e}", exc_info=True)
+            messages.error(
+                self.request,
+                _('Ошибка при создании записи CBM: {error}').format(error=str(e))
+            )
+            return self.form_invalid(form)
+        
+        # Вычисляем total_cbm для сообщения через агрегацию
+        from django.db.models import Sum
+        total_cbm = order.cbm_records.aggregate(total=Sum('cbm_value'))['total'] or 0
+        
+        messages.success(
+            self.request,
+            _('CBM успешно добавлено! Значение: {cbm} куб. м, Общий CBM: {total} куб. м').format(
+                cbm=cbm_record.cbm_value,
+                total=total_cbm
+            )
+        )
+        
+        # Перенаправляем на страницу инвойса, если он есть, иначе на страницу заказа
+        if hasattr(order, 'invoice'):
+            return redirect('invoice_detail', pk=order.invoice.id)
+        else:
+            return redirect('order_detail', pk=order.id)
+
+
+@method_decorator(login_required, name='dispatch')
+class CBMUpdateView(UpdateView):
+    """
+    Редактирование существующей записи CBM.
+    """
+    model = OrderCBM
+    form_class = OrderCBMForm
+    template_name = 'orders/cbm_form.html'
+    
+    def get_queryset(self):
+        """Оптимизация запросов с select_related"""
+        return OrderCBM.objects.select_related('order', 'order__factory', 'order__invoice', 'created_by')
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        cbm_record = self.get_object()
+        kwargs['order'] = cbm_record.order
+        return kwargs
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        cbm_record = self.get_object()
+        order = cbm_record.order
+        context['order'] = order
+        context['title'] = _('Редактировать CBM')
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Вычисляем total_cbm через агрегацию вместо property
+        from django.db.models import Sum
+        total_cbm = order.cbm_records.aggregate(total=Sum('cbm_value'))['total'] or 0
+        
+        # Добавляем информацию о заказе для отображения
+        context['order_info'] = {
+            'title': order.title,
+            'factory': order.factory.name,  # factory уже загружен через select_related
+            'total_cbm': total_cbm,
+        }
+        
+        return context
+    
+    def form_valid(self, form):
+        from django.db import transaction
+        
+        cbm_record = self.get_object()
+        order = cbm_record.order
+        old_cbm = cbm_record.cbm_value
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Используем транзакцию для атомарности операции
+        try:
+            with transaction.atomic():
+                # Сохраняем изменения
+                cbm_record = form.save()
+                
+                # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Вычисляем total_cbm через агрегацию вместо property
+                # Используем агрегацию из уже загруженных записей для производительности
+                from django.db.models import Sum
+                total_cbm = order.cbm_records.aggregate(total=Sum('cbm_value'))['total'] or 0
+                
+                # Создаем запись аудита
+                OrderAuditLog.log_action(
+                    order=order,
+                    user=self.request.user,
+                    action='updated',
+                    field_name='cbm',
+                    old_value=f'CBM: {old_cbm} куб. м',
+                    new_value=f'CBM: {cbm_record.cbm_value} куб. м',
+                    comments=f'Изменен CBM. Старое значение: {old_cbm} куб. м, Новое значение: {cbm_record.cbm_value} куб. м, Общий CBM: {total_cbm} куб. м'
+                )
+        except Exception as e:
+            import logging
+            logger = logging.getLogger('orders')
+            logger.error(f"Ошибка при обновлении записи CBM: {e}", exc_info=True)
+            messages.error(
+                self.request,
+                _('Ошибка при обновлении записи CBM: {error}').format(error=str(e))
+            )
+            return self.form_invalid(form)
+        
+        messages.success(
+            self.request,
+            _('CBM успешно обновлено!')
+        )
+        
+        # Перенаправляем на страницу инвойса, если он есть, иначе на страницу заказа
+        if hasattr(order, 'invoice'):
+            return redirect('invoice_detail', pk=order.invoice.id)
+        else:
+            return redirect('order_detail', pk=order.id)
+
+
+@login_required
+@require_http_methods(["POST"])
+def delete_cbm(request, cbm_id):
+    """
+    Удаление записи CBM.
+    """
+    cbm_record = get_object_or_404(OrderCBM, id=cbm_id)
+    order = cbm_record.order
+    cbm_value = cbm_record.cbm_value
+    
+    try:
+        with transaction.atomic():
+            # Создаем запись аудита перед удалением
+            OrderAuditLog.log_action(
+                order=order,
+                user=request.user,
+                action='updated',
+                field_name='cbm',
+                old_value=f'CBM {cbm_value} куб. м',
+                new_value='CBM удалено',
+                comments=f'Удалена запись CBM: {cbm_value} куб. м'
+            )
+            
+            # Удаляем запись CBM
+            cbm_record.delete()
+            
+            messages.success(
+                request,
+                _('Запись CBM успешно удалена! Значение: {cbm} куб. м').format(cbm=cbm_value)
+            )
+            
+    except Exception as e:
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Добавлено логирование ошибок
+        import logging
+        logger = logging.getLogger('orders')
+        logger.error(f"Ошибка при удалении записи CBM (ID: {cbm_id}): {e}", exc_info=True)
+        messages.error(request, _('Ошибка при удалении записи CBM: {error}').format(error=str(e)))
+    
+    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Правильный редирект в зависимости от наличия инвойса
+    if hasattr(order, 'invoice'):
+        return redirect('invoice_detail', pk=order.invoice.id)
+    else:
+        return redirect('order_detail', pk=order.id)
+
+
 class InvoiceListView(ListView):
     """
     Список всех инвойсов пользователя с фильтрацией.

@@ -229,11 +229,91 @@
                     {% endif %}
                 </div>
             </div>
+
+            <!-- История CBM -->
+            <div class="card mt-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-cube"></i> {% trans "CBM (кубические метры)" %}</h5>
+                    <div>
+                        <span class="badge bg-primary text-white me-2">{% trans "Общий CBM" %}: {{ total_cbm|floatformat:3 }} {% trans "куб. м" %}</span>
+                        <a href="{% url 'cbm_create' invoice.order.id %}" class="btn btn-success btn-sm">
+                            <i class="fas fa-plus"></i> {% trans "Добавить CBM" %}
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if cbm_records %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>{% trans "Дата" %}</th>
+                                        <th>{% trans "CBM" %}</th>
+                                        <th>{% trans "Комментарии" %}</th>
+                                        <th>{% trans "Создал" %}</th>
+                                        <th>{% trans "Действия" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for cbm in cbm_records %}
+                                    <tr>
+                                        <td>{{ cbm.date|date:"d.m.Y" }}</td>
+                                        <td>
+                                            <span class="font-weight-bold text-primary">{{ cbm.cbm_value|floatformat:3 }} {% trans "куб. м" %}</span>
+                                        </td>
+                                        <td>
+                                            {% if cbm.notes %}
+                                                <small class="text-muted">{{ cbm.notes|truncatechars:50 }}</small>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">{{ cbm.created_by.username|default:"-" }}</small><br>
+                                            <small class="text-muted">{{ cbm.created_at|date:"d.m.Y H:i" }}</small>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{% url 'cbm_update' cbm.id %}" class="btn btn-outline-primary" title="{% trans 'Редактировать' %}">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-outline-danger" 
+                                                        onclick="deleteCBM({{ cbm.id }}, {{ cbm.cbm_value }})" 
+                                                        title="{% trans 'Удалить' %}"
+                                                        data-cbm-value="{{ cbm.cbm_value|floatformat:3 }}">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-info">
+                                        <th colspan="1">{% trans "Итого" %}:</th>
+                                        <th><span class="font-weight-bold">{{ total_cbm|floatformat:3 }} {% trans "куб. м" %}</span></th>
+                                        <th colspan="3"></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-cube fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">{% trans "CBM не добавлены" %}</h5>
+                            <p class="text-muted">{% trans "Пока не было добавлено ни одной записи CBM для этого заказа." %}</p>
+                            <a href="{% url 'cbm_create' invoice.order.id %}" class="btn btn-success">
+                                <i class="fas fa-plus"></i> {% trans "Добавить CBM" %}
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Модальное окно подтверждения удаления -->
+<!-- Модальное окно подтверждения удаления платежа -->
 <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -262,11 +342,48 @@
     </div>
 </div>
 
+<!-- Модальное окно подтверждения удаления CBM -->
+<div class="modal fade" id="deleteCBMModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{% trans "Подтверждение удаления CBM" %}</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>{% trans "Вы уверены, что хотите удалить эту запись CBM?" %}</p>
+                <p><strong>{% trans "CBM" %}:</strong> <span id="cbmValue"></span></p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    {% trans "Это действие нельзя отменить!" %}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Отмена" %}</button>
+                <form id="deleteCBMForm" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">{% trans "Удалить" %}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 function deletePayment(paymentId, amount) {
     document.getElementById('paymentAmount').textContent = amount + ' €';
     document.getElementById('deleteForm').action = '{% url "payment_delete" 0 %}'.replace('0', paymentId);
     $('#deleteModal').modal('show');
+}
+
+function deleteCBM(cbmId, cbmValue) {
+    // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасное отображение значения CBM
+    const cbmValueFormatted = parseFloat(cbmValue).toFixed(3);
+    document.getElementById('cbmValue').textContent = cbmValueFormatted + ' {% trans "куб. м" %}';
+    document.getElementById('deleteCBMForm').action = '{% url "cbm_delete" 0 %}'.replace('0', cbmId);
+    $('#deleteCBMModal').modal('show');
 }
 </script>
 {% endblock %}

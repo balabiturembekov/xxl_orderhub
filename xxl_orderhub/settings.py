@@ -309,6 +309,7 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = config(
 # Файлы больше FILE_UPLOAD_MAX_MEMORY_SIZE будут сохраняться сюда
 # Это предотвращает загрузку больших файлов в память
 import tempfile
+
 FILE_UPLOAD_TEMP_DIR = tempfile.gettempdir()
 
 # Logging

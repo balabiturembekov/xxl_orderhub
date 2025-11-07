@@ -288,10 +288,34 @@ def download_file(request, pk: int, file_type: str):
     if not os.path.exists(file_path):
         raise Http404("Файл не найден на диске")
     
-    with open(file_path, 'rb') as file:
-        response = HttpResponse(file.read(), content_type='application/octet-stream')
-        response['Content-Disposition'] = f'attachment; filename="{filename}"'
-        return response
+    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Используем StreamingHttpResponse для больших файлов
+    # вместо чтения всего файла в память, что предотвращает OOM для файлов до 2GB
+    from django.http import StreamingHttpResponse
+    import mimetypes
+    
+    def file_iterator(file_path, chunk_size=8192):
+        """Генератор для чтения файла по частям"""
+        with open(file_path, 'rb') as f:
+            while True:
+                chunk = f.read(chunk_size)
+                if not chunk:
+                    break
+                yield chunk
+    
+    # Определяем content_type
+    content_type, _ = mimetypes.guess_type(file_path)
+    if not content_type:
+        content_type = 'application/octet-stream'
+    
+    response = StreamingHttpResponse(file_iterator(file_path), content_type=content_type)
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    # Добавляем Content-Length для лучшей поддержки браузеров
+    try:
+        response['Content-Length'] = str(os.path.getsize(file_path))
+    except OSError:
+        pass  # Если не удалось получить размер, пропускаем
+    
+    return response
 
 
 @login_required

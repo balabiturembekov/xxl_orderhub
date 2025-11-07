@@ -21,6 +21,7 @@ from .views import (
     # Payment views
     InvoiceDetailView, InvoiceListView, PaymentCreateView, PaymentUpdateView,
     upload_invoice_with_payment, delete_payment, payment_analytics,
+    CBMCreateView, CBMUpdateView, delete_cbm,
 )
 from .views.email_template_views import (
     EmailTemplateListView, EmailTemplateDetailView, EmailTemplateCreateView,
@@ -113,6 +114,11 @@ urlpatterns = [
     path("payments/<int:payment_id>/delete/", delete_payment, name="payment_delete"),
     path("orders/<int:order_id>/upload-invoice-with-payment/", upload_invoice_with_payment, name="upload_invoice_with_payment"),
     path("payment-analytics/", payment_analytics, name="payment_analytics"),
+    
+    # Управление CBM
+    path("orders/<int:order_id>/cbm/create/", CBMCreateView.as_view(), name="cbm_create"),
+    path("cbm/<int:pk>/edit/", CBMUpdateView.as_view(), name="cbm_update"),
+    path("cbm/<int:cbm_id>/delete/", delete_cbm, name="cbm_delete"),
     
     # Управление email шаблонами
     path("email-templates/", EmailTemplateListView.as_view(), name="email_template_list"),

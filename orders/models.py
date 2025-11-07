@@ -837,6 +837,15 @@ class Invoice(models.Model):
     # Дополнительная информация
     notes = models.TextField(blank=True, verbose_name="Комментарии")
     
+    @property
+    def total_cbm(self):
+        """Общий объем CBM для заказа (сумма всех записей CBM)"""
+        from django.db.models import Sum
+        total = self.order.cbm_records.aggregate(
+            total=Sum('cbm_value')
+        )['total'] or 0
+        return total
+    
     class Meta:
         verbose_name = "Инвойс"
         verbose_name_plural = "Инвойсы"
@@ -848,10 +857,35 @@ class Invoice(models.Model):
     def save(self, *args, **kwargs):
         """Автоматический расчет остатка при сохранении"""
         from decimal import Decimal
+        from django.db import transaction
         
         # Проверка на None для balance
         if self.balance is None:
             self.balance = Decimal('0')
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если total_paid не указан в update_fields,
+        # пересчитываем его через агрегацию для предотвращения несогласованности
+        update_fields = kwargs.get('update_fields', None)
+        if update_fields is None or 'total_paid' not in update_fields:
+            # Пересчитываем total_paid через агрегацию для актуальности
+            # Используем select_for_update только если мы в транзакции
+            try:
+                in_atomic = transaction.get_connection().in_atomic_block
+            except (AttributeError, Exception):
+                # Если не удалось проверить, предполагаем, что мы не в транзакции
+                in_atomic = False
+            
+            if in_atomic:
+                # В транзакции - используем блокировку для предотвращения race condition
+                total_paid = self.payments.select_for_update().aggregate(
+                    total=models.Sum('amount')
+                )['total'] or Decimal('0')
+            else:
+                # Вне транзакции - просто агрегация
+                total_paid = self.payments.aggregate(
+                    total=models.Sum('amount')
+                )['total'] or Decimal('0')
+            self.total_paid = total_paid
         
         self.remaining_amount = Decimal(str(self.balance)) - self.total_paid
         
@@ -861,8 +895,19 @@ class Invoice(models.Model):
         elif self.total_paid >= Decimal(str(self.balance)):
             self.status = 'paid'
         else:
-            # Определяем статус на основе типа последнего платежа
-            last_payment = self.payments.order_by('-created_at').first()
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Используем блокировку при запросе last_payment
+            # для предотвращения race condition
+            try:
+                in_atomic = transaction.get_connection().in_atomic_block
+            except (AttributeError, Exception):
+                # Если не удалось проверить, предполагаем, что мы не в транзакции
+                in_atomic = False
+            
+            if in_atomic:
+                last_payment = self.payments.select_for_update().order_by('-created_at').first()
+            else:
+                last_payment = self.payments.order_by('-created_at').first()
+            
             if last_payment:
                 if last_payment.payment_type == 'deposit':
                     self.status = 'pending'  # Депозит - ожидает доплаты
@@ -983,11 +1028,21 @@ class InvoicePayment(models.Model):
     
     def delete(self, *args, **kwargs):
         """Обновление общей суммы оплаты при удалении платежа"""
-        invoice = self.invoice
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Сохраняем invoice_id до удаления,
+        # т.к. после super().delete() объект self будет удален
+        invoice_id = self.invoice_id
+        
         super().delete(*args, **kwargs)
         
         # Пересчет общей суммы оплаты
-        self._update_invoice_total_for_invoice(invoice)
+        # Используем invoice_id для получения свежего объекта после удаления
+        # ВАЖНО: Используем прямой импорт Invoice, т.к. мы уже в модуле models
+        try:
+            invoice = Invoice.objects.get(pk=invoice_id)
+            self._update_invoice_total_for_invoice(invoice)
+        except Invoice.DoesNotExist:
+            # Если инвойс был удален вместе с заказом, ничего не делаем
+            pass
     
     def _update_invoice_total(self):
         """Обновление общей суммы оплаты для текущего инвойса"""
@@ -1009,4 +1064,64 @@ class InvoicePayment(models.Model):
             )['total'] or 0
             
             invoice.total_paid = total_paid
-            invoice.save(update_fields=['total_paid', 'remaining_amount', 'status'])
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Не указываем remaining_amount и status в update_fields,
+            # т.к. они будут пересчитаны в save() автоматически
+            # Это предотвращает конфликт между update_fields и логикой пересчета в save()
+            invoice.save(update_fields=['total_paid'])
+
+
+class OrderCBM(models.Model):
+    """
+    Модель для хранения записей CBM (кубических метров) для заказа.
+    
+    Позволяет добавлять несколько записей CBM, которые суммируются
+    для получения общего объема заказа.
+    """
+    
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.CASCADE,
+        verbose_name="Заказ",
+        related_name='cbm_records'
+    )
+    cbm_value = models.DecimalField(
+        max_digits=10,
+        decimal_places=3,
+        verbose_name="CBM",
+        help_text="Объем в кубических метрах"
+    )
+    date = models.DateField(
+        verbose_name="Дата",
+        help_text="Дата добавления CBM"
+    )
+    notes = models.TextField(
+        blank=True,
+        verbose_name="Комментарии",
+        help_text="Дополнительная информация о CBM"
+    )
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Создал",
+        related_name='created_cbm_records'
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Дата создания"
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Дата обновления"
+    )
+    
+    class Meta:
+        verbose_name = "Запись CBM"
+        verbose_name_plural = "Записи CBM"
+        ordering = ['-date', '-created_at']
+    
+    def __str__(self):
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасное форматирование с ограничением длины
+        order_title = self.order.title[:50] + '...' if len(self.order.title) > 50 else self.order.title
+        return f"CBM {self.cbm_value} для заказа {order_title} ({self.date})"
