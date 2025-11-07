@@ -1,8 +1,10 @@
 import os
-import magic
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from .constants import FileConstants
+
+# ВАЖНО: magic больше не используется, т.к. может вызывать зависания
+# Используем только проверку сигнатур файлов для надежности
 
 
 def validate_file_type(file):
@@ -12,16 +14,12 @@ def validate_file_type(file):
     file_content = file.read(1024)
     file.seek(0)  # Возвращаем указатель в начало
     
-    # Для больших файлов (>100MB) пропускаем magic, используем только сигнатуры
-    # Это ускоряет валидацию и предотвращает зависания
+    # ВАЖНО: magic.from_buffer() может зависать даже на маленьких файлах
+    # Используем только проверку сигнатур для надежности и скорости
+    # Это предотвращает зависания при валидации файлов
     mime_type = None
-    if hasattr(file, 'size') and file.size and file.size < 100 * 1024 * 1024:  # < 100MB
-        # Определяем MIME тип с обработкой ошибок (только для небольших файлов)
-        try:
-            mime_type = magic.from_buffer(file_content, mime=True)
-        except Exception:
-            # Если magic не работает, используем только проверку сигнатур
-            mime_type = None
+    # Пропускаем magic полностью - используем только сигнатуры
+    # Если нужна проверка MIME типа, можно включить для отладки, но это может вызывать зависания
     
     # Проверяем расширение файла
     file_extension = file.name.lower().split('.')[-1] if '.' in file.name else ''
@@ -113,10 +111,17 @@ def validate_excel_file(file):
         )
     
     # Проверка типа файла по содержимому
+    # ВАЖНО: Используем только проверку сигнатур, без magic (предотвращает зависания)
     try:
+        # Сохраняем текущую позицию файла
+        current_pos = file.tell()
         file.seek(0)
-        file_content = file.read(1024)
-        file.seek(0)  # Возвращаем указатель в начало
+        
+        # Читаем только первые 8 байт для проверки сигнатур (достаточно для Excel)
+        file_content = file.read(8)
+        
+        # Возвращаем позицию файла
+        file.seek(current_pos)
         
         # Проверяем сигнатуры Excel файлов
         if not (file_content.startswith(b'PK\x03\x04') or  # ZIP/Office signature (.xlsx)
@@ -125,9 +130,11 @@ def validate_excel_file(file):
                 _('Файл не является корректным Excel файлом'),
                 code='invalid_excel_file'
             )
+    except ValidationError:
+        # Пробрасываем ValidationError как есть
+        raise
     except Exception as e:
-        # Если не удалось прочитать файл, это может быть проблема с большим файлом
-        # Но мы уже проверили размер, так что это скорее всего ошибка чтения
+        # Если не удалось прочитать файл, это может быть проблема с доступом к файлу
         raise ValidationError(
             _('Ошибка при чтении файла: {}').format(str(e)),
             code='file_read_error'
@@ -160,10 +167,17 @@ def validate_pdf_file(file):
         )
     
     # Проверка типа файла по содержимому
+    # ВАЖНО: Используем только проверку сигнатур, без magic (предотвращает зависания)
     try:
+        # Сохраняем текущую позицию файла
+        current_pos = file.tell()
         file.seek(0)
-        file_content = file.read(1024)
-        file.seek(0)  # Возвращаем указатель в начало
+        
+        # Читаем только первые 4 байта для проверки сигнатуры PDF
+        file_content = file.read(4)
+        
+        # Возвращаем позицию файла
+        file.seek(current_pos)
         
         # Проверяем сигнатуру PDF файла
         if not file_content.startswith(b'%PDF'):
@@ -171,8 +185,11 @@ def validate_pdf_file(file):
                 _('Файл не является корректным PDF файлом'),
                 code='invalid_pdf_file'
             )
+    except ValidationError:
+        # Пробрасываем ValidationError как есть
+        raise
     except Exception as e:
-        # Если не удалось прочитать файл
+        # Если не удалось прочитать файл, это может быть проблема с доступом к файлу
         raise ValidationError(
             _('Ошибка при чтении файла: {}').format(str(e)),
             code='file_read_error'
