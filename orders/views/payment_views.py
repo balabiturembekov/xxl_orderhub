@@ -176,12 +176,28 @@ class InvoiceDetailView(DetailView):
     context_object_name = 'invoice'
     
     def get_queryset(self):
-        """Фильтруем инвойсы по пользователю"""
-        return Invoice.objects.all()
+        """Фильтруем инвойсы по пользователю с оптимизацией запросов"""
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Добавляем select_related для order, чтобы избежать ошибки
+        # "'Invoice' instance needs to have a primary key value before this relationship can be used"
+        return Invoice.objects.select_related('order', 'order__factory').all()
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         invoice = self.get_object()
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем, что invoice имеет pk перед обращением к связанным объектам
+        if not invoice.pk:
+            # Если invoice не сохранен, возвращаем контекст без CBM
+            context.update({
+                'payments': [],
+                'total_payments': 0,
+                'payment_progress': 0,
+                'is_overdue': False,
+                'order': None,
+                'cbm_records': [],
+                'total_cbm': 0,
+            })
+            return context
         
         # Получаем историю платежей
         payments = invoice.payments.all().order_by('-payment_date', '-created_at')
@@ -190,6 +206,20 @@ class InvoiceDetailView(DetailView):
         paginator = Paginator(payments, 10)
         page_number = self.request.GET.get('page')
         payments_page = paginator.get_page(page_number)
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем, что order существует и имеет pk
+        if not hasattr(invoice, 'order') or not invoice.order or not invoice.order.pk:
+            # Если order не существует, возвращаем контекст без CBM
+            context.update({
+                'payments': payments_page,
+                'total_payments': payments.count(),
+                'payment_progress': invoice.payment_progress_percentage,
+                'is_overdue': invoice.is_overdue,
+                'order': None,
+                'cbm_records': [],
+                'total_cbm': 0,
+            })
+            return context
         
         # Получаем записи CBM для заказа
         cbm_records = invoice.order.cbm_records.select_related('created_by').order_by('-date', '-created_at')
