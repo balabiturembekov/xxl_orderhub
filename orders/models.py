@@ -127,7 +127,8 @@ class Factory(models.Model):
         ordering = ['country', 'name']
     
     def __str__(self):
-        return f"{self.name} ({self.country.name})"
+        country_name = self.country.name if self.country else "Без страны"
+        return f"{self.name} ({country_name})"
 
 
 class Order(models.Model):
@@ -459,22 +460,44 @@ class OrderConfirmation(models.Model):
         if not self.can_be_confirmed_by(user):
             raise ValueError("Пользователь не может подтвердить эту операцию")
         
-        self.status = 'confirmed'
-        self.confirmed_by = user
-        self.confirmed_at = timezone.now()
-        self.comments = comments
-        self.save()
+        # Атомарное обновление для предотвращения race condition
+        updated = OrderConfirmation.objects.filter(
+            id=self.id,
+            status='pending'
+        ).update(
+            status='confirmed',
+            confirmed_by=user,
+            confirmed_at=timezone.now(),
+            comments=comments
+        )
+        
+        if updated == 0:
+            raise ValueError("Подтверждение уже обработано или истекло")
+        
+        # Обновляем локальный объект
+        self.refresh_from_db()
     
     def reject(self, user, reason=""):
         """Отклонение операции"""
         if not self.can_be_confirmed_by(user):
             raise ValueError("Пользователь не может отклонить эту операцию")
         
-        self.status = 'rejected'
-        self.confirmed_by = user
-        self.confirmed_at = timezone.now()
-        self.rejection_reason = reason
-        self.save()
+        # Атомарное обновление для предотвращения race condition
+        updated = OrderConfirmation.objects.filter(
+            id=self.id,
+            status='pending'
+        ).update(
+            status='rejected',
+            confirmed_by=user,
+            confirmed_at=timezone.now(),
+            rejection_reason=reason
+        )
+        
+        if updated == 0:
+            raise ValueError("Подтверждение уже обработано или истекло")
+        
+        # Обновляем локальный объект
+        self.refresh_from_db()
 
 
 class OrderAuditLog(models.Model):
@@ -825,6 +848,11 @@ class Invoice(models.Model):
     def save(self, *args, **kwargs):
         """Автоматический расчет остатка при сохранении"""
         from decimal import Decimal
+        
+        # Проверка на None для balance
+        if self.balance is None:
+            self.balance = Decimal('0')
+        
         self.remaining_amount = Decimal(str(self.balance)) - self.total_paid
         
         # Обновление статуса на основе типа последнего платежа
@@ -861,9 +889,21 @@ class Invoice(models.Model):
     @property
     def payment_progress_percentage(self):
         """Процент оплаты"""
-        if self.balance == 0:
+        from decimal import Decimal
+        
+        # Проверка на None и отрицательные значения
+        if not self.balance or self.balance <= 0:
+            return 0
+        
+        # Если оплачено больше или равно балансу, возвращаем 100%
+        if self.total_paid >= self.balance:
             return 100
-        return (self.total_paid / self.balance) * 100
+        
+        # Безопасное деление
+        try:
+            return float((self.total_paid / self.balance) * 100)
+        except (ZeroDivisionError, TypeError):
+            return 0
 
 
 class InvoicePayment(models.Model):
@@ -955,9 +995,18 @@ class InvoicePayment(models.Model):
     
     def _update_invoice_total_for_invoice(self, invoice):
         """Обновление общей суммы оплаты для указанного инвойса"""
-        total_paid = invoice.payments.aggregate(
-            total=models.Sum('amount')
-        )['total'] or 0
+        from django.db import transaction
+        from django.db.models import F
         
-        invoice.total_paid = total_paid
-        invoice.save(update_fields=['total_paid', 'remaining_amount', 'status'])
+        # Используем транзакцию и блокировку для предотвращения race condition
+        with transaction.atomic():
+            # Блокируем инвойс для обновления
+            invoice = Invoice.objects.select_for_update().get(pk=invoice.pk)
+            
+            # Пересчитываем сумму через агрегацию
+            total_paid = invoice.payments.aggregate(
+                total=models.Sum('amount')
+            )['total'] or 0
+            
+            invoice.total_paid = total_paid
+            invoice.save(update_fields=['total_paid', 'remaining_amount', 'status'])

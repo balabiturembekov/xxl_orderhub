@@ -13,7 +13,11 @@ from .constants import TimeConstants
 def send_notification_email(self, notification_id):
     """Отправка email уведомления с retry механизмом"""
     try:
-        notification = Notification.objects.get(id=notification_id)
+        try:
+            notification = Notification.objects.get(id=notification_id)
+        except Notification.DoesNotExist:
+            return f"Уведомление {notification_id} не найдено"
+        
         user = notification.user
         
         # Проверяем настройки пользователя

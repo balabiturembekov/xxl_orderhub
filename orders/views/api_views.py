@@ -272,7 +272,12 @@ def search_factories(request):
         JsonResponse with matching factories
     """
     query = request.GET.get('q', '').strip()
-    limit = int(request.GET.get('limit', 10))
+    try:
+        limit = int(request.GET.get('limit', 10))
+        if limit < 1 or limit > 100:
+            limit = 10  # Значение по умолчанию при недопустимом значении
+    except (ValueError, TypeError):
+        limit = 10  # Значение по умолчанию при ошибке преобразования
     
     if not query:
         return JsonResponse({'factories': []})

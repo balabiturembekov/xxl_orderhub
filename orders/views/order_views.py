@@ -18,6 +18,7 @@ from django.views.generic import ListView, DetailView
 from django.http import HttpResponse, Http404, JsonResponse
 from django.utils import timezone
 from django.db.models import Q
+from django.conf import settings
 import os
 
 from ..models import Order, Factory
@@ -67,7 +68,8 @@ class OrderListView(ListView):
     def get_context_data(self, **kwargs):
         """Add filter options to context."""
         context = super().get_context_data(**kwargs)
-        context['factories'] = Factory.objects.select_related('country')
+        # Фильтруем только активные фабрики
+        context['factories'] = Factory.objects.filter(is_active=True).select_related('country')
         context['status_choices'] = Order.STATUS_CHOICES
         return context
 
@@ -96,9 +98,11 @@ class OrderDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         order = self.get_object()
         
-        # Add related data
-        context['confirmations'] = order.orderconfirmation_set.all().order_by('-requested_at')
-        context['audit_logs'] = order.orderauditlog_set.all().order_by('-timestamp')
+        # Add related data with optimized queries to prevent N+1
+        context['confirmations'] = order.orderconfirmation_set.select_related(
+            'requested_by', 'confirmed_by', 'order'
+        ).order_by('-requested_at')
+        context['audit_logs'] = order.orderauditlog_set.select_related('user', 'order').order_by('-timestamp')
         
         # Calculate days since upload/sent
         if order.uploaded_at:
@@ -145,6 +149,10 @@ def download_file(request, pk: int, file_type: str):
     Returns:
         HttpResponse with file content or 404 if file not found
     """
+    # Валидация file_type для предотвращения path traversal
+    if file_type not in ['excel', 'invoice']:
+        raise Http404("Неверный тип файла")
+    
     order = get_object_or_404(Order, pk=pk)
     
     if file_type == 'excel' and order.excel_file:
@@ -155,6 +163,13 @@ def download_file(request, pk: int, file_type: str):
         filename = os.path.basename(file_path)
     else:
         raise Http404("Файл не найден")
+    
+    # Проверка безопасности пути к файлу
+    media_root = os.path.abspath(settings.MEDIA_ROOT)
+    file_path_abs = os.path.abspath(file_path)
+    
+    if not file_path_abs.startswith(media_root):
+        raise Http404("Неверный путь к файлу")
     
     if not os.path.exists(file_path):
         raise Http404("Файл не найден на диске")
@@ -177,6 +192,10 @@ def preview_file(request, pk: int, file_type: str):
     Returns:
         JsonResponse with preview data or error message
     """
+    # Валидация file_type для предотвращения path traversal
+    if file_type not in ['excel', 'invoice']:
+        return JsonResponse({'error': 'Неверный тип файла'}, status=400)
+    
     order = get_object_or_404(Order, pk=pk)
     
     try:
@@ -187,6 +206,13 @@ def preview_file(request, pk: int, file_type: str):
             file_path = order.invoice_file.path
         else:
             return JsonResponse({'error': 'Файл не найден'}, status=404)
+        
+        # Проверка безопасности пути к файлу
+        media_root = os.path.abspath(settings.MEDIA_ROOT)
+        file_path_abs = os.path.abspath(file_path)
+        
+        if not file_path_abs.startswith(media_root):
+            return JsonResponse({'error': 'Неверный путь к файлу'}, status=403)
         
         preview_data = generate_file_preview(file_path, file_type)
         return JsonResponse(preview_data)
@@ -206,6 +232,16 @@ def preview_file_modal(request, pk: int, file_type: str):
     Returns:
         Rendered modal template with preview data
     """
+    # Валидация file_type для предотвращения path traversal
+    if file_type not in ['excel', 'invoice']:
+        order = get_object_or_404(Order, pk=pk)
+        return render(request, 'orders/file_preview_modal.html', {
+            'order': order,
+            'file_type': file_type,
+            'file_name': 'Неизвестный файл',
+            'error': 'Неверный тип файла'
+        })
+    
     order = get_object_or_404(Order, pk=pk)
     
     try:
@@ -220,6 +256,18 @@ def preview_file_modal(request, pk: int, file_type: str):
                 'file_type': file_type,
                 'file_name': 'Неизвестный файл',
                 'error': 'Файл не найден'
+            })
+        
+        # Проверка безопасности пути к файлу
+        media_root = os.path.abspath(settings.MEDIA_ROOT)
+        file_path_abs = os.path.abspath(file_path)
+        
+        if not file_path_abs.startswith(media_root):
+            return render(request, 'orders/file_preview_modal.html', {
+                'order': order,
+                'file_type': file_type,
+                'file_name': 'Неизвестный файл',
+                'error': 'Неверный путь к файлу'
             })
         
         preview_data = generate_file_preview(file_path, file_type)

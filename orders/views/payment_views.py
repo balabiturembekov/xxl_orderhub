@@ -101,25 +101,27 @@ def upload_invoice_with_payment(request, pk):
                     order.save()
                     
                     # Обрабатываем подтверждение (если есть)
-                    if request.resolver_match.url_name == 'upload_invoice_execute':
-                        active_confirmation = OrderConfirmation.objects.filter(
-                            order=order,
-                            action='upload_invoice',
-                            status='pending',
-                            expires_at__gt=timezone.now()
-                        ).first()
-                        
-                        if active_confirmation:
-                            active_confirmation.status = 'approved'
-                            active_confirmation.confirmed_by = request.user
-                            active_confirmation.confirmed_at = timezone.now()
+                    # Используем active_confirmation, полученный выше, не делаем повторный запрос
+                    if request.resolver_match.url_name == 'upload_invoice_execute' and active_confirmation:
+                        # Используем метод confirm() для атомарного обновления
+                        try:
+                            active_confirmation.confirm(
+                                request.user,
+                                comments=f'Инвойс {invoice.invoice_number} загружен с платежом {payment.amount}'
+                            )
+                            # Обновляем confirmation_data
                             active_confirmation.confirmation_data.update({
                                 'invoice_number': invoice.invoice_number,
                                 'balance': str(invoice.balance),
                                 'payment_amount': str(payment.amount),
                                 'payment_type': payment.payment_type,
                             })
-                            active_confirmation.save()
+                            active_confirmation.save(update_fields=['confirmation_data'])
+                        except ValueError as e:
+                            # Если подтверждение уже обработано, просто логируем
+                            import logging
+                            logger = logging.getLogger('orders')
+                            logger.warning(f'Не удалось подтвердить операцию: {e}')
                     
                     # Создаем запись аудита
                     OrderAuditLog.log_action(

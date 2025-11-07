@@ -9,6 +9,8 @@ This module handles the critical operations confirmation system:
 """
 
 from typing import Dict, Any
+import logging
+import os
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -317,6 +319,7 @@ def upload_invoice_execute(request, pk: int):
             
             old_status = order.status
             
+            # Используем уже полученный active_confirmation, не делаем повторный запрос
             with transaction.atomic():
                 if existing_invoice:
                     # Инвойс уже существует - только добавляем платеж
@@ -340,21 +343,25 @@ def upload_invoice_execute(request, pk: int):
                         active_confirmation.confirmation_data.update({
                             'invoice_file_name': invoice_file.name,
                             'invoice_file_size': invoice_file.size,
+                            'payment_amount': str(payment.amount),
+                            'payment_type': payment.payment_type,
                         })
-                        active_confirmation.save()
+                        
+                        # Confirm operation (обновляем данные перед подтверждением)
+                        active_confirmation.confirm(request.user, f"Дополнительный платеж добавлен и файл инвойса обновлен: {invoice_file.name}")
+                        # Сохраняем обновленные confirmation_data
+                        active_confirmation.save(update_fields=['confirmation_data'])
+                    else:
+                        # Update confirmation data для дополнительного платежа
+                        active_confirmation.confirmation_data.update({
+                            'payment_amount': str(payment.amount),
+                            'payment_type': payment.payment_type,
+                        })
                         
                         # Confirm operation
-                        active_confirmation.confirm(request.user, f"Дополнительный платеж добавлен и файл инвойса обновлен: {invoice_file.name}")
-                    else:
-                        # Confirm operation
                         active_confirmation.confirm(request.user, f"Дополнительный платеж добавлен")
-                    
-                    # Update confirmation data для дополнительного платежа
-                    active_confirmation.confirmation_data.update({
-                        'payment_amount': str(payment.amount),
-                        'payment_type': payment.payment_type,
-                    })
-                    active_confirmation.save()
+                        # Сохраняем обновленные confirmation_data
+                        active_confirmation.save(update_fields=['confirmation_data'])
                     
                     # Create audit log для дополнительного платежа
                     OrderAuditLog.objects.create(
@@ -429,7 +436,8 @@ def upload_invoice_execute(request, pk: int):
                     else:
                         send_order_notification.delay(order.id, 'payment_received')
                 except Exception as e:
-                    print(f"Ошибка отправки уведомления: {e}")
+                    logger = logging.getLogger('orders')
+                    logger.error(f"Ошибка отправки уведомления: {e}")
                 
                 # Сообщение об успехе в зависимости от действия
                 if not existing_invoice:
@@ -513,11 +521,20 @@ def confirmation_approve(request, pk: int):
     """
     confirmation = get_object_or_404(OrderConfirmation, pk=pk)
     
+    # Проверка прав доступа
+    if not confirmation.can_be_confirmed_by(request.user):
+        messages.error(request, 'Вы не можете подтвердить эту операцию!')
+        return redirect('confirmation_detail', pk=pk)
+    
     if confirmation.status != 'pending':
         messages.error(request, 'Это подтверждение уже обработано!')
         return redirect('confirmation_detail', pk=pk)
     
     if confirmation.is_expired():
+        # Автоматически помечаем как истекшее
+        if confirmation.status == 'pending':
+            confirmation.status = 'expired'
+            confirmation.save(update_fields=['status'])
         messages.error(request, 'Срок подтверждения истек!')
         return redirect('confirmation_detail', pk=pk)
     
@@ -541,8 +558,14 @@ def confirmation_approve(request, pk: int):
             # Confirm the operation
             confirmation.confirm(request.user, comments)
             
+        except ValueError as e:
+            # Обработка ошибок валидации (права доступа, уже обработано)
+            messages.error(request, str(e))
         except Exception as e:
-            messages.error(request, f'Ошибка при подтверждении: {str(e)}')
+            # Логируем неожиданные ошибки
+            logger = logging.getLogger('orders')
+            logger.error(f"Unexpected error in confirmation_approve: {e}", exc_info=True)
+            messages.error(request, 'Произошла неожиданная ошибка. Обратитесь к администратору.')
         
         return redirect('confirmation_detail', pk=pk)
     
@@ -564,6 +587,11 @@ def confirmation_reject(request, pk: int):
     """
     confirmation = get_object_or_404(OrderConfirmation, pk=pk)
     
+    # Проверка прав доступа
+    if not confirmation.can_be_confirmed_by(request.user):
+        messages.error(request, 'Вы не можете отклонить эту операцию!')
+        return redirect('confirmation_detail', pk=pk)
+    
     if confirmation.status != 'pending':
         messages.error(request, 'Это подтверждение уже обработано!')
         return redirect('confirmation_detail', pk=pk)
@@ -579,8 +607,14 @@ def confirmation_reject(request, pk: int):
         try:
             confirmation.reject(request.user, rejection_reason)
             messages.success(request, 'Операция отклонена.')
+        except ValueError as e:
+            # Обработка ошибок валидации (права доступа, уже обработано)
+            messages.error(request, str(e))
         except Exception as e:
-            messages.error(request, f'Ошибка при отклонении: {str(e)}')
+            # Логируем неожиданные ошибки
+            logger = logging.getLogger('orders')
+            logger.error(f"Unexpected error in confirmation_reject: {e}", exc_info=True)
+            messages.error(request, 'Произошла неожиданная ошибка. Обратитесь к администратору.')
         
         return redirect('confirmation_detail', pk=pk)
     
@@ -674,19 +708,25 @@ def _execute_send_order(confirmation: OrderConfirmation, user, comments: str) ->
         email.content_subtype = "html"
         email.encoding = 'utf-8'
         
-        # Attach Excel file
+        # Attach Excel file with security check
         if order.excel_file:
-            email.attach_file(order.excel_file.path)
+            file_path = order.excel_file.path
+            # Проверка безопасности пути к файлу
+            media_root = os.path.abspath(settings.MEDIA_ROOT)
+            file_path_abs = os.path.abspath(file_path)
+            
+            if file_path_abs.startswith(media_root) and os.path.exists(file_path):
+                email.attach_file(file_path)
+            else:
+                logger.warning(f'Небезопасный путь к файлу или файл не найден: {file_path}')
         
         email.send()
         
         # Log successful email sending
-        import logging
         logger = logging.getLogger('orders')
         logger.info(f'Email successfully sent to {order.factory.email} for order {order.id} using template: {template.name if template else "static"}')
         
     except Exception as e:
-        import logging
         logger = logging.getLogger('orders')
         logger.error(f"Ошибка отправки email для заказа {order.id}: {e}")
         raise ValueError(f'Ошибка при отправке email: {str(e)}')
@@ -711,7 +751,8 @@ def _execute_send_order(confirmation: OrderConfirmation, user, comments: str) ->
     try:
         send_order_notification.delay(order.id, 'order_sent')
     except Exception as e:
-        print(f"Ошибка отправки уведомления: {e}")
+        logger = logging.getLogger('orders')
+        logger.error(f"Ошибка отправки уведомления для заказа {order.id}: {e}")
 
 
 def _execute_complete_order(confirmation: OrderConfirmation, user, comments: str) -> None:
@@ -747,4 +788,5 @@ def _execute_complete_order(confirmation: OrderConfirmation, user, comments: str
     try:
         send_order_notification.delay(order.id, 'order_completed')
     except Exception as e:
-        print(f"Ошибка отправки уведомления: {e}")
+        logger = logging.getLogger('orders')
+        logger.error(f"Ошибка отправки уведомления для заказа {order.id}: {e}")

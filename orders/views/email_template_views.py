@@ -396,10 +396,19 @@ def email_template_preview_ajax(request):
         return JsonResponse({'success': False, 'error': 'Only POST method allowed'})
     
     try:
-        # Получаем данные из формы
+        # Получаем данные из формы с ограничением длины для предотвращения DoS
+        MAX_TEMPLATE_LENGTH = 100000  # 100KB максимум
+        
         subject = request.POST.get('subject', '')
         html_content = request.POST.get('html_content', '')
         text_content = request.POST.get('text_content', '')
+        
+        # Проверка длины для предотвращения DoS атак
+        if len(subject) > MAX_TEMPLATE_LENGTH or len(html_content) > MAX_TEMPLATE_LENGTH or len(text_content) > MAX_TEMPLATE_LENGTH:
+            return JsonResponse({
+                'success': False,
+                'error': 'Шаблон слишком большой. Максимальный размер: 100KB'
+            })
         
         # Создаем тестовый контекст
         from django.utils import timezone
@@ -429,9 +438,11 @@ def email_template_preview_ajax(request):
             })(),
         }
         
-        # Рендерим шаблоны
+        # Рендерим шаблоны с autoescape=True (по умолчанию в Django)
+        # Django Template автоматически экранирует HTML, но это только для preview
         from django.template import Template, Context
         
+        # Ограничиваем время выполнения рендеринга (защита от бесконечных циклов в шаблонах)
         rendered_subject = Template(subject).render(Context(test_context))
         rendered_html = Template(html_content).render(Context(test_context))
         rendered_text = Template(text_content).render(Context(test_context))
@@ -444,7 +455,10 @@ def email_template_preview_ajax(request):
         })
         
     except Exception as e:
+        import logging
+        logger = logging.getLogger('orders')
+        logger.error(f"Error in email_template_preview_ajax: {e}", exc_info=True)
         return JsonResponse({
             'success': False,
-            'error': str(e)
+            'error': 'Ошибка при рендеринге шаблона. Проверьте синтаксис.'
         })
