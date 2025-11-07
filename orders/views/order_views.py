@@ -180,14 +180,31 @@ def create_order(request):
                         
                         # Сохраняем заказ (файл будет сохранен на диск здесь)
                         logger.info(f'Saving order to database, factory_id={order.factory_id}...')
-                        logger.info(f'Excel file name: {order.excel_file.name if order.excel_file else "None"}, size: {order.excel_file.size if order.excel_file and hasattr(order.excel_file, "size") else "unknown"}')
+                        
+                        # Безопасное получение информации о файле
+                        try:
+                            file_name = order.excel_file.name if order.excel_file else "None"
+                            file_size = "unknown"
+                            if order.excel_file:
+                                if hasattr(order.excel_file, 'size') and order.excel_file.size is not None:
+                                    file_size = f"{order.excel_file.size / (1024*1024):.2f}MB"
+                                elif hasattr(order.excel_file, 'file') and hasattr(order.excel_file.file, 'size'):
+                                    file_size = f"{order.excel_file.file.size / (1024*1024):.2f}MB"
+                            logger.info(f'Excel file name: {file_name}, size: {file_size}')
+                        except Exception as file_info_error:
+                            logger.warning(f'Could not get file info: {file_info_error}')
                         
                         # Сохраняем заказ - это может занять время для больших файлов
                         import time
                         save_start = time.time()
-                        order.save()
-                        save_duration = time.time() - save_start
-                        logger.info(f'Order saved to database, id={order.id}, save took {save_duration:.2f}s')
+                        try:
+                            order.save()
+                            save_duration = time.time() - save_start
+                            logger.info(f'Order saved to database, id={order.id}, save took {save_duration:.2f}s')
+                        except Exception as save_error:
+                            save_duration = time.time() - save_start
+                            logger.error(f'Error saving order after {save_duration:.2f}s: {save_error}', exc_info=True)
+                            raise  # Пробрасываем ошибку дальше
                         
                         # Создаем аудит-лог
                         logger.info('Creating audit log...')
