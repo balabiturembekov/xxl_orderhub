@@ -2,7 +2,7 @@
 {% load i18n %}
 {% load file_utils %}
 
-{% block title %}{% trans "Инвойс" %} {{ invoice.invoice_number }} - {{ invoice.order.title }}{% endblock %}
+{% block title %}{% trans "Инвойс" %} {{ invoice.invoice_number }}{% if invoice.order %} - {{ invoice.order.title }}{% endif %}{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -12,12 +12,16 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h2><i class="fas fa-file-invoice-dollar"></i> {% trans "Инвойс" %} {{ invoice.invoice_number }}</h2>
-                    <p class="text-muted mb-0">{{ invoice.order.title }} - {{ invoice.order.factory.name }}</p>
+                    {% if invoice.order %}
+                    <p class="text-muted mb-0">{{ invoice.order.title }}{% if invoice.order.factory %} - {{ invoice.order.factory.name }}{% endif %}</p>
+                    {% endif %}
                 </div>
                 <div>
+                    {% if invoice.order %}
                     <a href="{% url 'order_detail' invoice.order.id %}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left"></i> {% trans "К заказу" %}
                     </a>
+                    {% endif %}
                     <a href="{% url 'payment_create' invoice.id %}" class="btn btn-success">
                         <i class="fas fa-plus"></i> {% trans "Добавить платеж" %}
                     </a>
@@ -236,9 +240,11 @@
                     <h5 class="mb-0"><i class="fas fa-cube"></i> {% trans "CBM (кубические метры)" %}</h5>
                     <div>
                         <span class="badge bg-primary text-white me-2">{% trans "Общий CBM" %}: {{ total_cbm|floatformat:3 }} {% trans "куб. м" %}</span>
+                        {% if invoice.order %}
                         <a href="{% url 'cbm_create' invoice.order.id %}" class="btn btn-success btn-sm">
                             <i class="fas fa-plus"></i> {% trans "Добавить CBM" %}
                         </a>
+                        {% endif %}
                     </div>
                 </div>
                 <div class="card-body">
@@ -300,11 +306,13 @@
                     {% else %}
                         <div class="text-center py-4">
                             <i class="fas fa-cube fa-3x text-muted mb-3"></i>
-                            <h5 class="text-muted">{% trans "CBM не добавлены" %}</h5>
-                            <p class="text-muted">{% trans "Пока не было добавлено ни одной записи CBM для этого заказа." %}</p>
-                            <a href="{% url 'cbm_create' invoice.order.id %}" class="btn btn-success">
-                                <i class="fas fa-plus"></i> {% trans "Добавить CBM" %}
-                            </a>
+                        <h5 class="text-muted">{% trans "CBM не добавлены" %}</h5>
+                        <p class="text-muted">{% trans "Пока не было добавлено ни одной записи CBM для этого заказа." %}</p>
+                        {% if invoice.order %}
+                        <a href="{% url 'cbm_create' invoice.order.id %}" class="btn btn-success">
+                            <i class="fas fa-plus"></i> {% trans "Добавить CBM" %}
+                        </a>
+                        {% endif %}
                         </div>
                     {% endif %}
                 </div>

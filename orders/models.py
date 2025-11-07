@@ -840,11 +840,17 @@ class Invoice(models.Model):
     @property
     def total_cbm(self):
         """Общий объем CBM для заказа (сумма всех записей CBM)"""
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем наличие pk и order перед обращением к связанным объектам
+        if not self.pk or not hasattr(self, 'order') or not self.order or not self.order.pk:
+            return 0
         from django.db.models import Sum
-        total = self.order.cbm_records.aggregate(
-            total=Sum('cbm_value')
-        )['total'] or 0
-        return total
+        try:
+            total = self.order.cbm_records.aggregate(
+                total=Sum('cbm_value')
+            )['total'] or 0
+            return total
+        except Exception:
+            return 0
     
     class Meta:
         verbose_name = "Инвойс"
