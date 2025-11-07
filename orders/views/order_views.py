@@ -91,7 +91,17 @@ class OrderDetailView(DetailView):
     
     def get_queryset(self):
         """Show all orders."""
-        return Order.objects.select_related('factory', 'factory__country', 'employee')
+        # Оптимизация: используем prefetch_related для обратных связей
+        # Это предотвратит N+1 запросы при загрузке confirmations и audit_logs
+        return Order.objects.select_related(
+            'factory', 
+            'factory__country', 
+            'employee'
+        ).prefetch_related(
+            'orderconfirmation_set__requested_by',
+            'orderconfirmation_set__confirmed_by',
+            'orderauditlog_set__user'
+        )
     
     def get_context_data(self, **kwargs):
         """Add additional context for order detail view."""
@@ -104,15 +114,19 @@ class OrderDetailView(DetailView):
         logger.info(f'Order object retrieved: {order.id}')
         
         # Add related data with optimized queries to prevent N+1
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: убрали .count() и избыточный select_related('order')
+        # Добавили лимиты для предотвращения загрузки тысяч записей
         logger.info('Loading confirmations...')
-        context['confirmations'] = order.orderconfirmation_set.select_related(
-            'requested_by', 'confirmed_by', 'order'
-        ).order_by('-requested_at')
-        logger.info(f'Confirmations loaded: {context["confirmations"].count()}')
+        confirmations_qs = order.orderconfirmation_set.select_related(
+            'requested_by', 'confirmed_by'
+        ).order_by('-requested_at')[:50]  # Лимит 50 последних подтверждений
+        context['confirmations'] = list(confirmations_qs)  # Преобразуем в список, чтобы избежать повторных запросов
+        logger.info(f'Confirmations loaded: {len(context["confirmations"])}')
         
         logger.info('Loading audit logs...')
-        context['audit_logs'] = order.orderauditlog_set.select_related('user', 'order').order_by('-timestamp')
-        logger.info(f'Audit logs loaded: {context["audit_logs"].count()}')
+        audit_logs_qs = order.orderauditlog_set.select_related('user').order_by('-timestamp')[:100]  # Лимит 100 последних логов
+        context['audit_logs'] = list(audit_logs_qs)  # Преобразуем в список
+        logger.info(f'Audit logs loaded: {len(context["audit_logs"])}')
         
         # Calculate days since upload/sent
         if order.uploaded_at:
