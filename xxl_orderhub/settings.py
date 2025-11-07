@@ -299,11 +299,17 @@ CSRF_COOKIE_NAME = "csrftoken"  # Явно указываем имя cookie
 # Лимиты для загрузки больших файлов (Excel, PDF, изображения)
 # По умолчанию 2GB, можно переопределить через переменные окружения
 FILE_UPLOAD_MAX_MEMORY_SIZE = config(
-    "FILE_UPLOAD_MAX_MEMORY_SIZE", default=2 * 1024 * 1024 * 1024, cast=int
-)  # 2GB по умолчанию
+    "FILE_UPLOAD_MAX_MEMORY_SIZE", default=100 * 1024 * 1024, cast=int
+)  # 100MB - файлы больше этого размера будут сохраняться во временные файлы
 DATA_UPLOAD_MAX_MEMORY_SIZE = config(
     "DATA_UPLOAD_MAX_MEMORY_SIZE", default=2 * 1024 * 1024 * 1024, cast=int
-)  # 2GB по умолчанию
+)  # 2GB по умолчанию для общих данных
+
+# Временная директория для больших файлов
+# Файлы больше FILE_UPLOAD_MAX_MEMORY_SIZE будут сохраняться сюда
+# Это предотвращает загрузку больших файлов в память
+import tempfile
+FILE_UPLOAD_TEMP_DIR = tempfile.gettempdir()
 
 # Logging
 LOGGING = {

@@ -129,10 +129,19 @@ def create_order(request):
     logger = logging.getLogger('orders')
     
     if request.method == 'POST':
-        logger.info(f'POST /orders/create/ - User: {request.user.username} - IP: {request.META.get("REMOTE_ADDR")}')
+        # Логируем сразу при получении POST запроса
+        file_size = 0
+        if 'excel_file' in request.FILES:
+            file_size = request.FILES['excel_file'].size
+        logger.info(
+            f'POST /orders/create/ - User: {request.user.username} - '
+            f'IP: {request.META.get("REMOTE_ADDR")} - '
+            f'File size: {file_size / (1024*1024):.2f}MB'
+        )
         try:
+            logger.info('Creating form instance...')
             form = OrderForm(request.POST, request.FILES)
-            logger.debug(f'Form created, validating...')
+            logger.info('Form instance created, starting validation...')
             if form.is_valid():
                 logger.info(f'Form is valid, saving order...')
                 try:

@@ -13,6 +13,16 @@ class RequestLoggingMiddleware(MiddlewareMixin):
     
     def process_request(self, request):
         request.start_time = time.time()
+        # Логируем POST запросы сразу, до обработки файлов
+        # ВАЖНО: request.FILES может быть еще не доступен здесь, т.к. Django парсит multipart/form-data
+        # только когда к request.FILES обращаются. Поэтому логируем только факт POST запроса.
+        if request.method == 'POST' and request.path == '/orders/create/':
+            content_length = request.META.get('CONTENT_LENGTH', 'unknown')
+            logger.info(
+                f"MIDDLEWARE: POST {request.path} - "
+                f"User: {getattr(request.user, 'username', 'Anonymous')} - "
+                f"Content-Length: {content_length} bytes"
+            )
         return None
     
     def process_response(self, request, response):
