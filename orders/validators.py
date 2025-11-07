@@ -12,12 +12,16 @@ def validate_file_type(file):
     file_content = file.read(1024)
     file.seek(0)  # Возвращаем указатель в начало
     
-    # Определяем MIME тип с обработкой ошибок
-    try:
-        mime_type = magic.from_buffer(file_content, mime=True)
-    except Exception:
-        # Если magic не работает, используем только проверку сигнатур
-        mime_type = None
+    # Для больших файлов (>100MB) пропускаем magic, используем только сигнатуры
+    # Это ускоряет валидацию и предотвращает зависания
+    mime_type = None
+    if hasattr(file, 'size') and file.size and file.size < 100 * 1024 * 1024:  # < 100MB
+        # Определяем MIME тип с обработкой ошибок (только для небольших файлов)
+        try:
+            mime_type = magic.from_buffer(file_content, mime=True)
+        except Exception:
+            # Если magic не работает, используем только проверку сигнатур
+            mime_type = None
     
     # Проверяем расширение файла
     file_extension = file.name.lower().split('.')[-1] if '.' in file.name else ''

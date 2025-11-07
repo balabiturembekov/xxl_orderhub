@@ -129,9 +129,12 @@ def create_order(request):
     logger = logging.getLogger('orders')
     
     if request.method == 'POST':
+        logger.info(f'POST /orders/create/ - User: {request.user.username} - IP: {request.META.get("REMOTE_ADDR")}')
         try:
             form = OrderForm(request.POST, request.FILES)
+            logger.debug(f'Form created, validating...')
             if form.is_valid():
+                logger.info(f'Form is valid, saving order...')
                 try:
                     # Используем транзакцию для атомарности операции
                     with transaction.atomic():
