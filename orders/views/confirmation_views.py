@@ -212,7 +212,7 @@ def upload_invoice_form(request, pk: int):
     
     # Проверяем, есть ли уже инвойс у заказа
     initial_data = {}
-    if hasattr(order, 'invoice'):
+    if hasattr(order, 'invoice') and order.invoice and order.invoice.pk:
         invoice = order.invoice
         initial_data = {
             'invoice_number': invoice.invoice_number,

@@ -869,34 +869,45 @@ class Invoice(models.Model):
         if self.balance is None:
             self.balance = Decimal('0')
         
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем наличие pk перед обращением к связанным объектам
+        # Если объект еще не сохранен (нет pk), устанавливаем значения по умолчанию
+        is_new = self.pk is None
+        
         # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если total_paid не указан в update_fields,
         # пересчитываем его через агрегацию для предотвращения несогласованности
         update_fields = kwargs.get('update_fields', None)
         if update_fields is None or 'total_paid' not in update_fields:
-            # Пересчитываем total_paid через агрегацию для актуальности
-            # Используем select_for_update только если мы в транзакции
-            try:
-                in_atomic = transaction.get_connection().in_atomic_block
-            except (AttributeError, Exception):
-                # Если не удалось проверить, предполагаем, что мы не в транзакции
-                in_atomic = False
-            
-            if in_atomic:
-                # В транзакции - используем блокировку для предотвращения race condition
-                total_paid = self.payments.select_for_update().aggregate(
-                    total=models.Sum('amount')
-                )['total'] or Decimal('0')
+            if is_new:
+                # Для нового объекта платежей еще нет, устанавливаем 0
+                self.total_paid = Decimal('0')
             else:
-                # Вне транзакции - просто агрегация
-                total_paid = self.payments.aggregate(
-                    total=models.Sum('amount')
-                )['total'] or Decimal('0')
-            self.total_paid = total_paid
+                # Пересчитываем total_paid через агрегацию для актуальности
+                # Используем select_for_update только если мы в транзакции
+                try:
+                    in_atomic = transaction.get_connection().in_atomic_block
+                except (AttributeError, Exception):
+                    # Если не удалось проверить, предполагаем, что мы не в транзакции
+                    in_atomic = False
+                
+                if in_atomic:
+                    # В транзакции - используем блокировку для предотвращения race condition
+                    total_paid = self.payments.select_for_update().aggregate(
+                        total=models.Sum('amount')
+                    )['total'] or Decimal('0')
+                else:
+                    # Вне транзакции - просто агрегация
+                    total_paid = self.payments.aggregate(
+                        total=models.Sum('amount')
+                    )['total'] or Decimal('0')
+                self.total_paid = total_paid
         
         self.remaining_amount = Decimal(str(self.balance)) - self.total_paid
         
         # Обновление статуса на основе типа последнего платежа
-        if self.total_paid == 0:
+        if is_new:
+            # Для нового объекта устанавливаем статус по умолчанию
+            self.status = 'pending'
+        elif self.total_paid == 0:
             self.status = 'pending'
         elif self.total_paid >= Decimal(str(self.balance)):
             self.status = 'paid'
