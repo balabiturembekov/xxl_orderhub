@@ -901,15 +901,19 @@ class Invoice(models.Model):
                     )['total'] or Decimal('0')
                 self.total_paid = total_paid
         
-        self.remaining_amount = Decimal(str(self.balance)) - self.total_paid
+        # Преобразуем balance в Decimal для корректного сравнения
+        balance_decimal = Decimal(str(self.balance)) if self.balance is not None else Decimal('0')
+        self.remaining_amount = balance_decimal - self.total_paid
         
-        # Обновление статуса на основе типа последнего платежа
+        # Обновление статуса на основе суммы оплаты и типа последнего платежа
         if is_new:
             # Для нового объекта устанавливаем статус по умолчанию
             self.status = 'pending'
         elif self.total_paid == 0:
             self.status = 'pending'
-        elif self.total_paid >= Decimal(str(self.balance)):
+        elif self.total_paid >= balance_decimal:
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если оплата полная или больше баланса, статус должен быть 'paid'
+            # Это должно быть приоритетнее проверки типа последнего платежа
             self.status = 'paid'
         else:
             # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Используем блокировку при запросе last_payment
@@ -953,17 +957,21 @@ class Invoice(models.Model):
         """Процент оплаты"""
         from decimal import Decimal
         
+        # Преобразуем в Decimal для корректного сравнения
+        balance_decimal = Decimal(str(self.balance)) if self.balance is not None else Decimal('0')
+        total_paid_decimal = Decimal(str(self.total_paid)) if self.total_paid is not None else Decimal('0')
+        
         # Проверка на None и отрицательные значения
-        if not self.balance or self.balance <= 0:
+        if balance_decimal <= 0:
             return 0
         
         # Если оплачено больше или равно балансу, возвращаем 100%
-        if self.total_paid >= self.balance:
+        if total_paid_decimal >= balance_decimal:
             return 100
         
         # Безопасное деление
         try:
-            return float((self.total_paid / self.balance) * 100)
+            return float((total_paid_decimal / balance_decimal) * 100)
         except (ZeroDivisionError, TypeError):
             return 0
 
@@ -1069,6 +1077,7 @@ class InvoicePayment(models.Model):
         """Обновление общей суммы оплаты для указанного инвойса"""
         from django.db import transaction
         from django.db.models import F
+        from decimal import Decimal
         
         # Используем транзакцию и блокировку для предотвращения race condition
         with transaction.atomic():
@@ -1078,13 +1087,17 @@ class InvoicePayment(models.Model):
             # Пересчитываем сумму через агрегацию
             total_paid = invoice.payments.aggregate(
                 total=models.Sum('amount')
-            )['total'] or 0
+            )['total'] or Decimal('0')
             
             invoice.total_paid = total_paid
-            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Не указываем remaining_amount и status в update_fields,
-            # т.к. они будут пересчитаны в save() автоматически
-            # Это предотвращает конфликт между update_fields и логикой пересчета в save()
-            invoice.save(update_fields=['total_paid'])
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: НЕ используем update_fields, т.к. это пропускает логику save()
+            # Нужно вызвать полный save() чтобы пересчитались remaining_amount и status
+            # Это критично для правильного обновления статуса при полной оплате
+            # Передаем update_fields=['total_paid'] чтобы избежать двойного пересчета в save(),
+            # но это означает, что save() не пересчитает total_paid снова (что правильно, т.к. мы уже пересчитали)
+            # Однако, это также означает, что логика пересчета статуса в save() НЕ выполнится!
+            # Поэтому НЕ используем update_fields - вызываем полный save()
+            invoice.save()
 
 
 class OrderCBM(models.Model):
