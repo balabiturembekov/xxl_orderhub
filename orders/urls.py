@@ -10,7 +10,7 @@ from .views import (
     NotificationListView, mark_notification_read, mark_all_notifications_read,
     notification_settings, test_notification,
     # Analytics views
-    AnalyticsDashboardView, analytics_export, analytics_api,
+    AnalyticsDashboardView, analytics_export, analytics_api, CBMAnalyticsView,
     # Management views
     CountryListView, CountryCreateView, CountryUpdateView, country_delete,
     FactoryListView, FactoryCreateView, FactoryUpdateView, factory_delete,
@@ -78,6 +78,7 @@ urlpatterns = [
     path("analytics/", AnalyticsDashboardView.as_view(), name="analytics_dashboard"),
     path("analytics/export/", analytics_export, name="analytics_export"),
     path("api/analytics/", analytics_api, name="analytics_api"),
+    path("analytics/cbm/", CBMAnalyticsView.as_view(), name="cbm_analytics"),
     
     # Подтверждения
     path("confirmations/", ConfirmationListView.as_view(), name="confirmation_list"),

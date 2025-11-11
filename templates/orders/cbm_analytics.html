@@ -1,0 +1,250 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Аналитика CBM по странам" %} - XXL OrderHub{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>📦 {% trans "Аналитика CBM по странам" %}</h2>
+            <div>
+                <a href="{% url 'analytics_dashboard' %}" class="btn btn-outline-primary btn-sm">
+                    📊 {% trans "Общая аналитика" %}
+                </a>
+            </div>
+        </div>
+
+        <!-- Фильтры -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="date_from" class="form-label">{% trans "Дата с" %}</label>
+                        <input type="date" class="form-control" id="date_from" name="date_from" 
+                               value="{{ date_from }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="date_to" class="form-label">{% trans "Дата по" %}</label>
+                        <input type="date" class="form-control" id="date_to" name="date_to" 
+                               value="{{ date_to }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">{% trans "Применить фильтр" %}</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Общая статистика -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title text-primary">{{ total_cbm_all|floatformat:3 }}</h5>
+                        <p class="card-text">{% trans "Всего CBM" %}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title text-success">{{ total_orders_with_cbm }}</h5>
+                        <p class="card-text">{% trans "Заказов с CBM" %}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title text-info">{{ total_cbm_records }}</h5>
+                        <p class="card-text">{% trans "Записей CBM" %}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Статистика по странам -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">{% trans "Статистика CBM по странам" %}</h5>
+            </div>
+            <div class="card-body">
+                {% if country_stats %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>{% trans "Страна" %}</th>
+                                <th>{% trans "Код" %}</th>
+                                <th class="text-end">{% trans "Всего CBM" %}</th>
+                                <th class="text-center">{% trans "Заказов" %}</th>
+                                <th class="text-center">{% trans "Записей" %}</th>
+                                <th class="text-end">{% trans "Средний CBM на заказ" %}</th>
+                                <th class="text-end">{% trans "Доля" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stat in country_stats %}
+                            <tr>
+                                <td>
+                                    <strong>{{ stat.country_name }}</strong>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ stat.country_code }}</span>
+                                </td>
+                                <td class="text-end">
+                                    <strong class="text-primary">{{ stat.total_cbm|floatformat:3 }}</strong> {% trans "куб. м" %}
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-info">{{ stat.total_orders }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-secondary">{{ stat.total_records }}</span>
+                                </td>
+                                <td class="text-end">
+                                    {{ stat.avg_cbm_per_order|floatformat:3 }} {% trans "куб. м" %}
+                                </td>
+                                <td class="text-end">
+                                    {% if stat.percentage > 0 %}
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar" role="progressbar" 
+                                                 style="width: {{ stat.percentage }}%" 
+                                                 aria-valuenow="{{ stat.percentage }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                                {{ stat.percentage }}%
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-primary">
+                                <td colspan="2"><strong>{% trans "ИТОГО" %}</strong></td>
+                                <td class="text-end">
+                                    <strong>{{ total_cbm_all|floatformat:3 }}</strong> {% trans "куб. м" %}
+                                </td>
+                                <td class="text-center">
+                                    <strong>{{ total_orders_with_cbm }}</strong>
+                                </td>
+                                <td class="text-center">
+                                    <strong>{{ total_cbm_records }}</strong>
+                                </td>
+                                <td class="text-end">
+                                    {% if total_orders_with_cbm > 0 %}
+                                        {% widthratio total_cbm_all total_orders_with_cbm 1 as avg %}
+                                        <strong>{{ avg|floatformat:3 }}</strong> {% trans "куб. м" %}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <strong>100%</strong>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-5">
+                    <i class="fas fa-inbox fa-3x mb-3"></i>
+                    <p>{% trans "Нет данных CBM за выбранный период" %}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- График распределения CBM по странам -->
+        {% if country_stats %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">{% trans "График распределения CBM по странам" %}</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="cbmChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+{% if country_stats %}
+<script>
+// Данные для графика
+const cbmData = {
+    labels: [
+        {% for stat in country_stats %}
+        '{{ stat.country_code }} ({{ stat.country_name }})',
+        {% endfor %}
+    ],
+    datasets: [{
+        label: '{% trans "CBM (куб. м)" %}',
+        data: [
+            {% for stat in country_stats %}
+            {{ stat.total_cbm }},
+            {% endfor %}
+        ],
+        backgroundColor: [
+            '#007bff', '#28a745', '#ffc107', '#dc3545', '#17a2b8',
+            '#6f42c1', '#e83e8c', '#fd7e14', '#20c997', '#6c757d'
+        ],
+        borderColor: [
+            '#0056b3', '#1e7e34', '#d39e00', '#bd2130', '#138496',
+            '#5a32a3', '#c2185b', '#d66a00', '#1aa179', '#5a6268'
+        ],
+        borderWidth: 2
+    }]
+};
+
+// График CBM по странам
+const cbmCtx = document.getElementById('cbmChart').getContext('2d');
+new Chart(cbmCtx, {
+    type: 'bar',
+    data: cbmData,
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: '{% trans "CBM (куб. м)" %}'
+                }
+            },
+            x: {
+                title: {
+                    display: true,
+                    text: '{% trans "Страны" %}'
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                display: false
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return context.parsed.y.toFixed(3) + ' {% trans "куб. м" %}';
+                    }
+                }
+            }
+        }
+    }
+});
+</script>
+{% endif %}
+{% endblock %}
+

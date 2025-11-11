@@ -1,20 +1,20 @@
 XXL OrderHub - {{ notification.title }}
 
-Здравствуйте, {{ user.first_name|default:user.username }}!
+Hello, {{ user.first_name|default:user.username }}!
 
 {{ notification.message }}
 
-ИНФОРМАЦИЯ О ЗАКАЗЕ:
-===================
-Название: {{ order.title }}
-Фабрика: {{ order.factory.name }}
-Страна: {{ order.factory.country.name }}
-Статус: {{ order.status }}
-{% if order.uploaded_at %}Дата загрузки: {{ order.uploaded_at|date:"d.m.Y H:i" }}{% endif %}
-{% if order.sent_at %}Дата отправки: {{ order.sent_at|date:"d.m.Y H:i" }}{% endif %}
+ORDER INFORMATION:
+==================
+Title: {{ order.title }}
+Factory: {{ order.factory.name }}
+Country: {{ order.factory.country.name }}
+Status: {{ order.status }}
+{% if order.uploaded_at %}Uploaded at: {{ order.uploaded_at|date:"d.m.Y H:i" }}{% endif %}
+{% if order.sent_at %}Sent at: {{ order.sent_at|date:"d.m.Y H:i" }}{% endif %}
 
-Ссылка на заказ: {{ base_url }}{% url 'order_detail' order.pk %}
+Order link: {{ base_url }}{% url 'order_detail' order.pk %}
 
 ---
-Это автоматическое уведомление от системы XXL OrderHub
-Если вы не хотите получать такие уведомления, вы можете отключить их в настройках профиля
+This is an automatic notification from XXL OrderHub system
+If you do not want to receive these notifications, you can disable them in your profile settings

@@ -19,18 +19,29 @@
         <div class="card mb-4">
             <div class="card-body">
                 <form method="get" class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label for="id_search" class="form-label">{% trans "Поиск" %}</label>
                         <input type="text" class="form-control" id="id_search" name="search" 
                                value="{{ request.GET.search }}" placeholder="{% trans 'По названию, описанию или фабрике' %}">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label for="id_status" class="form-label">{% trans "Статус" %}</label>
                         <select class="form-select" id="id_status" name="status">
                             <option value="">{% trans "Все статусы" %}</option>
                             {% for value, label in status_choices %}
                             <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>
                                 {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="id_country" class="form-label">{% trans "Страна" %}</label>
+                        <select class="form-select" id="id_country" name="country">
+                            <option value="">{% trans "Все страны" %}</option>
+                            {% for country in countries %}
+                            <option value="{{ country.id }}" {% if request.GET.country == country.id|stringformat:"s" %}selected{% endif %}>
+                                {{ country.name }} ({{ country.code }})
                             </option>
                             {% endfor %}
                         </select>
@@ -48,8 +59,9 @@
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">&nbsp;</label>
-                        <div class="d-grid">
+                        <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-outline-primary">{% trans "Фильтровать" %}</button>
+                            <a href="{% url 'order_list' %}" class="btn btn-outline-secondary btn-sm">{% trans "Сбросить" %}</a>
                         </div>
                     </div>
                 </form>
@@ -143,12 +155,12 @@
             <ul class="pagination justify-content-center">
                 {% if page_obj.has_previous %}
                 <li class="page-item">
-                    <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.factory %}&factory={{ request.GET.factory }}{% endif %}">
+                    <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.country %}&country={{ request.GET.country }}{% endif %}{% if request.GET.factory %}&factory={{ request.GET.factory }}{% endif %}">
                         {% trans "Первая" %}
                     </a>
                 </li>
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.factory %}&factory={{ request.GET.factory }}{% endif %}">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.country %}&country={{ request.GET.country }}{% endif %}{% if request.GET.factory %}&factory={{ request.GET.factory }}{% endif %}">
                         {% trans "Предыдущая" %}
                     </a>
                 </li>
@@ -162,12 +174,12 @@
 
                 {% if page_obj.has_next %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.factory %}&factory={{ request.GET.factory }}{% endif %}">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.country %}&country={{ request.GET.country }}{% endif %}{% if request.GET.factory %}&factory={{ request.GET.factory }}{% endif %}">
                         {% trans "Следующая" %}
                     </a>
                 </li>
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.factory %}&factory={{ request.GET.factory }}{% endif %}">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.country %}&country={{ request.GET.country }}{% endif %}{% if request.GET.factory %}&factory={{ request.GET.factory }}{% endif %}">
                         {% trans "Последняя" %}
                     </a>
                 </li>

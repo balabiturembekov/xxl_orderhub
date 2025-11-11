@@ -1,10 +1,11 @@
 from celery import shared_task
-from django.core.mail import send_mail
+from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from django.conf import settings
 from django.utils import timezone
 from django.db import models
 from datetime import timedelta
+from email.header import Header
 from .models import Order, Notification, NotificationSettings, NotificationTemplate, Invoice
 from .constants import TimeConstants
 
@@ -16,7 +17,7 @@ def send_notification_email(self, notification_id):
         try:
             notification = Notification.objects.get(id=notification_id)
         except Notification.DoesNotExist:
-            return f"Уведомление {notification_id} не найдено"
+            return f"Notification {notification_id} not found"
         
         user = notification.user
         
@@ -24,22 +25,19 @@ def send_notification_email(self, notification_id):
         try:
             settings_obj = NotificationSettings.objects.get(user=user)
             if not settings_obj.email_notifications:
-                return f"Email уведомления отключены для пользователя {user.username}"
+                return f"Email notifications disabled for user {user.username}"
         except NotificationSettings.DoesNotExist:
             # Если настройки не найдены, создаем их с настройками по умолчанию
             settings_obj = NotificationSettings.objects.create(user=user)
         
         # Получаем шаблон уведомления
+        html_message = None
+        text_message = None
         try:
             template = NotificationTemplate.objects.get(
                 template_type=notification.notification_type,
                 is_active=True
             )
-        except NotificationTemplate.DoesNotExist:
-            # Если шаблон не найден, используем базовый шаблон
-            subject = notification.title
-            message = notification.message
-        else:
             subject = template.subject
             # Рендерим HTML шаблон
             html_message = render_to_string('emails/notification.html', {
@@ -50,28 +48,75 @@ def send_notification_email(self, notification_id):
                 'base_url': settings.BASE_URL
             })
             # Рендерим текстовый шаблон
-            message = render_to_string('emails/notification.txt', {
+            text_message = render_to_string('emails/notification.txt', {
                 'notification': notification,
                 'order': notification.order,
                 'user': user,
                 'template': template,
                 'base_url': settings.BASE_URL
             })
+        except NotificationTemplate.DoesNotExist:
+            # Если шаблон не найден, используем базовый шаблон
+            subject = notification.title
+            text_message = notification.message
         
-        # Отправляем email
-        send_mail(
-            subject=subject,
-            message=message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            html_message=html_message if 'html_message' in locals() else None,
-            fail_silently=False,
-        )
+        # Правильно кодируем subject для не-ASCII символов
+        # Используем Header для правильной кодировки subject
+        try:
+            # Проверяем, есть ли не-ASCII символы в subject
+            # Пытаемся закодировать в ASCII - если не получается, значит есть не-ASCII
+            subject.encode('ascii')
+            # Если успешно, значит только ASCII символы
+            encoded_subject = subject
+        except UnicodeEncodeError:
+            # Есть не-ASCII символы, кодируем через Header
+            encoded_subject = str(Header(subject, 'utf-8'))
+        except (AttributeError, UnicodeDecodeError):
+            # В случае ошибки используем исходный subject
+            encoded_subject = subject
+        
+        # Отправляем email с правильной кодировкой UTF-8
+        # Используем альтернативный формат для HTML и текстовой версии
+        if html_message:
+            # Если есть HTML версия, используем её как основную и добавляем текстовую альтернативу
+            email = EmailMessage(
+                subject=encoded_subject,
+                body=html_message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[user.email],
+            )
+            email.encoding = 'utf-8'
+            email.content_subtype = 'html'
+            # Добавляем текстовую альтернативу для почтовых клиентов без поддержки HTML
+            if text_message:
+                email.attach_alternative(text_message, 'text/plain; charset=UTF-8')
+        else:
+            # Если только текстовая версия
+            email = EmailMessage(
+                subject=encoded_subject,
+                body=text_message or '',
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[user.email],
+            )
+            email.encoding = 'utf-8'
+        
+        # Устанавливаем дополнительные заголовки для правильной кодировки
+        # Это критично для старых почтовых клиентов
+        email.extra_headers = email.extra_headers or {}
+        if html_message:
+            email.extra_headers['Content-Type'] = 'text/html; charset=UTF-8'
+        else:
+            email.extra_headers['Content-Type'] = 'text/plain; charset=UTF-8'
+        email.extra_headers['Content-Transfer-Encoding'] = '8bit'
+        # Явно указываем кодировку для MIME
+        email.extra_headers['MIME-Version'] = '1.0'
+        
+        email.send(fail_silently=False)
         
         # Отмечаем уведомление как отправленное
         notification.mark_as_sent()
         
-        return f"Email отправлен пользователю {user.username} для заказа {notification.order.title}"
+        return f"Email sent to user {user.username} for order {notification.order.title}"
         
     except Exception as e:
         # Логируем ошибку
@@ -83,7 +128,7 @@ def send_notification_email(self, notification_id):
         if self.request.retries < self.max_retries:
             raise self.retry(countdown=60 * (2 ** self.request.retries))
         
-        return f"Ошибка при отправке email после {self.max_retries} попыток: {str(e)}"
+        return f"Error sending email after {self.max_retries} attempts: {str(e)}"
 
 
 @shared_task
@@ -117,12 +162,12 @@ def check_overdue_orders():
         # Определяем тип уведомления
         if order.status == 'uploaded' and settings_obj.notify_uploaded_reminder:
             notification_type = 'uploaded_reminder'
-            title = f"Напоминание: заказ '{order.title}' не отправлен уже {order.days_since_upload} дней"
-            message = f"Заказ '{order.title}' для фабрики '{order.factory.name}' был загружен {order.days_since_upload} дней назад, но еще не отправлен. Рекомендуется отправить заказ на фабрику."
+            title = f"Reminder: Order '{order.title}' not sent for {order.days_since_upload} days"
+            message = f"Order '{order.title}' for factory '{order.factory.name}' was uploaded {order.days_since_upload} days ago but has not been sent yet. Please send the order to the factory."
         elif order.status == 'sent' and settings_obj.notify_sent_reminder:
             notification_type = 'sent_reminder'
-            title = f"Напоминание: заказ '{order.title}' отправлен, но инвойс не получен уже {order.days_since_sent} дней"
-            message = f"Заказ '{order.title}' для фабрики '{order.factory.name}' был отправлен {order.days_since_sent} дней назад, но инвойс еще не получен. Рекомендуется связаться с фабрикой."
+            title = f"Reminder: Order '{order.title}' sent but invoice not received for {order.days_since_sent} days"
+            message = f"Order '{order.title}' for factory '{order.factory.name}' was sent {order.days_since_sent} days ago but the invoice has not been received yet. Please contact the factory."
         else:
             continue
         
@@ -150,7 +195,7 @@ def check_overdue_orders():
         send_notification_email.delay(notification.id)
         notifications_sent += 1
     
-    return f"Отправлено {notifications_sent} напоминаний о просроченных заказах"
+    return f"Sent {notifications_sent} reminders about overdue orders"
 
 
 @shared_task
@@ -164,34 +209,34 @@ def send_order_notification(order_id, notification_type):
         try:
             settings_obj = NotificationSettings.objects.get(user=user)
             if not settings_obj.email_notifications:
-                return f"Email уведомления отключены для пользователя {user.username}"
+                return f"Email notifications disabled for user {user.username}"
         except NotificationSettings.DoesNotExist:
             settings_obj = NotificationSettings.objects.create(user=user)
         
         # Определяем заголовок и сообщение в зависимости от типа
         if notification_type == 'order_uploaded':
-            title = f"Заказ '{order.title}' загружен"
-            message = f"Заказ '{order.title}' для фабрики '{order.factory.name}' успешно загружен. Не забудьте отправить его на фабрику."
+            title = f"Order '{order.title}' uploaded"
+            message = f"Order '{order.title}' for factory '{order.factory.name}' has been successfully uploaded. Please don't forget to send it to the factory."
         elif notification_type == 'order_sent':
             if not settings_obj.notify_invoice_received:
-                return "Уведомления о отправке заказов отключены"
-            title = f"Заказ '{order.title}' отправлен на фабрику"
-            message = f"Заказ '{order.title}' успешно отправлен на фабрику '{order.factory.name}'. Ожидайте инвойс от фабрики."
+                return "Order sent notifications are disabled"
+            title = f"Order '{order.title}' sent to factory"
+            message = f"Order '{order.title}' has been successfully sent to factory '{order.factory.name}'. Please wait for the invoice from the factory."
         elif notification_type == 'invoice_received':
             if not settings_obj.notify_invoice_received:
-                return "Уведомления о получении инвойсов отключены"
-            title = f"Инвойс получен для заказа '{order.title}'"
-            message = f"Инвойс для заказа '{order.title}' от фабрики '{order.factory.name}' успешно получен и прикреплен к заказу."
+                return "Invoice received notifications are disabled"
+            title = f"Invoice received for order '{order.title}'"
+            message = f"Invoice for order '{order.title}' from factory '{order.factory.name}' has been successfully received and attached to the order."
         elif notification_type == 'payment_received':
             if not settings_obj.notify_invoice_received:
-                return "Уведомления о получении инвойсов отключены"
-            title = f"Платеж получен для заказа '{order.title}'"
-            message = f"Новый платеж для заказа '{order.title}' от фабрики '{order.factory.name}' успешно добавлен."
+                return "Payment received notifications are disabled"
+            title = f"Payment received for order '{order.title}'"
+            message = f"New payment for order '{order.title}' from factory '{order.factory.name}' has been successfully added."
         elif notification_type == 'order_completed':
-            title = f"Заказ '{order.title}' завершен"
-            message = f"Заказ '{order.title}' от фабрики '{order.factory.name}' успешно завершен."
+            title = f"Order '{order.title}' completed"
+            message = f"Order '{order.title}' from factory '{order.factory.name}' has been successfully completed."
         else:
-            return f"Неизвестный тип уведомления: {notification_type}"
+            return f"Unknown notification type: {notification_type}"
         
         # Создаем уведомление
         notification = Notification.objects.create(
@@ -205,12 +250,12 @@ def send_order_notification(order_id, notification_type):
         # Отправляем email асинхронно
         send_notification_email.delay(notification.id)
         
-        return f"Уведомление отправлено пользователю {user.username} для заказа {order.title}"
+        return f"Notification sent to user {user.username} for order {order.title}"
         
     except Order.DoesNotExist:
-        return f"Заказ с ID {order_id} не найден"
+        return f"Order with ID {order_id} not found"
     except Exception as e:
-        return f"Ошибка при отправке уведомления: {str(e)}"
+        return f"Error sending notification: {str(e)}"
 
 
 @shared_task
@@ -219,76 +264,76 @@ def create_default_notification_templates():
     templates_data = [
         {
             'template_type': 'uploaded_reminder',
-            'subject': 'Напоминание: заказ не отправлен',
+            'subject': 'Reminder: Order not sent',
             'html_template': '''
-            <h2>Напоминание о неотправленном заказе</h2>
-            <p>Здравствуйте, {{ user.first_name|default:user.username }}!</p>
-            <p>Заказ <strong>{{ order.title }}</strong> для фабрики <strong>{{ order.factory.name }}</strong> был загружен {{ order.days_since_upload }} дней назад, но еще не отправлен.</p>
-            <p>Рекомендуется отправить заказ на фабрику как можно скорее.</p>
-            <p><a href="{{ order.get_absolute_url }}">Перейти к заказу</a></p>
+            <h2>Reminder: Order not sent</h2>
+            <p>Hello, {{ user.first_name|default:user.username }}!</p>
+            <p>Order <strong>{{ order.title }}</strong> for factory <strong>{{ order.factory.name }}</strong> was uploaded {{ order.days_since_upload }} days ago but has not been sent yet.</p>
+            <p>Please send the order to the factory as soon as possible.</p>
+            <p><a href="{{ order.get_absolute_url }}">View Order</a></p>
             ''',
             'text_template': '''
-            Напоминание о неотправленном заказе
+            Reminder: Order not sent
             
-            Здравствуйте, {{ user.first_name|default:user.username }}!
+            Hello, {{ user.first_name|default:user.username }}!
             
-            Заказ "{{ order.title }}" для фабрики "{{ order.factory.name }}" был загружен {{ order.days_since_upload }} дней назад, но еще не отправлен.
+            Order "{{ order.title }}" for factory "{{ order.factory.name }}" was uploaded {{ order.days_since_upload }} days ago but has not been sent yet.
             
-            Рекомендуется отправить заказ на фабрику как можно скорее.
+            Please send the order to the factory as soon as possible.
             '''
         },
         {
             'template_type': 'sent_reminder',
-            'subject': 'Напоминание: ожидается инвойс',
+            'subject': 'Reminder: Invoice expected',
             'html_template': '''
-            <h2>Напоминание о заказе без инвойса</h2>
-            <p>Здравствуйте, {{ user.first_name|default:user.username }}!</p>
-            <p>Заказ <strong>{{ order.title }}</strong> для фабрики <strong>{{ order.factory.name }}</strong> был отправлен {{ order.days_since_sent }} дней назад, но инвойс еще не получен.</p>
-            <p>Рекомендуется связаться с фабрикой для уточнения статуса заказа.</p>
-            <p><a href="{{ order.get_absolute_url }}">Перейти к заказу</a></p>
+            <h2>Reminder: Order without invoice</h2>
+            <p>Hello, {{ user.first_name|default:user.username }}!</p>
+            <p>Order <strong>{{ order.title }}</strong> for factory <strong>{{ order.factory.name }}</strong> was sent {{ order.days_since_sent }} days ago but the invoice has not been received yet.</p>
+            <p>Please contact the factory to check the order status.</p>
+            <p><a href="{{ order.get_absolute_url }}">View Order</a></p>
             ''',
             'text_template': '''
-            Напоминание о заказе без инвойса
+            Reminder: Order without invoice
             
-            Здравствуйте, {{ user.first_name|default:user.username }}!
+            Hello, {{ user.first_name|default:user.username }}!
             
-            Заказ "{{ order.title }}" для фабрики "{{ order.factory.name }}" был отправлен {{ order.days_since_sent }} дней назад, но инвойс еще не получен.
+            Order "{{ order.title }}" for factory "{{ order.factory.name }}" was sent {{ order.days_since_sent }} days ago but the invoice has not been received yet.
             
-            Рекомендуется связаться с фабрикой для уточнения статуса заказа.
+            Please contact the factory to check the order status.
             '''
         },
         {
             'template_type': 'invoice_received',
-            'subject': 'Инвойс получен',
+            'subject': 'Invoice received',
             'html_template': '''
-            <h2>Инвойс получен</h2>
-            <p>Здравствуйте, {{ user.first_name|default:user.username }}!</p>
-            <p>Инвойс для заказа <strong>{{ order.title }}</strong> от фабрики <strong>{{ order.factory.name }}</strong> успешно получен и прикреплен к заказу.</p>
-            <p><a href="{{ order.get_absolute_url }}">Перейти к заказу</a></p>
+            <h2>Invoice received</h2>
+            <p>Hello, {{ user.first_name|default:user.username }}!</p>
+            <p>Invoice for order <strong>{{ order.title }}</strong> from factory <strong>{{ order.factory.name }}</strong> has been successfully received and attached to the order.</p>
+            <p><a href="{{ order.get_absolute_url }}">View Order</a></p>
             ''',
             'text_template': '''
-            Инвойс получен
+            Invoice received
             
-            Здравствуйте, {{ user.first_name|default:user.username }}!
+            Hello, {{ user.first_name|default:user.username }}!
             
-            Инвойс для заказа "{{ order.title }}" от фабрики "{{ order.factory.name }}" успешно получен и прикреплен к заказу.
+            Invoice for order "{{ order.title }}" from factory "{{ order.factory.name }}" has been successfully received and attached to the order.
             '''
         },
         {
             'template_type': 'payment_received',
-            'subject': 'Платеж получен',
+            'subject': 'Payment received',
             'html_template': '''
-            <h2>Платеж получен</h2>
-            <p>Здравствуйте, {{ user.first_name|default:user.username }}!</p>
-            <p>Новый платеж для заказа <strong>{{ order.title }}</strong> от фабрики <strong>{{ order.factory.name }}</strong> успешно добавлен.</p>
-            <p><a href="{{ order.get_absolute_url }}">Перейти к заказу</a></p>
+            <h2>Payment received</h2>
+            <p>Hello, {{ user.first_name|default:user.username }}!</p>
+            <p>New payment for order <strong>{{ order.title }}</strong> from factory <strong>{{ order.factory.name }}</strong> has been successfully added.</p>
+            <p><a href="{{ order.get_absolute_url }}">View Order</a></p>
             ''',
             'text_template': '''
-            Платеж получен
+            Payment received
             
-            Здравствуйте, {{ user.first_name|default:user.username }}!
+            Hello, {{ user.first_name|default:user.username }}!
             
-            Новый платеж для заказа "{{ order.title }}" от фабрики "{{ order.factory.name }}" успешно добавлен.
+            New payment for order "{{ order.title }}" from factory "{{ order.factory.name }}" has been successfully added.
             '''
         }
     ]
@@ -302,7 +347,7 @@ def create_default_notification_templates():
         if created:
             created_count += 1
     
-    return f"Создано {created_count} шаблонов уведомлений"
+    return f"Created {created_count} notification templates"
 
 
 @shared_task
@@ -319,7 +364,7 @@ def cleanup_old_notifications():
     count = old_notifications.count()
     old_notifications.delete()
     
-    return f"Удалено {count} старых уведомлений"
+    return f"Deleted {count} old notifications"
 
 
 @shared_task
@@ -396,8 +441,8 @@ def check_overdue_payments():
         
         # Создаем уведомление
         days_overdue = (now.date() - invoice.due_date).days
-        title = f"Просроченный платеж: инвойс {invoice.invoice_number}"
-        message = f"Инвойс {invoice.invoice_number} для заказа '{invoice.order.title}' просрочен на {days_overdue} дней. Сумма к доплате: {invoice.remaining_amount}€"
+        title = f"Overdue payment: Invoice {invoice.invoice_number}"
+        message = f"Invoice {invoice.invoice_number} for order '{invoice.order.title}' is overdue by {days_overdue} days. Remaining amount: {invoice.remaining_amount}€"
         
         notification = Notification.objects.create(
             user=user,
@@ -411,4 +456,4 @@ def check_overdue_payments():
         send_notification_email.delay(notification.id)
         notifications_sent += 1
     
-    return f"Отправлено {notifications_sent} уведомлений о просроченных платежах"
+    return f"Sent {notifications_sent} notifications about overdue payments"

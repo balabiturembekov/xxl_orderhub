@@ -21,7 +21,7 @@ from django.db.models import Q
 from django.conf import settings
 import os
 
-from ..models import Order, Factory
+from ..models import Order, Factory, Country
 from ..forms import OrderForm
 from ..file_preview import generate_file_preview
 
@@ -48,6 +48,7 @@ class OrderListView(ListView):
         # Apply filters
         status_filter = self.request.GET.get('status')
         factory_filter = self.request.GET.get('factory')
+        country_filter = self.request.GET.get('country')
         search_query = self.request.GET.get('search')
         
         if status_filter:
@@ -55,6 +56,9 @@ class OrderListView(ListView):
         
         if factory_filter:
             queryset = queryset.filter(factory_id=factory_filter)
+        
+        if country_filter:
+            queryset = queryset.filter(factory__country_id=country_filter)
         
         if search_query:
             queryset = queryset.filter(
@@ -70,6 +74,10 @@ class OrderListView(ListView):
         context = super().get_context_data(**kwargs)
         # Фильтруем только активные фабрики
         context['factories'] = Factory.objects.filter(is_active=True).select_related('country')
+        # Получаем список стран, которые есть в заказах (через фабрики)
+        context['countries'] = Country.objects.filter(
+            factory__is_active=True
+        ).distinct().order_by('name')
         context['status_choices'] = Order.STATUS_CHOICES
         return context
 

@@ -17,8 +17,12 @@ from django.http import JsonResponse, HttpResponse
 from django.core.cache import cache
 import csv
 
-from ..models import Order, Factory, Country
+from ..models import Order, Factory, Country, OrderCBM
 from ..analytics import get_analytics_data
+from django.db.models import Sum, Count, Q
+from django.utils import timezone
+from datetime import timedelta, datetime
+from decimal import Decimal
 
 
 @method_decorator(login_required, name='dispatch')
@@ -142,3 +146,118 @@ def analytics_api(request):
     }
     
     return JsonResponse(chart_data)
+
+
+@method_decorator(login_required, name='dispatch')
+class CBMAnalyticsView(TemplateView):
+    """
+    Аналитика CBM (кубических метров) по странам.
+    
+    Отображает:
+    - Общее количество CBM по странам
+    - Количество заказов с CBM по странам
+    - Детальную статистику по каждой стране
+    - Фильтры по датам
+    """
+    template_name = 'orders/cbm_analytics.html'
+    
+    def get_context_data(self, **kwargs):
+        """Добавляем данные аналитики CBM по странам."""
+        context = super().get_context_data(**kwargs)
+        
+        # Получаем параметры фильтрации
+        date_from = self.request.GET.get('date_from')
+        date_to = self.request.GET.get('date_to')
+        
+        # Устанавливаем диапазон дат
+        if date_from:
+            try:
+                date_from = datetime.strptime(date_from, '%Y-%m-%d').date()
+            except (ValueError, AttributeError):
+                date_from = None
+        else:
+            # По умолчанию - последние 90 дней
+            date_from = timezone.now().date() - timedelta(days=90)
+        
+        if date_to:
+            try:
+                date_to = datetime.strptime(date_to, '%Y-%m-%d').date()
+            except (ValueError, AttributeError):
+                date_to = None
+        else:
+            date_to = timezone.now().date()
+        
+        # Базовый queryset для CBM записей
+        cbm_queryset = OrderCBM.objects.select_related(
+            'order', 
+            'order__factory', 
+            'order__factory__country'
+        )
+        
+        # Фильтрация по дате создания CBM записи
+        if date_from:
+            cbm_queryset = cbm_queryset.filter(date__gte=date_from)
+        if date_to:
+            cbm_queryset = cbm_queryset.filter(date__lte=date_to)
+        
+        # Фильтрация по пользователю (если нужно)
+        if self.request.user and not self.request.user.is_superuser:
+            cbm_queryset = cbm_queryset.filter(order__employee=self.request.user)
+        
+        # Группируем по странам и считаем сумму CBM
+        country_cbm_stats = cbm_queryset.values(
+            'order__factory__country__code',
+            'order__factory__country__name'
+        ).annotate(
+            total_cbm=Sum('cbm_value'),
+            total_orders=Count('order', distinct=True),
+            total_records=Count('id')
+        ).order_by('-total_cbm')
+        
+        # Конвертируем в список для удобства работы в шаблоне
+        country_stats = []
+        total_cbm_all = Decimal('0')
+        
+        for stat in country_cbm_stats:
+            total_cbm = stat['total_cbm'] or Decimal('0')
+            total_cbm_all += total_cbm
+            
+            country_stats.append({
+                'country_code': stat['order__factory__country__code'],
+                'country_name': stat['order__factory__country__name'],
+                'total_cbm': total_cbm,
+                'total_orders': stat['total_orders'],
+                'total_records': stat['total_records'],
+            })
+        
+        # Дополнительная статистика
+        total_orders_with_cbm = cbm_queryset.values('order').distinct().count()
+        total_cbm_records = cbm_queryset.count()
+        
+        # Средний CBM на заказ по странам и процент от общего
+        for stat in country_stats:
+            if stat['total_orders'] > 0:
+                stat['avg_cbm_per_order'] = round(
+                    float(stat['total_cbm'] / stat['total_orders']), 3
+                )
+            else:
+                stat['avg_cbm_per_order'] = 0
+            
+            # Вычисляем процент от общего CBM
+            if total_cbm_all > 0:
+                stat['percentage'] = round(
+                    float((stat['total_cbm'] / total_cbm_all) * 100), 1
+                )
+            else:
+                stat['percentage'] = 0
+        
+        context.update({
+            'country_stats': country_stats,
+            'total_cbm_all': total_cbm_all,
+            'total_orders_with_cbm': total_orders_with_cbm,
+            'total_cbm_records': total_cbm_records,
+            'date_from': date_from.strftime('%Y-%m-%d') if date_from else '',
+            'date_to': date_to.strftime('%Y-%m-%d') if date_to else '',
+        })
+        
+        return context
