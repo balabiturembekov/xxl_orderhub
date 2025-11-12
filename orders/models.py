@@ -193,7 +193,9 @@ class Order(models.Model):
         ordering = ['-uploaded_at']
     
     def __str__(self):
-        return f"{self.title} - {self.factory.name}"
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасный доступ к factory.name
+        factory_name = self.factory.name if self.factory else "Без фабрики"
+        return f"{self.title} - {factory_name}"
     
     @property
     def days_since_upload(self):
@@ -429,7 +431,9 @@ class OrderConfirmation(models.Model):
         ordering = ['-requested_at']
     
     def __str__(self):
-        return f"{self.get_action_display()} для заказа {self.order.title}"
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасный доступ к order.title
+        order_title = self.order.title if self.order else "Без заказа"
+        return f"{self.get_action_display()} для заказа {order_title}"
     
     def save(self, *args, **kwargs):
         if not self.expires_at:
@@ -537,7 +541,10 @@ class OrderAuditLog(models.Model):
         ordering = ['-timestamp']
     
     def __str__(self):
-        return f"{self.get_action_display()} заказа {self.order.title} пользователем {self.user.username}"
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасный доступ к order.title
+        order_title = self.order.title if self.order else "Без заказа"
+        user_name = self.user.username if self.user else "Без пользователя"
+        return f"{self.get_action_display()} заказа {order_title} пользователем {user_name}"
     
     @classmethod
     def log_action(cls, order, user, action, old_value="", new_value="", field_name="", 
@@ -766,7 +773,9 @@ class EmailTemplateVersion(models.Model):
         unique_together = [['template', 'version_number']]
     
     def __str__(self):
-        return f"Версия {self.version_number} шаблона {self.template.name}"
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасный доступ к template.name
+        template_name = self.template.name if self.template else "Без шаблона"
+        return f"Версия {self.version_number} шаблона {template_name}"
 
 
 class Invoice(models.Model):
@@ -858,7 +867,9 @@ class Invoice(models.Model):
         ordering = ['-created_at']
     
     def __str__(self):
-        return f"Инвойс {self.invoice_number} для заказа {self.order.title}"
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасный доступ к order.title
+        order_title = self.order.title if self.order else "Без заказа"
+        return f"Инвойс {self.invoice_number} для заказа {order_title}"
     
     def save(self, *args, **kwargs):
         """Автоматический расчет остатка при сохранении"""
@@ -1042,7 +1053,9 @@ class InvoicePayment(models.Model):
         ordering = ['-payment_date', '-created_at']
     
     def __str__(self):
-        return f"Платеж {self.amount} от {self.payment_date} по инвойсу {self.invoice.invoice_number}"
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасный доступ к invoice.invoice_number
+        invoice_number = self.invoice.invoice_number if self.invoice else "Без инвойса"
+        return f"Платеж {self.amount} от {self.payment_date} по инвойсу {invoice_number}"
     
     def save(self, *args, **kwargs):
         """Обновление общей суммы оплаты инвойса при сохранении платежа"""
@@ -1152,6 +1165,135 @@ class OrderCBM(models.Model):
         ordering = ['-date', '-created_at']
     
     def __str__(self):
-        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасное форматирование с ограничением длины
-        order_title = self.order.title[:50] + '...' if len(self.order.title) > 50 else self.order.title
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасное форматирование с ограничением длины и проверкой на None
+        if self.order and self.order.title:
+            order_title = self.order.title[:50] + '...' if len(self.order.title) > 50 else self.order.title
+        else:
+            order_title = "Без заказа"
         return f"CBM {self.cbm_value} для заказа {order_title} ({self.date})"
+
+
+class Shipment(models.Model):
+    """
+    Модель для фуры/отправки, которая может содержать несколько заказов.
+    
+    Используется для отслеживания фактически полученных кубов,
+    когда товары от разных фабрик грузятся в одну фуру.
+    """
+    
+    shipment_number = models.CharField(
+        max_length=100,
+        unique=True,
+        verbose_name="Номер фуры",
+        help_text="Уникальный номер фуры/отправки"
+    )
+    orders = models.ManyToManyField(
+        Order,
+        related_name='shipments',
+        verbose_name="Заказы",
+        help_text="Заказы, которые входят в эту фуру"
+    )
+    received_cbm = models.DecimalField(
+        max_digits=10,
+        decimal_places=3,
+        null=True,
+        blank=True,
+        verbose_name="Фактические кубы",
+        help_text="Фактически полученные кубы в фуре"
+    )
+    shipment_date = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Дата отправки",
+        help_text="Дата отправки фуры"
+    )
+    received_date = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Дата получения",
+        help_text="Дата получения товара"
+    )
+    notes = models.TextField(
+        blank=True,
+        verbose_name="Комментарии",
+        help_text="Дополнительная информация о фуре"
+    )
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Создал",
+        related_name='created_shipments'
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Дата создания"
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Дата обновления"
+    )
+    
+    class Meta:
+        verbose_name = "Фура"
+        verbose_name_plural = "Фуры"
+        ordering = ['-shipment_date', '-created_at']
+    
+    def __str__(self):
+        return f"Фура {self.shipment_number}"
+    
+    @property
+    def total_invoice_cbm(self):
+        """
+        Сумма всех кубов из инвойсов заказов в этой фуре.
+        """
+        from django.db.models import Sum
+        from decimal import Decimal
+        
+        total = Decimal('0')
+        for order in self.orders.all():
+            # Суммируем все CBM записи заказа
+            order_cbm = order.cbm_records.aggregate(
+                total=Sum('cbm_value')
+            )['total'] or Decimal('0')
+            total += order_cbm
+        
+        return total
+    
+    @property
+    def cbm_difference(self):
+        """
+        Разница между заявленными кубами (из инвойсов) и фактическими кубами.
+        Положительное значение = фактически меньше, чем заявлено
+        Отрицательное значение = фактически больше, чем заявлено
+        """
+        from decimal import Decimal
+        
+        if self.received_cbm is None:
+            return None
+        
+        invoice_cbm = self.total_invoice_cbm
+        return invoice_cbm - Decimal(str(self.received_cbm))
+    
+    @property
+    def cbm_difference_percentage(self):
+        """
+        Процент отклонения фактических кубов от заявленных.
+        """
+        from decimal import Decimal
+        
+        if self.received_cbm is None or self.total_invoice_cbm == 0:
+            return None
+        
+        difference = self.cbm_difference
+        if difference is None:
+            return None
+        
+        percentage = (difference / self.total_invoice_cbm) * 100
+        return float(percentage)
+    
+    @property
+    def orders_count(self):
+        """Количество заказов в фуре"""
+        return self.orders.count()
