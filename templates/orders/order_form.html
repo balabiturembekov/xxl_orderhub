@@ -363,13 +363,56 @@ function addCountry() {
 }
 
 function addFactory() {
-    const formData = new FormData(document.getElementById('addFactoryForm'));
+    const form = document.getElementById('addFactoryForm');
+    if (!form) {
+        showAlert('Форма не найдена', 'danger');
+        return;
+    }
+    
+    const formData = new FormData(form);
+    
+    // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Клиентская валидация перед отправкой
+    const name = formData.get('name')?.trim();
+    const email = formData.get('email')?.trim();
+    const country = formData.get('country');
+    
+    if (!name || !email || !country) {
+        showAlert('Пожалуйста, заполните все обязательные поля', 'danger');
+        return;
+    }
+    
+    // Валидация email на клиенте
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showAlert('Пожалуйста, введите корректный email адрес', 'danger');
+        return;
+    }
+    
+    // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Преобразуем FormData в JSON
+    // и переименовываем поле 'country' в 'country_id'
+    const data = {
+        name: name,
+        email: email,
+        country_id: country,  // Переименовываем country в country_id
+        contact_person: formData.get('contact_person')?.trim() || '',
+        phone: formData.get('phone')?.trim() || '',
+        address: formData.get('address')?.trim() || '',
+        is_active: formData.get('is_active') === 'on'  // Преобразуем checkbox в boolean
+    };
+    
+    // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверка CSRF токена
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+    if (!csrfToken) {
+        showAlert('Ошибка безопасности. Пожалуйста, обновите страницу.', 'danger');
+        return;
+    }
     
     fetch('{% url "create_factory_ajax" %}', {
         method: 'POST',
-        body: formData,
+        body: JSON.stringify(data),
         headers: {
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
         }
     })
     .then(response => response.json())
@@ -380,17 +423,51 @@ function addFactory() {
             modal.hide();
             
             // Очищаем форму
-            document.getElementById('addFactoryForm').reset();
+            form.reset();
             
             // Показываем сообщение об успехе
             showAlert('Фабрика успешно добавлена!', 'success');
             
-            // Обновляем список фабрик в форме заказа
-            location.reload();
+            // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Обновляем список фабрик без перезагрузки страницы
+            updateFactorySelect(data.factory.id, data.factory.name);
         } else {
-            showAlert('Ошибка при добавлении фабрики: ' + JSON.stringify(data.errors), 'danger');
+            const errorMessage = data.message || data.errors || 'Неизвестная ошибка';
+            showAlert('Ошибка при добавлении фабрики: ' + errorMessage, 'danger');
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('Ошибка при добавлении фабрики: ' + error.message, 'danger');
     });
+}
+
+function updateFactorySelect(factoryId, factoryName) {
+    // Обновляем select с фабриками, добавляя новую фабрику
+    // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Ищем select по классу или по имени поля
+    // Используем более специфичный селектор для избежания конфликтов
+    const factorySelect = document.querySelector('select[name="factory"]') || 
+                          document.querySelector('#id_factory');
+    
+    if (factorySelect) {
+        // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем, не существует ли уже такая фабрика
+        const existingOption = factorySelect.querySelector(`option[value="${factoryId}"]`);
+        if (existingOption) {
+            // Фабрика уже есть в списке, просто выбираем её
+            existingOption.selected = true;
+            return;
+        }
+        
+        // Создаем новую опцию
+        const option = document.createElement('option');
+        option.value = factoryId;
+        option.textContent = factoryName;
+        option.selected = true;
+        factorySelect.appendChild(option);
+    } else {
+        // Если не нашли select, перезагружаем страницу
+        console.warn('Factory select not found, reloading page');
+        location.reload();
+    }
 }
 
 function showAlert(message, type) {
@@ -401,15 +478,28 @@ function showAlert(message, type) {
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
     
-    // Вставляем alert в начало контента
-    const content = document.querySelector('.main-content');
-    content.insertBefore(alertDiv, content.firstChild);
+    // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасная вставка alert с проверкой существования элемента
+    const content = document.querySelector('.main-content') || 
+                   document.querySelector('.container') ||
+                   document.querySelector('body');
     
-    // Автоматически скрываем через 5 секунд
-    setTimeout(() => {
-        const bsAlert = new bootstrap.Alert(alertDiv);
-        bsAlert.close();
-    }, 5000);
+    if (content) {
+        // Вставляем alert в начало контента
+        if (content.firstChild) {
+            content.insertBefore(alertDiv, content.firstChild);
+        } else {
+            content.appendChild(alertDiv);
+        }
+        
+        // Автоматически скрываем через 5 секунд
+        setTimeout(() => {
+            const bsAlert = new bootstrap.Alert(alertDiv);
+            bsAlert.close();
+        }, 5000);
+    } else {
+        // Fallback: используем alert браузера
+        alert(message);
+    }
 }
 </script>
 {% endblock %}

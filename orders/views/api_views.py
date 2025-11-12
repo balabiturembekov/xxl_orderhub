@@ -167,10 +167,25 @@ def create_factory_ajax(request):
         data = json.loads(request.body)
         
         # Validate required fields
-        if not all([data.get('name'), data.get('email'), data.get('country_id')]):
+        name = data.get('name', '').strip()
+        email = data.get('email', '').strip()
+        country_id = data.get('country_id')
+        
+        if not all([name, email, country_id]):
             return JsonResponse({
                 'success': False,
                 'message': 'Все поля обязательны'
+            })
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Валидация email формата
+        from django.core.validators import validate_email
+        from django.core.exceptions import ValidationError
+        try:
+            validate_email(email)
+        except ValidationError:
+            return JsonResponse({
+                'success': False,
+                'message': 'Неверный формат email адреса'
             })
         
         # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Используем транзакцию для атомарности операции
@@ -179,20 +194,39 @@ def create_factory_ajax(request):
             with transaction.atomic():
                 # Проверяем существование страны в транзакции
                 try:
-                    country = Country.objects.select_for_update().get(id=data['country_id'])
+                    country = Country.objects.select_for_update().get(id=country_id)
                 except Country.DoesNotExist:
                     return JsonResponse({
                         'success': False,
                         'message': 'Страна не найдена'
                     })
                 
+                # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверка на уникальность email
+                if Factory.objects.filter(email=email).exists():
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Фабрика с таким email уже существует'
+                    })
+                
                 # Create factory
+                # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Добавляем обработку всех полей из формы
                 factory = Factory.objects.create(
-                    name=data['name'],
-                    email=data['email'],
-                    country=country
+                    name=name,
+                    email=email,
+                    country=country,
+                    contact_person=data.get('contact_person', '').strip(),
+                    phone=data.get('phone', '').strip(),
+                    address=data.get('address', '').strip(),
+                    is_active=data.get('is_active', True)  # По умолчанию активна
                 )
         except Exception as db_error:
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Обработка IntegrityError для дубликатов
+            from django.db import IntegrityError
+            if isinstance(db_error, IntegrityError):
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Фабрика с таким email или названием уже существует'
+                })
             return JsonResponse({
                 'success': False,
                 'message': f'Ошибка при создании фабрики: {str(db_error)}'
