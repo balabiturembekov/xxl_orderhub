@@ -455,19 +455,29 @@ class OrderConfirmation(models.Model):
     
     def can_be_confirmed_by(self, user):
         """Проверка, может ли пользователь подтвердить операцию"""
-        # Пока что только создатель заказа может подтвердить
-        # В будущем можно добавить роли и права
-        return self.order.employee == user
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Подтвердить может либо создатель заказа,
+        # либо тот, кто создал подтверждение (requested_by)
+        # Это позволяет любому пользователю подтвердить операцию, которую он сам инициировал
+        return self.order.employee == user or self.requested_by == user
     
     def confirm(self, user, comments=""):
         """Подтверждение операции"""
         if not self.can_be_confirmed_by(user):
             raise ValueError("Пользователь не может подтвердить эту операцию")
         
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем истечение срока перед подтверждением
+        if self.is_expired():
+            # Автоматически помечаем как истекшее
+            if self.status == 'pending':
+                OrderConfirmation.objects.filter(id=self.id, status='pending').update(status='expired')
+            raise ValueError("Срок подтверждения истек")
+        
         # Атомарное обновление для предотвращения race condition
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Добавляем проверку истечения в фильтр
         updated = OrderConfirmation.objects.filter(
             id=self.id,
-            status='pending'
+            status='pending',
+            expires_at__gt=timezone.now()
         ).update(
             status='confirmed',
             confirmed_by=user,
@@ -476,7 +486,12 @@ class OrderConfirmation(models.Model):
         )
         
         if updated == 0:
-            raise ValueError("Подтверждение уже обработано или истекло")
+            # Проверяем причину - может быть истекло или уже обработано
+            self.refresh_from_db()
+            if self.is_expired() and self.status == 'pending':
+                OrderConfirmation.objects.filter(id=self.id, status='pending').update(status='expired')
+                raise ValueError("Срок подтверждения истек")
+            raise ValueError("Подтверждение уже обработано")
         
         # Обновляем локальный объект
         self.refresh_from_db()
@@ -486,10 +501,19 @@ class OrderConfirmation(models.Model):
         if not self.can_be_confirmed_by(user):
             raise ValueError("Пользователь не может отклонить эту операцию")
         
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем истечение срока перед отклонением
+        if self.is_expired():
+            # Автоматически помечаем как истекшее
+            if self.status == 'pending':
+                OrderConfirmation.objects.filter(id=self.id, status='pending').update(status='expired')
+            raise ValueError("Срок подтверждения истек")
+        
         # Атомарное обновление для предотвращения race condition
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Добавляем проверку истечения в фильтр
         updated = OrderConfirmation.objects.filter(
             id=self.id,
-            status='pending'
+            status='pending',
+            expires_at__gt=timezone.now()
         ).update(
             status='rejected',
             confirmed_by=user,
@@ -498,7 +522,12 @@ class OrderConfirmation(models.Model):
         )
         
         if updated == 0:
-            raise ValueError("Подтверждение уже обработано или истекло")
+            # Проверяем причину - может быть истекло или уже обработано
+            self.refresh_from_db()
+            if self.is_expired() and self.status == 'pending':
+                OrderConfirmation.objects.filter(id=self.id, status='pending').update(status='expired')
+                raise ValueError("Срок подтверждения истек")
+            raise ValueError("Подтверждение уже обработано")
         
         # Обновляем локальный объект
         self.refresh_from_db()

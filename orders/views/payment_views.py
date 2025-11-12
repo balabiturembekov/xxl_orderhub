@@ -49,6 +49,11 @@ def upload_invoice_with_payment(request, pk):
         if not active_confirmation:
             messages.error(request, _('Нет активного подтверждения для загрузки инвойса!'))
             return redirect('order_detail', pk=order.id)
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем права доступа перед обработкой
+        if not active_confirmation.can_be_confirmed_by(request.user):
+            messages.error(request, _('Вы не можете подтвердить эту операцию!'))
+            return redirect('order_detail', pk=order.id)
     
     # Проверяем, что у заказа еще нет инвойса (только если нет активного подтверждения)
     if not active_confirmation and hasattr(order, 'invoice'):

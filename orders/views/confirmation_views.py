@@ -292,6 +292,11 @@ def upload_invoice_execute(request, pk: int):
         messages.error(request, 'Нет активного подтверждения для загрузки инвойса!')
         return redirect('order_detail', pk=pk)
     
+    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем права доступа перед обработкой
+    if not active_confirmation.can_be_confirmed_by(request.user):
+        messages.error(request, 'Вы не можете подтвердить эту операцию!')
+        return redirect('order_detail', pk=pk)
+    
     if request.method != 'POST':
         return redirect('upload_invoice_form', pk=pk)
     
