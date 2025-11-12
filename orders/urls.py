@@ -22,6 +22,9 @@ from .views import (
     InvoiceDetailView, InvoiceListView, PaymentCreateView, PaymentUpdateView,
     upload_invoice_with_payment, delete_payment, payment_analytics,
     CBMCreateView, CBMUpdateView, delete_cbm,
+    # Shipment views
+    ShipmentListView, ShipmentDetailView, ShipmentCreateView,
+    ShipmentUpdateView, ShipmentDeleteView,
 )
 from .views.email_template_views import (
     EmailTemplateListView, EmailTemplateDetailView, EmailTemplateCreateView,
@@ -120,6 +123,13 @@ urlpatterns = [
     path("orders/<int:order_id>/cbm/create/", CBMCreateView.as_view(), name="cbm_create"),
     path("cbm/<int:pk>/edit/", CBMUpdateView.as_view(), name="cbm_update"),
     path("cbm/<int:cbm_id>/delete/", delete_cbm, name="cbm_delete"),
+    
+    # Управление фурами
+    path("shipments/", ShipmentListView.as_view(), name="shipment_list"),
+    path("shipments/create/", ShipmentCreateView.as_view(), name="shipment_create"),
+    path("shipments/<int:pk>/", ShipmentDetailView.as_view(), name="shipment_detail"),
+    path("shipments/<int:pk>/edit/", ShipmentUpdateView.as_view(), name="shipment_update"),
+    path("shipments/<int:pk>/delete/", ShipmentDeleteView.as_view(), name="shipment_delete"),
     
     # Управление email шаблонами
     path("email-templates/", EmailTemplateListView.as_view(), name="email_template_list"),

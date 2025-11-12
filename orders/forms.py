@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.utils import timezone
-from .models import UserProfile, Order, Factory, NotificationSettings, Notification, Country, Invoice, InvoicePayment, OrderCBM
+from .models import UserProfile, Order, Factory, NotificationSettings, Notification, Country, Invoice, InvoicePayment, OrderCBM, Shipment
 from .constants import FileConstants
 
 
@@ -746,3 +746,123 @@ class InvoiceWithPaymentForm(forms.Form):
             if receipt.size > FileConstants.MAX_IMAGE_SIZE:
                 raise forms.ValidationError("Размер файла не должен превышать 100MB.")
         return receipt
+
+
+class ShipmentForm(forms.ModelForm):
+    """
+    Форма для создания и редактирования фуры.
+    """
+    
+    orders = forms.ModelMultipleChoiceField(
+        queryset=Order.objects.all(),
+        widget=forms.SelectMultiple(attrs={'class': 'form-select', 'size': '10'}),
+        required=True,
+        label="Заказы",
+        help_text="Выберите заказы, которые входят в эту фуру"
+    )
+    
+    class Meta:
+        model = Shipment
+        fields = [
+            'shipment_number',
+            'orders',
+            'received_cbm',
+            'shipment_date',
+            'received_date',
+            'notes'
+        ]
+        widgets = {
+            'shipment_number': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Например: TR-2025-001'
+            }),
+            'received_cbm': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.001',
+                'min': '0'
+            }),
+            'shipment_date': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'received_date': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'notes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        # Фильтруем заказы: только те, у которых есть инвойс
+        if user:
+            if user.is_superuser:
+                queryset = Order.objects.filter(
+                    invoice__isnull=False
+                ).distinct()
+            else:
+                queryset = Order.objects.filter(
+                    employee=user,
+                    invoice__isnull=False
+                ).distinct()
+        else:
+            queryset = Order.objects.filter(
+                invoice__isnull=False
+            ).distinct()
+        
+        self.fields['orders'].queryset = queryset
+        
+        # Устанавливаем дату по умолчанию
+        if not self.instance.pk:
+            self.initial['shipment_date'] = timezone.now().date()
+    
+    def clean_shipment_number(self):
+        """Валидация номера фуры"""
+        shipment_number = self.cleaned_data.get('shipment_number')
+        if shipment_number:
+            shipment_number = shipment_number.strip()
+            # Проверка уникальности (кроме текущего объекта)
+            existing = Shipment.objects.filter(shipment_number=shipment_number)
+            if self.instance.pk:
+                existing = existing.exclude(pk=self.instance.pk)
+            if existing.exists():
+                raise forms.ValidationError("Фура с таким номером уже существует.")
+        return shipment_number
+    
+    def clean_received_cbm(self):
+        """Валидация фактических кубов"""
+        from decimal import Decimal
+        received_cbm = self.cleaned_data.get('received_cbm')
+        if received_cbm is not None:
+            if received_cbm < 0:
+                raise forms.ValidationError("Фактические кубы не могут быть отрицательными.")
+            # Проверка максимального значения
+            max_value = Decimal('9999999.999')
+            if received_cbm > max_value:
+                raise forms.ValidationError(f"Значение не может превышать {max_value} куб. м.")
+        return received_cbm
+    
+    def clean_orders(self):
+        """Валидация заказов"""
+        orders = self.cleaned_data.get('orders')
+        if not orders:
+            raise forms.ValidationError("Необходимо выбрать хотя бы один заказ.")
+        return orders
+    
+    def clean_received_date(self):
+        """Валидация даты получения"""
+        received_date = self.cleaned_data.get('received_date')
+        shipment_date = self.cleaned_data.get('shipment_date')
+        
+        if received_date and shipment_date:
+            if received_date < shipment_date:
+                raise forms.ValidationError(
+                    "Дата получения не может быть раньше даты отправки."
+                )
+        
+        return received_date

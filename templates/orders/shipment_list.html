@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load file_utils %}
+
+{% block title %}{% trans "Фуры" %} - XXL OrderHub{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Заголовок -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-truck"></i> {% trans "Фуры" %}</h2>
+                    <p class="text-muted mb-0">{% trans "Управление фурами и отслеживание фактических кубов" %}</p>
+                </div>
+                <div>
+                    <a href="{% url 'shipment_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> {% trans "Создать фуру" %}
+                    </a>
+                </div>
+            </div>
+
+            <!-- Фильтры -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="id_search" class="form-label">{% trans "Поиск" %}</label>
+                            <input type="text" class="form-control" id="id_search" name="search" 
+                                   value="{{ search_query }}" placeholder="{% trans 'По номеру фуры или комментариям' %}">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="id_date_from" class="form-label">{% trans "Дата отправки с" %}</label>
+                            <input type="date" class="form-control" id="id_date_from" name="date_from" 
+                                   value="{{ date_from }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="id_date_to" class="form-label">{% trans "Дата отправки по" %}</label>
+                            <input type="date" class="form-control" id="id_date_to" name="date_to" 
+                                   value="{{ date_to }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-outline-primary">{% trans "Фильтровать" %}</button>
+                                <a href="{% url 'shipment_list' %}" class="btn btn-outline-secondary btn-sm">{% trans "Сбросить" %}</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Список фур -->
+            {% if shipments %}
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>{% trans "Номер фуры" %}</th>
+                                    <th>{% trans "Заказов" %}</th>
+                                    <th>{% trans "Кубы из инвойсов" %}</th>
+                                    <th>{% trans "Фактические кубы" %}</th>
+                                    <th>{% trans "Разница" %}</th>
+                                    <th>{% trans "Дата отправки" %}</th>
+                                    <th>{% trans "Действия" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for shipment in shipments %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ shipment.shipment_number }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ shipment.orders_count }}</span>
+                                    </td>
+                                    <td>
+                                        <strong>{{ shipment.total_invoice_cbm|floatformat:3 }}</strong> {% trans "куб. м" %}
+                                    </td>
+                                    <td>
+                                        {% if shipment.received_cbm %}
+                                            <strong>{{ shipment.received_cbm|floatformat:3 }}</strong> {% trans "куб. м" %}
+                                        {% else %}
+                                            <span class="text-muted">{% trans "Не указано" %}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if shipment.cbm_difference is not None %}
+                                            {% if shipment.cbm_difference > 0 %}
+                                                <span class="text-danger">
+                                                    <i class="fas fa-arrow-down"></i> {{ shipment.cbm_difference|floatformat:3 }} {% trans "куб. м" %}
+                                                    {% if shipment.cbm_difference_percentage %}
+                                                        ({{ shipment.cbm_difference_percentage|floatformat:1 }}%)
+                                                    {% endif %}
+                                                </span>
+                                            {% elif shipment.cbm_difference < 0 %}
+                                                <span class="text-success">
+                                                    <i class="fas fa-arrow-up"></i> {{ shipment.cbm_difference|abs_value|floatformat:3 }} {% trans "куб. м" %}
+                                                    {% if shipment.cbm_difference_percentage %}
+                                                        ({{ shipment.cbm_difference_percentage|abs_value|floatformat:1 }}%)
+                                                    {% endif %}
+                                                </span>
+                                            {% else %}
+                                                <span class="text-success">
+                                                    <i class="fas fa-check"></i> {% trans "Совпадает" %}
+                                                </span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if shipment.shipment_date %}
+                                            {{ shipment.shipment_date|date:"d.m.Y" }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'shipment_detail' shipment.pk %}" class="btn btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{% url 'shipment_update' shipment.pk %}" class="btn btn-outline-warning">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Пагинация -->
+            {% if is_paginated %}
+            <nav aria-label="{% trans 'Навигация по страницам' %}" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}">
+                            {% trans "Первая" %}
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}">
+                            {% trans "Предыдущая" %}
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    <li class="page-item active">
+                        <span class="page-link">
+                            {% trans "Страница" %} {{ page_obj.number }} {% trans "из" %} {{ page_obj.paginator.num_pages }}
+                        </span>
+                    </li>
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}">
+                            {% trans "Следующая" %}
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}">
+                            {% trans "Последняя" %}
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-5">
+                <div class="mb-4">
+                    <i class="fas fa-truck fa-3x text-muted"></i>
+                </div>
+                <h4 class="text-muted">{% trans "Фуры не найдены" %}</h4>
+                <p class="text-muted">{% trans "У вас пока нет фур или они не соответствуют выбранным фильтрам." %}</p>
+                <a href="{% url 'shipment_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> {% trans "Создать первую фуру" %}
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+

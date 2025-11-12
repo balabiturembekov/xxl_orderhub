@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}
+    {% if shipment %}
+        {% trans "Редактировать фуру" %} - XXL OrderHub
+    {% else %}
+        {% trans "Создать фуру" %} - XXL OrderHub
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Главная" %}</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'shipment_list' %}">{% trans "Фуры" %}</a></li>
+                <li class="breadcrumb-item active">
+                    {% if shipment %}
+                        {% trans "Редактировать" %}
+                    {% else %}
+                        {% trans "Создать" %}
+                    {% endif %}
+                </li>
+            </ol>
+        </nav>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">
+                    {% if shipment %}
+                        <i class="fas fa-edit"></i> {% trans "Редактировать фуру" %}
+                    {% else %}
+                        <i class="fas fa-plus"></i> {% trans "Создать новую фуру" %}
+                    {% endif %}
+                </h3>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.shipment_number.id_for_label }}" class="form-label">
+                                    {% trans "Номер фуры" %} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.shipment_number }}
+                                {% if form.shipment_number.help_text %}
+                                    <div class="form-text">{{ form.shipment_number.help_text }}</div>
+                                {% endif %}
+                                {% if form.shipment_number.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.shipment_number.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="{{ form.shipment_date.id_for_label }}" class="form-label">
+                                    {% trans "Дата отправки" %}
+                                </label>
+                                {{ form.shipment_date }}
+                                {% if form.shipment_date.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.shipment_date.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="{{ form.received_date.id_for_label }}" class="form-label">
+                                    {% trans "Дата получения" %}
+                                </label>
+                                {{ form.received_date }}
+                                {% if form.received_date.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.received_date.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.received_cbm.id_for_label }}" class="form-label">
+                                    {% trans "Фактические кубы" %} <small class="text-muted">({% trans "куб. м" %})</small>
+                                </label>
+                                {{ form.received_cbm }}
+                                {% if form.received_cbm.help_text %}
+                                    <div class="form-text">{{ form.received_cbm.help_text }}</div>
+                                {% endif %}
+                                {% if form.received_cbm.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.received_cbm.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle"></i> 
+                                    {% trans "Введите фактически полученные кубы в фуре. Если не указано, разница не будет рассчитана." %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.orders.id_for_label }}" class="form-label">
+                            {% trans "Заказы" %} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.orders }}
+                        {% if form.orders.help_text %}
+                            <div class="form-text">{{ form.orders.help_text }}</div>
+                        {% endif %}
+                        {% if form.orders.errors %}
+                            <div class="text-danger">
+                                {% for error in form.orders.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">
+                            <i class="fas fa-info-circle"></i> 
+                            {% trans "Выберите заказы, которые входят в эту фуру. Можно выбрать несколько заказов, удерживая Ctrl (или Cmd на Mac)." %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.notes.id_for_label }}" class="form-label">
+                            {% trans "Комментарии" %}
+                        </label>
+                        {{ form.notes }}
+                        {% if form.notes.errors %}
+                            <div class="text-danger">
+                                {% for error in form.notes.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'shipment_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> {% trans "Отмена" %}
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> 
+                            {% if shipment %}
+                                {% trans "Сохранить изменения" %}
+                            {% else %}
+                                {% trans "Создать фуру" %}
+                            {% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

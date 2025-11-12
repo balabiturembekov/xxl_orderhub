@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Удалить фуру" %} - XXL OrderHub{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Главная" %}</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'shipment_list' %}">{% trans "Фуры" %}</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'shipment_detail' shipment.pk %}">{{ shipment.shipment_number }}</a></li>
+                <li class="breadcrumb-item active">{% trans "Удалить" %}</li>
+            </ol>
+        </nav>
+
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h3 class="mb-0"><i class="fas fa-exclamation-triangle"></i> {% trans "Подтверждение удаления" %}</h3>
+            </div>
+            <div class="card-body">
+                <p class="lead">{% trans "Вы уверены, что хотите удалить фуру?" %}</p>
+                
+                <div class="alert alert-warning">
+                    <strong>{% trans "Фура" %}:</strong> {{ shipment.shipment_number }}<br>
+                    <strong>{% trans "Количество заказов" %}:</strong> {{ shipment.orders_count }}<br>
+                    {% if shipment.shipment_date %}
+                        <strong>{% trans "Дата отправки" %}:</strong> {{ shipment.shipment_date|date:"d.m.Y" }}<br>
+                    {% endif %}
+                </div>
+
+                <p class="text-danger">
+                    <i class="fas fa-exclamation-circle"></i> 
+                    {% trans "Это действие нельзя отменить. Заказы не будут удалены, но связь с фурой будет разорвана." %}
+                </p>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'shipment_detail' shipment.pk %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> {% trans "Отмена" %}
+                        </a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> {% trans "Да, удалить" %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

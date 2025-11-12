@@ -4,6 +4,24 @@ import os
 register = template.Library()
 
 @register.filter
+def abs_value(value):
+    """
+    Возвращает абсолютное значение числа.
+    
+    Args:
+        value: Число (int, float, Decimal)
+        
+    Returns:
+        Абсолютное значение числа
+    """
+    try:
+        if value is None:
+            return None
+        return abs(value)
+    except (TypeError, ValueError):
+        return value
+
+@register.filter
 def filesize(value):
     """
     Форматирует размер файла в читаемый вид.

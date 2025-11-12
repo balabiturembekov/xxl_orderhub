@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Country, Factory, Order, NotificationSettings, Notification, NotificationTemplate, UserProfile
+from .models import Country, Factory, Order, NotificationSettings, Notification, NotificationTemplate, UserProfile, Shipment
 
 
 @admin.register(UserProfile)
@@ -195,3 +195,65 @@ class NotificationTemplateAdmin(admin.ModelAdmin):
     )
     
     readonly_fields = ['created_at', 'updated_at']
+
+
+@admin.register(Shipment)
+class ShipmentAdmin(admin.ModelAdmin):
+    list_display = ['shipment_number', 'orders_count', 'total_invoice_cbm_display', 'received_cbm_display', 'cbm_difference_display', 'shipment_date', 'created_at']
+    list_filter = ['shipment_date', 'received_date', 'created_at']
+    search_fields = ['shipment_number', 'notes']
+    filter_horizontal = ['orders']
+    date_hierarchy = 'shipment_date'
+    ordering = ['-shipment_date', '-created_at']
+    
+    fieldsets = (
+        ('Основная информация', {
+            'fields': ('shipment_number', 'orders')
+        }),
+        ('Кубы', {
+            'fields': ('received_cbm',)
+        }),
+        ('Даты', {
+            'fields': ('shipment_date', 'received_date')
+        }),
+        ('Дополнительно', {
+            'fields': ('notes', 'created_by'),
+            'classes': ('collapse',)
+        }),
+        ('Метаданные', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    readonly_fields = ['created_at', 'updated_at']
+    
+    def orders_count(self, obj):
+        """Количество заказов в фуре"""
+        return obj.orders_count
+    orders_count.short_description = 'Заказов'
+    
+    def total_invoice_cbm_display(self, obj):
+        """Отображение кубов из инвойсов"""
+        return f"{obj.total_invoice_cbm:.3f} куб. м"
+    total_invoice_cbm_display.short_description = 'Кубы из инвойсов'
+    
+    def received_cbm_display(self, obj):
+        """Отображение фактических кубов"""
+        if obj.received_cbm:
+            return f"{obj.received_cbm:.3f} куб. м"
+        return "-"
+    received_cbm_display.short_description = 'Фактические кубы'
+    
+    def cbm_difference_display(self, obj):
+        """Отображение разницы кубов"""
+        if obj.cbm_difference is not None:
+            diff = obj.cbm_difference
+            if diff > 0:
+                return format_html('<span style="color: red;">-{:.3f} куб. м</span>', diff)
+            elif diff < 0:
+                return format_html('<span style="color: green;">+{:.3f} куб. м</span>', abs(diff))
+            else:
+                return format_html('<span style="color: green;">✓ Совпадает</span>')
+        return "-"
+    cbm_difference_display.short_description = 'Разница'

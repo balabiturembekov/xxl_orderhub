@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load file_utils %}
+
+{% block title %}{% trans "Фура" %} {{ shipment.shipment_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Заголовок -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-truck"></i> {% trans "Фура" %} {{ shipment.shipment_number }}</h2>
+                    <p class="text-muted mb-0">
+                        {% trans "Создана" %}: {{ shipment.created_at|date:"d.m.Y H:i" }}
+                        {% if shipment.created_by %}
+                            {% trans "пользователем" %} {{ shipment.created_by.username }}
+                        {% endif %}
+                    </p>
+                </div>
+                <div>
+                    <a href="{% url 'shipment_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> {% trans "К списку фур" %}
+                    </a>
+                    <a href="{% url 'shipment_update' shipment.pk %}" class="btn btn-warning">
+                        <i class="fas fa-edit"></i> {% trans "Редактировать" %}
+                    </a>
+                </div>
+            </div>
+
+            <!-- Основная информация -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-info-circle"></i> {% trans "Информация о фуре" %}</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>{% trans "Номер фуры" %}:</strong></td>
+                                    <td>{{ shipment.shipment_number }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>{% trans "Дата отправки" %}:</strong></td>
+                                    <td>
+                                        {% if shipment.shipment_date %}
+                                            {{ shipment.shipment_date|date:"d.m.Y" }}
+                                        {% else %}
+                                            <span class="text-muted">{% trans "Не указана" %}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>{% trans "Дата получения" %}:</strong></td>
+                                    <td>
+                                        {% if shipment.received_date %}
+                                            {{ shipment.received_date|date:"d.m.Y" }}
+                                        {% else %}
+                                            <span class="text-muted">{% trans "Не указана" %}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>{% trans "Количество заказов" %}:</strong></td>
+                                    <td><span class="badge bg-info">{{ shipment.orders_count }}</span></td>
+                                </tr>
+                                {% if shipment.notes %}
+                                <tr>
+                                    <td><strong>{% trans "Комментарии" %}:</strong></td>
+                                    <td>{{ shipment.notes|linebreaks }}</td>
+                                </tr>
+                                {% endif %}
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-cube"></i> {% trans "Статистика по кубам" %}</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>{% trans "Кубы из инвойсов" %}:</strong></td>
+                                    <td>
+                                        <strong class="text-primary">{{ shipment.total_invoice_cbm|floatformat:3 }}</strong> {% trans "куб. м" %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>{% trans "Фактические кубы" %}:</strong></td>
+                                    <td>
+                                        {% if shipment.received_cbm %}
+                                            <strong class="text-success">{{ shipment.received_cbm|floatformat:3 }}</strong> {% trans "куб. м" %}
+                                        {% else %}
+                                            <span class="text-muted">{% trans "Не указано" %}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>{% trans "Разница" %}:</strong></td>
+                                    <td>
+                                        {% if shipment.cbm_difference is not None %}
+                                            {% if shipment.cbm_difference > 0 %}
+                                                <span class="text-danger">
+                                                    <i class="fas fa-arrow-down"></i> 
+                                                    <strong>{{ shipment.cbm_difference|floatformat:3 }}</strong> {% trans "куб. м" %}
+                                                    {% if shipment.cbm_difference_percentage %}
+                                                        <small>({{ shipment.cbm_difference_percentage|floatformat:1 }}%)</small>
+                                                    {% endif %}
+                                                    <br>
+                                                    <small>{% trans "Фактически меньше, чем заявлено" %}</small>
+                                                </span>
+                                            {% elif shipment.cbm_difference < 0 %}
+                                                <span class="text-success">
+                                                    <i class="fas fa-arrow-up"></i> 
+                                                    <strong>{{ shipment.cbm_difference|abs_value|floatformat:3 }}</strong> {% trans "куб. м" %}
+                                                    {% if shipment.cbm_difference_percentage %}
+                                                        <small>({{ shipment.cbm_difference_percentage|abs_value|floatformat:1 }}%)</small>
+                                                    {% endif %}
+                                                    <br>
+                                                    <small>{% trans "Фактически больше, чем заявлено" %}</small>
+                                                </span>
+                                            {% else %}
+                                                <span class="text-success">
+                                                    <i class="fas fa-check-circle"></i> 
+                                                    <strong>{% trans "Совпадает" %}</strong>
+                                                </span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">{% trans "Не рассчитано" %}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Список заказов в фуре -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-list"></i> {% trans "Заказы в фуре" %}</h5>
+                </div>
+                <div class="card-body">
+                    {% if orders_data %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>{% trans "Заказ" %}</th>
+                                    <th>{% trans "Фабрика" %}</th>
+                                    <th>{% trans "Страна" %}</th>
+                                    <th>{% trans "Кубы из инвойса" %}</th>
+                                    <th>{% trans "Действия" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order_data in orders_data %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'order_detail' order_data.order.pk %}">
+                                            <strong>{{ order_data.order.title }}</strong>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        {% if order_data.order.factory %}
+                                            {{ order_data.order.factory.name }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if order_data.order.factory.country %}
+                                            {{ order_data.order.factory.country.name }} ({{ order_data.order.factory.country.code }})
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <strong>{{ order_data.invoice_cbm|floatformat:3 }}</strong> {% trans "куб. м" %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'order_detail' order_data.order.pk %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i> {% trans "Просмотр" %}
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-info">
+                                    <td colspan="3"><strong>{% trans "ИТОГО" %}:</strong></td>
+                                    <td>
+                                        <strong>{{ total_invoice_cbm|floatformat:3 }}</strong> {% trans "куб. м" %}
+                                    </td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-3">{% trans "В этой фуре пока нет заказов" %}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
