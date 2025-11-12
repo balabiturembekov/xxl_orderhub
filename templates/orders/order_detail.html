@@ -144,6 +144,77 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- CBM (Кубы) -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">📦 {% trans "Кубы (CBM)" %}</h5>
+                        {% if order.status == 'invoice_received' or order.status == 'completed' %}
+                        <a href="{% url 'cbm_create' order.pk %}" class="btn btn-sm btn-primary">
+                            ➕ {% trans "Добавить CBM" %}
+                        </a>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        {% if cbm_records %}
+                        <div class="mb-3">
+                            <h6 class="text-primary">
+                                {% trans "Всего CBM:" %} <strong>{{ total_cbm|floatformat:3 }}</strong> {% trans "куб. м" %}
+                            </h6>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>{% trans "Дата" %}</th>
+                                        <th class="text-end">{% trans "CBM" %}</th>
+                                        <th>{% trans "Создал" %}</th>
+                                        <th>{% trans "Действия" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for cbm in cbm_records %}
+                                    <tr>
+                                        <td>{{ cbm.date|date:"d.m.Y" }}</td>
+                                        <td class="text-end">
+                                            <strong>{{ cbm.cbm_value|floatformat:3 }}</strong> {% trans "куб. м" %}
+                                        </td>
+                                        <td>
+                                            {% if cbm.created_by %}
+                                                {{ cbm.created_by.username }}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a href="{% url 'cbm_update' cbm.pk %}" class="btn btn-outline-primary btn-sm" title="{% trans 'Редактировать' %}">
+                                                    ✏️
+                                                </a>
+                                                <a href="{% url 'cbm_delete' cbm.pk %}" class="btn btn-outline-danger btn-sm" title="{% trans 'Удалить' %}" onclick="return confirm('{% trans 'Вы уверены, что хотите удалить эту запись CBM?' %}');">
+                                                    🗑️
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center text-muted py-3">
+                            <p>{% trans "CBM записи отсутствуют" %}</p>
+                            {% if order.status == 'invoice_received' or order.status == 'completed' %}
+                            <a href="{% url 'cbm_create' order.pk %}" class="btn btn-primary btn-sm">
+                                ➕ {% trans "Добавить первую запись CBM" %}
+                            </a>
+                            {% else %}
+                            <small class="text-muted">{% trans "CBM можно добавить после получения инвойса" %}</small>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
 
             <!-- Действия -->
