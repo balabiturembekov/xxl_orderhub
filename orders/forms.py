@@ -646,12 +646,15 @@ class InvoiceWithPaymentForm(forms.Form):
         })
     )
     
-    # Поля платежа
+    # Поля платежа (опциональные)
+    # КРИТИЧЕСКОЕ ИЗМЕНЕНИЕ: Поля платежа теперь необязательны
+    # Можно загрузить инвойс без платежа и добавить платеж позже
     payment_amount = forms.DecimalField(
         max_digits=12,
         decimal_places=2,
+        required=False,  # КРИТИЧЕСКОЕ ИЗМЕНЕНИЕ: Поле необязательно
         label="Сумма платежа",
-        help_text="Сумма первого платежа",
+        help_text="Сумма первого платежа (необязательно, можно добавить позже)",
         widget=forms.NumberInput(attrs={
             'class': 'form-control',
             'step': '0.01',
@@ -660,6 +663,7 @@ class InvoiceWithPaymentForm(forms.Form):
         })
     )
     payment_date = forms.DateField(
+        required=False,  # КРИТИЧЕСКОЕ ИЗМЕНЕНИЕ: Поле необязательно
         label="Дата платежа",
         widget=forms.DateInput(attrs={
             'class': 'form-control',
@@ -668,14 +672,16 @@ class InvoiceWithPaymentForm(forms.Form):
     )
     payment_type = forms.ChoiceField(
         choices=InvoicePayment.PAYMENT_TYPE_CHOICES,
+        required=False,  # КРИТИЧЕСКОЕ ИЗМЕНЕНИЕ: Поле необязательно
         label="Тип платежа",
         widget=forms.Select(attrs={
             'class': 'form-control'
         })
     )
     payment_receipt = forms.FileField(
+        required=False,  # КРИТИЧЕСКОЕ ИЗМЕНЕНИЕ: Поле необязательно
         label="Скриншот чека оплаты",
-        help_text="Фото или скриншот подтверждения оплаты (JPG, PNG, PDF)",
+        help_text="Фото или скриншот подтверждения оплаты (JPG, PNG, PDF) - необязательно",
         widget=forms.FileInput(attrs={
             'class': 'form-control',
             'accept': 'image/*,.pdf'
@@ -728,7 +734,11 @@ class InvoiceWithPaymentForm(forms.Form):
         amount = self.cleaned_data.get('payment_amount')
         balance = self.cleaned_data.get('balance')
         
-        if amount is not None and amount <= 0:
+        # КРИТИЧЕСКОЕ ИЗМЕНЕНИЕ: Платеж опционален, валидируем только если указан
+        if amount is None:
+            return None  # Платеж не обязателен
+        
+        if amount <= 0:
             raise forms.ValidationError("Сумма платежа должна быть больше нуля.")
         
         if balance and amount and amount > balance:
@@ -737,6 +747,28 @@ class InvoiceWithPaymentForm(forms.Form):
             )
         
         return amount
+    
+    def clean(self):
+        """Валидация всей формы - проверяем, что если указан платеж, то все поля заполнены"""
+        cleaned_data = super().clean()
+        
+        # КРИТИЧЕСКОЕ ИЗМЕНЕНИЕ: Если указана сумма платежа, проверяем обязательные поля платежа
+        payment_amount = cleaned_data.get('payment_amount')
+        payment_date = cleaned_data.get('payment_date')
+        payment_type = cleaned_data.get('payment_type')
+        
+        # Если указана сумма платежа, то дата и тип обязательны
+        if payment_amount is not None and payment_amount > 0:
+            if not payment_date:
+                raise forms.ValidationError({
+                    'payment_date': 'Дата платежа обязательна, если указана сумма платежа.'
+                })
+            if not payment_type:
+                raise forms.ValidationError({
+                    'payment_type': 'Тип платежа обязателен, если указана сумма платежа.'
+                })
+        
+        return cleaned_data
     
     def clean_payment_receipt(self):
         """Валидация файла чека оплаты"""

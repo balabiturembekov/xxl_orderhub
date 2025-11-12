@@ -175,33 +175,49 @@
                         </div>
                     </div>
 
-                    <!-- Информация о платеже -->
+                    <!-- Информация о платеже (опционально) -->
                     <div class="card mb-3">
-                        <div class="card-header bg-success text-white">
+                        <div class="card-header bg-secondary text-white">
                             <h6 class="mb-0">
                                 <i class="fas fa-credit-card"></i> 
                                 {% if has_existing_file %}
                                     {% trans "Добавить дополнительный платеж" %}
                                 {% else %}
-                                    {% trans "Информация о платеже" %}
+                                    {% trans "Информация о платеже" %} <small class="ms-2">({% trans "необязательно" %})</small>
                                 {% endif %}
                             </h6>
                         </div>
                         <div class="card-body">
+                            <div class="alert alert-info mb-3">
+                                <i class="fas fa-info-circle"></i> 
+                                {% if has_existing_file %}
+                                    {% trans "Вы можете добавить дополнительный платеж по инвойсу." %}
+                                {% else %}
+                                    {% trans "Платеж можно добавить позже. Если вы уже произвели оплату, заполните поля ниже." %}
+                                {% endif %}
+                            </div>
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="id_payment_amount" class="form-label">
-                                            {% trans "Сумма платежа" %} <span class="text-danger">*</span>
+                                            {% trans "Сумма платежа" %}
+                                            {% if has_existing_file %}<span class="text-danger">*</span>{% endif %}
                                         </label>
                                         {{ form.payment_amount }}
-                                        <div class="form-text">{% trans "Сумма первого платежа" %}</div>
+                                        <div class="form-text">
+                                            {% if has_existing_file %}
+                                                {% trans "Сумма дополнительного платежа" %}
+                                            {% else %}
+                                                {% trans "Сумма первого платежа (необязательно)" %}
+                                            {% endif %}
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="id_payment_date" class="form-label">
-                                            {% trans "Дата платежа" %} <span class="text-danger">*</span>
+                                            {% trans "Дата платежа" %}
+                                            {% if has_existing_file %}<span class="text-danger">*</span>{% endif %}
                                         </label>
                                         {{ form.payment_date }}
                                     </div>
@@ -211,7 +227,8 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="id_payment_type" class="form-label">
-                                            {% trans "Тип платежа" %} <span class="text-danger">*</span>
+                                            {% trans "Тип платежа" %}
+                                            {% if has_existing_file %}<span class="text-danger">*</span>{% endif %}
                                         </label>
                                         {{ form.payment_type }}
                                     </div>
@@ -219,10 +236,10 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="id_payment_receipt" class="form-label">
-                                            {% trans "Скриншот чека оплаты" %} <span class="text-danger">*</span>
+                                            {% trans "Скриншот чека оплаты" %}
                                         </label>
                                         {{ form.payment_receipt }}
-                                        <div class="form-text">{% trans "Фото или скриншот подтверждения оплаты (JPG, PNG, PDF)" %}</div>
+                                        <div class="form-text">{% trans "Фото или скриншот подтверждения оплаты (JPG, PNG, PDF) - необязательно" %}</div>
                                     </div>
                                 </div>
                             </div>
@@ -240,6 +257,7 @@
                             <li>{% trans "Будет создана запись аудита операции" %}</li>
                             <li>{% trans "Отправится уведомление о получении инвойса" %}</li>
                             <li>{% trans "Заказ станет доступен для завершения" %}</li>
+                            <li>{% trans "Платеж можно добавить позже на странице инвойса" %}</li>
                         </ul>
                     </div>
 
@@ -254,6 +272,11 @@
                                 <i class="fas fa-upload"></i> {% trans "Загрузить инвойс" %}
                             {% endif %}
                         </button>
+                        {% if not has_existing_file %}
+                        <button type="submit" class="btn btn-outline-primary" id="uploadWithoutPaymentBtn" disabled>
+                            <i class="fas fa-file-invoice"></i> {% trans "Загрузить без платежа" %}
+                        </button>
+                        {% endif %}
                     </div>
                 </form>
             </div>
@@ -275,19 +298,38 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function validateForm() {
         const invoiceFileSelected = invoiceFileInput && invoiceFileInput.files && invoiceFileInput.files.length > 0;
-        const paymentReceiptSelected = paymentReceiptInput && paymentReceiptInput.files && paymentReceiptInput.files.length > 0;
         const balanceFilled = balanceInput && balanceInput.value && parseFloat(balanceInput.value) > 0;
         const paymentAmountFilled = paymentAmountInput && paymentAmountInput.value && parseFloat(paymentAmountInput.value) > 0;
         
-        // Проверяем, что сумма платежа не превышает сумму инвойса
+        // КРИТИЧЕСКОЕ ИЗМЕНЕНИЕ: Платеж опционален, валидируем только если указана сумма
+        let paymentValid = true;
         let amountValid = true;
-        if (balanceFilled && paymentAmountFilled) {
-            const balance = parseFloat(balanceInput.value);
-            const paymentAmount = parseFloat(paymentAmountInput.value);
-            if (paymentAmount > balance) {
-                amountValid = false;
-                paymentAmountInput.setCustomValidity('Сумма платежа не может превышать сумму инвойса');
-            } else {
+        
+        if (paymentAmountFilled) {
+            // Если указана сумма платежа, проверяем остальные поля платежа
+            const paymentDateInput = document.getElementById('id_payment_date');
+            const paymentTypeInput = document.getElementById('id_payment_type');
+            const paymentDateFilled = paymentDateInput && paymentDateInput.value;
+            const paymentTypeFilled = paymentTypeInput && paymentTypeInput.value;
+            
+            if (!paymentDateFilled || !paymentTypeFilled) {
+                paymentValid = false;
+            }
+            
+            // Проверяем, что сумма платежа не превышает сумму инвойса
+            if (balanceFilled) {
+                const balance = parseFloat(balanceInput.value);
+                const paymentAmount = parseFloat(paymentAmountInput.value);
+                if (paymentAmount > balance) {
+                    amountValid = false;
+                    paymentAmountInput.setCustomValidity('Сумма платежа не может превышать сумму инвойса');
+                } else {
+                    paymentAmountInput.setCustomValidity('');
+                }
+            }
+        } else {
+            // Если сумма платежа не указана, очищаем валидацию
+            if (paymentAmountInput) {
                 paymentAmountInput.setCustomValidity('');
             }
         }
@@ -295,26 +337,28 @@ document.addEventListener('DOMContentLoaded', function() {
         // Проверяем, есть ли уже существующий файл
         const hasExistingFile = {{ has_existing_file|yesno:"true,false" }};
         
-        // Активируем кнопку в зависимости от ситуации
+        // КРИТИЧЕСКОЕ ИЗМЕНЕНИЕ: Активируем кнопку в зависимости от ситуации
+        // Для нового инвойса: обязательны файл и баланс, платеж опционален
+        // Для существующего инвойса: если указана сумма платежа, то все поля платежа обязательны
         let formValid;
         if (hasExistingFile) {
-            // Если файл уже есть, нужен только платеж
-            formValid = paymentReceiptSelected && paymentAmountFilled && amountValid;
+            // Если файл уже есть, платеж опционален, но если указана сумма - все поля обязательны
+            if (paymentAmountFilled) {
+                formValid = paymentValid && amountValid;
+            } else {
+                // Можно отправить форму без платежа
+                formValid = true;
+            }
         } else {
-            // Если файла нет, нужны все поля
-            formValid = invoiceFileSelected && paymentReceiptSelected && balanceFilled && paymentAmountFilled && amountValid;
+            // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Для нового инвойса файл ОБЯЗАТЕЛЕН
+            // Если файла нет, обязательны файл и баланс, платеж опционален
+            if (paymentAmountFilled) {
+                formValid = invoiceFileSelected && balanceFilled && paymentValid && amountValid;
+            } else {
+                // Для нового инвойса файл обязателен даже без платежа
+                formValid = invoiceFileSelected && balanceFilled;
+            }
         }
-        
-        // Отладочная информация
-        console.log('Validation debug:', {
-            hasExistingFile,
-            invoiceFileSelected,
-            paymentReceiptSelected,
-            balanceFilled,
-            paymentAmountFilled,
-            amountValid,
-            formValid
-        });
         
         if (formValid) {
             uploadBtn.disabled = false;
@@ -342,6 +386,52 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (paymentAmountInput) {
         paymentAmountInput.addEventListener('input', validateForm);
+    }
+    
+    // КРИТИЧЕСКОЕ ИЗМЕНЕНИЕ: Отдельная валидация для кнопки "Загрузить без платежа"
+    const uploadWithoutPaymentBtn = document.getElementById('uploadWithoutPaymentBtn');
+    if (uploadWithoutPaymentBtn) {
+        function validateFormWithoutPayment() {
+            const invoiceFileSelected = invoiceFileInput && invoiceFileInput.files && invoiceFileInput.files.length > 0;
+            const balanceFilled = balanceInput && balanceInput.value && parseFloat(balanceInput.value) > 0;
+            
+            // Для загрузки без платежа нужны только файл и баланс
+            const formValid = invoiceFileSelected && balanceFilled;
+            
+            if (formValid) {
+                uploadWithoutPaymentBtn.disabled = false;
+                uploadWithoutPaymentBtn.classList.remove('btn-secondary');
+                uploadWithoutPaymentBtn.classList.add('btn-outline-primary');
+            } else {
+                uploadWithoutPaymentBtn.disabled = true;
+                uploadWithoutPaymentBtn.classList.remove('btn-outline-primary');
+                uploadWithoutPaymentBtn.classList.add('btn-secondary');
+            }
+        }
+        
+        // Очищаем поля платежа при нажатии на кнопку "без платежа"
+        uploadWithoutPaymentBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            // Очищаем поля платежа
+            if (paymentAmountInput) paymentAmountInput.value = '';
+            const paymentDateInput = document.getElementById('id_payment_date');
+            if (paymentDateInput) paymentDateInput.value = '';
+            const paymentTypeInput = document.getElementById('id_payment_type');
+            if (paymentTypeInput) paymentTypeInput.value = '';
+            if (paymentReceiptInput) paymentReceiptInput.value = '';
+            
+            // Отправляем форму
+            document.querySelector('form').submit();
+        });
+        
+        // Добавляем валидацию для кнопки без платежа
+        if (invoiceFileInput) {
+            invoiceFileInput.addEventListener('change', validateFormWithoutPayment);
+        }
+        if (balanceInput) {
+            balanceInput.addEventListener('input', validateFormWithoutPayment);
+        }
+        validateFormWithoutPayment();
     }
     
     // Изначально кнопка должна быть неактивной
