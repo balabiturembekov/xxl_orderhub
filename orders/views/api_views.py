@@ -47,9 +47,9 @@ def get_factories(request):
             'name': factory.name,
             'email': factory.email,
             'country': {
-                'id': factory.country.id,
-                'name': factory.country.name,
-                'code': factory.country.code
+                'id': factory.country.id if factory.country else None,
+                'name': factory.country.name if factory.country else None,
+                'code': factory.country.code if factory.country else None
             }
         }
         for factory in factories
@@ -205,9 +205,9 @@ def create_factory_ajax(request):
                 'name': factory.name,
                 'email': factory.email,
                 'country': {
-                    'id': factory.country.id,
-                    'name': factory.country.name,
-                    'code': factory.country.code
+                    'id': factory.country.id if factory.country else None,
+                    'name': factory.country.name if factory.country else None,
+                    'code': factory.country.code if factory.country else None
                 }
             }
         })
@@ -314,9 +314,9 @@ def search_factories(request):
             'name': factory.name,
             'email': factory.email,
             'country': {
-                'id': factory.country.id,
-                'name': factory.country.name,
-                'code': factory.country.code
+                'id': factory.country.id if factory.country else None,
+                'name': factory.country.name if factory.country else None,
+                'code': factory.country.code if factory.country else None
             }
         }
         for factory in factories
@@ -351,9 +351,9 @@ def get_factory_details(request, pk: int):
         'phone': factory.phone,
         'address': factory.address,
         'country': {
-            'id': factory.country.id,
-            'name': factory.country.name,
-            'code': factory.country.code
+            'id': factory.country.id if factory.country else None,
+            'name': factory.country.name if factory.country else None,
+            'code': factory.country.code if factory.country else None
         },
         'orders_count': orders_count,
         'recent_orders': [

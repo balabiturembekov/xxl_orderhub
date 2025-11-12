@@ -108,7 +108,8 @@ class OrderDetailView(DetailView):
         ).prefetch_related(
             'orderconfirmation_set__requested_by',
             'orderconfirmation_set__confirmed_by',
-            'orderauditlog_set__user'
+            'orderauditlog_set__user',
+            'cbm_records__created_by'  # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Оптимизация запросов для CBM
         )
     
     def get_context_data(self, **kwargs):
@@ -135,6 +136,16 @@ class OrderDetailView(DetailView):
         audit_logs_qs = order.orderauditlog_set.select_related('user').order_by('-timestamp')[:100]  # Лимит 100 последних логов
         context['audit_logs'] = list(audit_logs_qs)  # Преобразуем в список
         logger.info(f'Audit logs loaded: {len(context["audit_logs"])}')
+        
+        # Загружаем CBM записи и общую сумму
+        from django.db.models import Sum
+        from decimal import Decimal
+        
+        cbm_records = order.cbm_records.select_related('created_by').order_by('-date', '-created_at')
+        total_cbm = cbm_records.aggregate(total=Sum('cbm_value'))['total'] or Decimal('0')
+        
+        context['cbm_records'] = cbm_records
+        context['total_cbm'] = total_cbm
         
         # Calculate days since upload/sent
         if order.uploaded_at:

@@ -501,9 +501,11 @@ class CBMCreateView(CreateView):
         total_cbm = order.cbm_records.aggregate(total=Sum('cbm_value'))['total'] or 0
         
         # Добавляем информацию о заказе для отображения
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасный доступ к factory.name
+        factory_name = order.factory.name if order.factory else "Без фабрики"
         context['order_info'] = {
             'title': order.title,
-            'factory': order.factory.name,  # factory уже загружен через select_related
+            'factory': factory_name,
             'total_cbm': total_cbm,
         }
         
@@ -560,7 +562,8 @@ class CBMCreateView(CreateView):
         )
         
         # Перенаправляем на страницу инвойса, если он есть, иначе на страницу заказа
-        if hasattr(order, 'invoice'):
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасная проверка наличия invoice и его id
+        if hasattr(order, 'invoice') and order.invoice and order.invoice.id:
             return redirect('invoice_detail', pk=order.invoice.id)
         else:
             return redirect('order_detail', pk=order.id)
@@ -597,9 +600,11 @@ class CBMUpdateView(UpdateView):
         total_cbm = order.cbm_records.aggregate(total=Sum('cbm_value'))['total'] or 0
         
         # Добавляем информацию о заказе для отображения
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасный доступ к factory.name
+        factory_name = order.factory.name if order.factory else "Без фабрики"
         context['order_info'] = {
             'title': order.title,
-            'factory': order.factory.name,  # factory уже загружен через select_related
+            'factory': factory_name,
             'total_cbm': total_cbm,
         }
         
@@ -649,7 +654,8 @@ class CBMUpdateView(UpdateView):
         )
         
         # Перенаправляем на страницу инвойса, если он есть, иначе на страницу заказа
-        if hasattr(order, 'invoice'):
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасная проверка наличия invoice и его id
+        if hasattr(order, 'invoice') and order.invoice and order.invoice.id:
             return redirect('invoice_detail', pk=order.invoice.id)
         else:
             return redirect('order_detail', pk=order.id)
@@ -694,7 +700,8 @@ def delete_cbm(request, cbm_id):
         messages.error(request, _('Ошибка при удалении записи CBM: {error}').format(error=str(e)))
     
     # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Правильный редирект в зависимости от наличия инвойса
-    if hasattr(order, 'invoice'):
+    # Безопасная проверка наличия invoice и его id
+    if hasattr(order, 'invoice') and order.invoice and order.invoice.id:
         return redirect('invoice_detail', pk=order.invoice.id)
     else:
         return redirect('order_detail', pk=order.id)
