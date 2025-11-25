@@ -322,14 +322,12 @@
 </div>
 
 <!-- Модальное окно подтверждения удаления платежа -->
-<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog" role="document">
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">{% trans "Подтверждение удаления" %}</h5>
-                <button type="button" class="close" data-dismiss="modal">
-                    <span>&times;</span>
-                </button>
+                <h5 class="modal-title" id="deleteModalLabel">{% trans "Подтверждение удаления" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <p>{% trans "Вы уверены, что хотите удалить этот платеж?" %}</p>
@@ -340,7 +338,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Отмена" %}</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Отмена" %}</button>
                 <form id="deleteForm" method="post" style="display: inline;">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-danger">{% trans "Удалить" %}</button>
@@ -351,14 +349,12 @@
 </div>
 
 <!-- Модальное окно подтверждения удаления CBM -->
-<div class="modal fade" id="deleteCBMModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog" role="document">
+<div class="modal fade" id="deleteCBMModal" tabindex="-1" aria-labelledby="deleteCBMModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">{% trans "Подтверждение удаления CBM" %}</h5>
-                <button type="button" class="close" data-dismiss="modal">
-                    <span>&times;</span>
-                </button>
+                <h5 class="modal-title" id="deleteCBMModalLabel">{% trans "Подтверждение удаления CBM" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <p>{% trans "Вы уверены, что хотите удалить эту запись CBM?" %}</p>
@@ -369,7 +365,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Отмена" %}</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Отмена" %}</button>
                 <form id="deleteCBMForm" method="post" style="display: inline;">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-danger">{% trans "Удалить" %}</button>
@@ -383,7 +379,8 @@
 function deletePayment(paymentId, amount) {
     document.getElementById('paymentAmount').textContent = amount + ' €';
     document.getElementById('deleteForm').action = '{% url "payment_delete" 0 %}'.replace('0', paymentId);
-    $('#deleteModal').modal('show');
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    deleteModal.show();
 }
 
 function deleteCBM(cbmId, cbmValue) {
@@ -391,7 +388,8 @@ function deleteCBM(cbmId, cbmValue) {
     const cbmValueFormatted = parseFloat(cbmValue).toFixed(3);
     document.getElementById('cbmValue').textContent = cbmValueFormatted + ' {% trans "куб. м" %}';
     document.getElementById('deleteCBMForm').action = '{% url "cbm_delete" 0 %}'.replace('0', cbmId);
-    $('#deleteCBMModal').modal('show');
+    const deleteCBMModal = new bootstrap.Modal(document.getElementById('deleteCBMModal'));
+    deleteCBMModal.show();
 }
 </script>
 {% endblock %}
