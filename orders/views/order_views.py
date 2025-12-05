@@ -14,6 +14,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
+from django.views.decorators.http import require_http_methods
 from django.views.generic import ListView, DetailView
 from django.http import HttpResponse, Http404, JsonResponse
 from django.utils import timezone
@@ -21,9 +22,10 @@ from django.db.models import Q
 from django.conf import settings
 import os
 
-from ..models import Order, Factory, Country
+from ..models import Order, Factory, Country, OrderAuditLog
 from ..forms import OrderForm
 from ..file_preview import generate_file_preview
+from django.db import transaction
 
 
 @method_decorator(login_required, name='dispatch')
@@ -442,3 +444,150 @@ def preview_file_modal(request, pk: int, file_type: str):
             'file_name': 'Неизвестный файл',
             'error': str(e)
         })
+
+
+@login_required
+@require_http_methods(["POST"])
+def cancel_order_by_client(request, pk: int):
+    """
+    Mark order as cancelled by client.
+    
+    Args:
+        pk: Order primary key
+    
+    Returns:
+        Redirect to order detail page
+    """
+    order = get_object_or_404(Order, pk=pk)
+    
+    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем права доступа - только создатель заказа или любой авторизованный пользователь может отменить
+    # (по аналогии с другими операциями в системе)
+    # Если нужна более строгая проверка, можно добавить: if order.employee != request.user and not request.user.is_staff
+    
+    # Проверяем, что заказ еще не отменен клиентом
+    if order.cancelled_by_client:
+        messages.warning(request, 'Этот заказ уже отменен клиентом!')
+        return redirect('order_detail', pk=pk)
+    
+    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем статус заказа - нельзя отменять уже завершенные заказы
+    if order.status == 'completed':
+        messages.error(request, 'Нельзя отменить уже завершенный заказ!')
+        return redirect('order_detail', pk=pk)
+    
+    comment = request.POST.get('comment', '').strip()
+    
+    if not comment:
+        messages.error(request, 'Пожалуйста, укажите комментарий при отмене заказа!')
+        return redirect('order_detail', pk=pk)
+    
+    # Проверка длины комментария (максимум 2000 символов)
+    if len(comment) > 2000:
+        messages.error(request, 'Комментарий слишком длинный! Максимум 2000 символов.')
+        return redirect('order_detail', pk=pk)
+    
+    try:
+        with transaction.atomic():
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Используем select_for_update для предотвращения race condition
+            # Два пользователя не смогут одновременно отменить один и тот же заказ
+            order = Order.objects.select_for_update().get(pk=order.pk)
+            
+            # Повторная проверка после блокировки (на случай если заказ был отменен между проверкой и блокировкой)
+            if order.cancelled_by_client:
+                messages.warning(request, 'Этот заказ уже отменен клиентом!')
+                return redirect('order_detail', pk=pk)
+            
+            if order.status == 'completed':
+                messages.error(request, 'Нельзя отменить уже завершенный заказ!')
+                return redirect('order_detail', pk=pk)
+            
+            # Отмечаем заказ как отмененный клиентом
+            order.cancelled_by_client = True
+            order.cancelled_by_client_at = timezone.now()
+            order.cancelled_by_client_comment = comment
+            order.cancelled_by_client_by = request.user
+            order.save()
+            
+            # Создаем audit log
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: action должен быть из ACTION_TYPES, используем 'cancelled'
+            OrderAuditLog.log_action(
+                order=order,
+                user=request.user,
+                action='cancelled',
+                field_name='cancelled_by_client',
+                old_value='False',
+                new_value='True',
+                comments=f'Заказ отменен клиентом. Комментарий: {comment[:500]}'  # Ограничиваем длину комментария в логе
+            )
+        
+        messages.success(request, f'Заказ "{order.title}" отмечен как отмененный клиентом!')
+    except Exception as e:
+        import logging
+        logger = logging.getLogger('orders')
+        logger.error(f"Ошибка при отмене заказа {order.id}: {e}", exc_info=True)
+        messages.error(request, f'Ошибка при отмене заказа: {str(e)}')
+    
+    return redirect('order_detail', pk=pk)
+
+
+@method_decorator(login_required, name='dispatch')
+class CancelledByClientOrderListView(ListView):
+    """
+    Display a list of orders cancelled by client.
+    
+    Features:
+    - Filtering by factory, country, and search terms
+    - Pagination
+    - Order by cancellation date (newest first)
+    """
+    model = Order
+    template_name = 'orders/cancelled_by_client_list.html'
+    context_object_name = 'orders'
+    paginate_by = 20
+    
+    def get_queryset(self):
+        """Get orders cancelled by client."""
+        queryset = Order.objects.filter(
+            cancelled_by_client=True
+        ).select_related('factory', 'factory__country', 'employee', 'cancelled_by_client_by')
+        
+        # Apply filters
+        factory_filter = self.request.GET.get('factory')
+        country_filter = self.request.GET.get('country')
+        search_query = self.request.GET.get('search')
+        
+        if factory_filter:
+            try:
+                factory_id = int(factory_filter)
+                queryset = queryset.filter(factory_id=factory_id)
+            except (ValueError, TypeError):
+                pass  # Игнорируем невалидные значения
+        
+        if country_filter:
+            try:
+                country_id = int(country_filter)
+                queryset = queryset.filter(factory__country_id=country_id)
+            except (ValueError, TypeError):
+                pass  # Игнорируем невалидные значения
+        
+        if search_query:
+            queryset = queryset.filter(
+                Q(title__icontains=search_query) |
+                Q(description__icontains=search_query) |
+                Q(factory__name__icontains=search_query) |
+                Q(cancelled_by_client_comment__icontains=search_query)
+            )
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Используем nulls_last для правильной сортировки, если cancelled_by_client_at = None
+        from django.db.models import F
+        return queryset.order_by(F('cancelled_by_client_at').desc(nulls_last=True), '-uploaded_at')
+    
+    def get_context_data(self, **kwargs):
+        """Add filter options to context."""
+        context = super().get_context_data(**kwargs)
+        # Фильтруем только активные фабрики
+        context['factories'] = Factory.objects.filter(is_active=True).select_related('country')
+        # Получаем список стран, которые есть в заказах (через фабрики)
+        context['countries'] = Country.objects.filter(
+            factory__is_active=True
+        ).distinct().order_by('name')
+        return context

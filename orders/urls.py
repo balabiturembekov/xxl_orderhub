@@ -3,6 +3,7 @@ from django.contrib.auth import views as auth_views
 from .views import (
     # Order views
     OrderListView, OrderDetailView, create_order, download_file, preview_file, preview_file_modal,
+    cancel_order_by_client, CancelledByClientOrderListView,
     # Confirmation views
     ConfirmationListView, confirmation_detail, send_order, upload_invoice, upload_invoice_form,
     upload_invoice_execute, complete_order, confirmation_approve, confirmation_reject,
@@ -60,6 +61,8 @@ urlpatterns = [
     path("orders/", OrderListView.as_view(), name="order_list"),
     path("orders/create/", create_order, name="create_order"),
     path("orders/<int:pk>/", OrderDetailView.as_view(), name="order_detail"),
+    path("orders/<int:pk>/cancel-by-client/", cancel_order_by_client, name="cancel_order_by_client"),
+    path("orders/cancelled-by-client/", CancelledByClientOrderListView.as_view(), name="cancelled_by_client_list"),
     path("orders/<int:pk>/send/", send_order, name="send_order"),
     path("orders/<int:pk>/upload-invoice/", upload_invoice, name="upload_invoice"),
     path("orders/<int:pk>/upload-invoice-form/", upload_invoice_form, name="upload_invoice_form"),
