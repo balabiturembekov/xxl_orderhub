@@ -187,10 +187,28 @@ class Order(models.Model):
     last_reminder_sent = models.DateTimeField(blank=True, null=True, verbose_name="Последнее напоминание")
     reminder_count = models.PositiveIntegerField(default=0, verbose_name="Количество напоминаний")
     
+    # Отмена клиентом
+    cancelled_by_client = models.BooleanField(default=False, verbose_name="Отменен клиентом")
+    cancelled_by_client_at = models.DateTimeField(blank=True, null=True, verbose_name="Дата отмены клиентом")
+    cancelled_by_client_comment = models.TextField(blank=True, verbose_name="Комментарий при отмене клиентом")
+    cancelled_by_client_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='cancelled_orders',
+        verbose_name="Отменил клиентом"
+    )
+    
     class Meta:
         verbose_name = "Заказ"
         verbose_name_plural = "Заказы"
         ordering = ['-uploaded_at']
+        indexes = [
+            models.Index(fields=['cancelled_by_client'], name='order_cancelled_idx'),
+            models.Index(fields=['cancelled_by_client_at'], name='order_cancelled_at_idx'),
+            models.Index(fields=['cancelled_by_client', 'cancelled_by_client_at'], name='order_cancelled_comp_idx'),
+        ]
     
     def __str__(self):
         # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасный доступ к factory.name
@@ -246,6 +264,38 @@ class Order(models.Model):
             validate_safe_filename(self.excel_file.name)
         if self.invoice_file and hasattr(self.invoice_file, 'name') and self.invoice_file.name:
             validate_safe_filename(self.invoice_file.name)
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Валидация полей отмены клиентом
+        if self.cancelled_by_client:
+            # Если заказ отменен клиентом, должны быть установлены обязательные поля
+            if not self.cancelled_by_client_at:
+                from django.core.exceptions import ValidationError
+                raise ValidationError({
+                    'cancelled_by_client_at': 'Дата отмены должна быть установлена, если заказ отменен клиентом.'
+                })
+            if not self.cancelled_by_client_by:
+                from django.core.exceptions import ValidationError
+                raise ValidationError({
+                    'cancelled_by_client_by': 'Пользователь, отменивший заказ, должен быть указан.'
+                })
+            # Проверка длины комментария (максимум 2000 символов)
+            if self.cancelled_by_client_comment and len(self.cancelled_by_client_comment) > 2000:
+                from django.core.exceptions import ValidationError
+                raise ValidationError({
+                    'cancelled_by_client_comment': 'Комментарий не может быть длиннее 2000 символов.'
+                })
+        else:
+            # Если заказ не отменен, поля отмены должны быть пустыми
+            if self.cancelled_by_client_at:
+                from django.core.exceptions import ValidationError
+                raise ValidationError({
+                    'cancelled_by_client_at': 'Дата отмены не может быть установлена, если заказ не отменен клиентом.'
+                })
+            if self.cancelled_by_client_by:
+                from django.core.exceptions import ValidationError
+                raise ValidationError({
+                    'cancelled_by_client_by': 'Пользователь, отменивший заказ, не может быть указан, если заказ не отменен.'
+                })
     
     def get_absolute_url(self) -> str:
         """URL для детальной страницы заказа"""
