@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load file_utils %}
+{% load time_utils %}
+
+{% block title %}{% trans "Отмененные клиентом заказы" %} - XXL OrderHub{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>🚫 {% trans "Отмененные клиентом заказы" %}</h2>
+            <a href="{% url 'order_list' %}" class="btn btn-outline-secondary">
+                ← {% trans "Все заказы" %}
+            </a>
+        </div>
+
+        <!-- Фильтры -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="id_search" class="form-label">{% trans "Поиск" %}</label>
+                        <input type="text" class="form-control" id="id_search" name="search" 
+                               value="{{ request.GET.search }}" placeholder="{% trans 'По названию, описанию, фабрике или комментарию' %}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="id_country" class="form-label">{% trans "Страна" %}</label>
+                        <select class="form-select" id="id_country" name="country">
+                            <option value="">{% trans "Все страны" %}</option>
+                            {% for country in countries %}
+                            <option value="{{ country.id }}" {% if request.GET.country == country.id|stringformat:"s" %}selected{% endif %}>
+                                {{ country.name }} ({{ country.code }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="id_factory" class="form-label">{% trans "Фабрика" %}</label>
+                        <select class="form-select" id="id_factory" name="factory">
+                            <option value="">{% trans "Все фабрики" %}</option>
+                            {% for factory in factories %}
+                            <option value="{{ factory.id }}" {% if request.GET.factory == factory.id|stringformat:"s" %}selected{% endif %}>
+                                {{ factory.name }} ({{ factory.country.name }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-outline-primary">{% trans "Фильтровать" %}</button>
+                            <a href="{% url 'cancelled_by_client_list' %}" class="btn btn-outline-secondary btn-sm">{% trans "Сбросить" %}</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Список заказов -->
+        {% if orders %}
+        <div class="row">
+            {% for order in orders %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100 border-danger">
+                    <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">{{ order.title|truncatechars:30 }}</h6>
+                        <span class="badge bg-light text-dark">
+                            {{ order.get_status_display }}
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">
+                            <strong>{% trans "Фабрика:" %}</strong> {% if order.factory %}{{ order.factory.name }}{% else %}<span class="text-muted">-</span>{% endif %}<br>
+                            <strong>{% trans "Страна:" %}</strong> {% if order.factory and order.factory.country %}{{ order.factory.country.name }}{% else %}<span class="text-muted">-</span>{% endif %}<br>
+                            <strong>{% trans "Дата загрузки:" %}</strong> {{ order.uploaded_at|european_datetime_full }}<br>
+                            <strong class="text-danger">{% trans "Отменен:" %}</strong> 
+                            {% if order.cancelled_by_client_at %}
+                            <span class="text-danger">{{ order.cancelled_by_client_at|european_datetime_full }}</span>
+                            {% else %}
+                            <span class="text-danger">-</span>
+                            {% endif %}
+                            {% if order.cancelled_by_client_by %}
+                            <br><strong>{% trans "Отменил:" %}</strong> {{ order.cancelled_by_client_by.username }}
+                            {% endif %}
+                        </p>
+                        
+                        {% if order.cancelled_by_client_comment %}
+                        <div class="alert alert-danger alert-sm py-2 mb-2">
+                            <small><strong>{% trans "Комментарий:" %}</strong> {{ order.cancelled_by_client_comment|truncatechars:150 }}</small>
+                        </div>
+                        {% endif %}
+                        
+                        {% if order.description %}
+                        <p class="card-text">
+                            <small class="text-muted">{{ order.description|truncatechars:100 }}</small>
+                        </p>
+                        {% endif %}
+                    </div>
+                    <div class="card-footer">
+                        <div class="btn-group w-100" role="group">
+                            <a href="{% url 'order_detail' order.pk %}" class="btn btn-outline-primary btn-sm">
+                                👁️ {% trans "Просмотр" %}
+                            </a>
+                            {% if order.excel_file %}
+                            <a href="{% url 'download_file' order.pk 'excel' %}" class="btn btn-outline-success btn-sm">
+                                📄 Excel
+                            </a>
+                            {% endif %}
+                            {% if order.invoice_file %}
+                            <a href="{% url 'download_file' order.pk 'invoice' %}" class="btn btn-outline-success btn-sm">
+                                📋 PDF
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Пагинация -->
+        {% if is_paginated %}
+        <nav aria-label="{% trans 'Навигация по страницам' %}">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.country %}&country={{ request.GET.country }}{% endif %}{% if request.GET.factory %}&factory={{ request.GET.factory }}{% endif %}">
+                        {% trans "Первая" %}
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.country %}&country={{ request.GET.country }}{% endif %}{% if request.GET.factory %}&factory={{ request.GET.factory }}{% endif %}">
+                        {% trans "Предыдущая" %}
+                    </a>
+                </li>
+                {% endif %}
+
+                <li class="page-item active">
+                    <span class="page-link">
+                        {% trans "Страница" %} {{ page_obj.number }} {% trans "из" %} {{ page_obj.paginator.num_pages }}
+                    </span>
+                </li>
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.country %}&country={{ request.GET.country }}{% endif %}{% if request.GET.factory %}&factory={{ request.GET.factory }}{% endif %}">
+                        {% trans "Следующая" %}
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.country %}&country={{ request.GET.country }}{% endif %}{% if request.GET.factory %}&factory={{ request.GET.factory }}{% endif %}">
+                        {% trans "Последняя" %}
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        {% else %}
+        <div class="text-center py-5">
+            <div class="mb-4">
+                <i class="fas fa-ban fa-3x text-muted"></i>
+            </div>
+            <h4 class="text-muted">{% trans "Отмененные заказы не найдены" %}</h4>
+            <p class="text-muted">{% trans "Нет заказов, отмененных клиентом, или они не соответствуют выбранным фильтрам." %}</p>
+            <a href="{% url 'order_list' %}" class="btn btn-primary">
+                ← {% trans "Вернуться к списку заказов" %}
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

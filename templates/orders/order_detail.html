@@ -22,6 +22,11 @@
                 <span class="badge bg-{% if order.status == 'uploaded' %}warning{% elif order.status == 'sent' %}info{% elif order.status == 'invoice_received' %}success{% elif order.status == 'completed' %}dark{% else %}secondary{% endif %} fs-6">
                     {{ order.get_status_display }}
                 </span>
+                {% if order.cancelled_by_client %}
+                <span class="badge bg-danger fs-6 ms-2">
+                    {% trans "Отменен клиентом" %}
+                </span>
+                {% endif %}
             </div>
         </div>
 
@@ -36,11 +41,13 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <p><strong>{% trans "Название:" %}</strong> {{ order.title }}</p>
-                                <p><strong>{% trans "Фабрика:" %}</strong> {{ order.factory.name }}</p>
-                                <p><strong>{% trans "Страна:" %}</strong> {{ order.factory.country.name }}</p>
+                                <p><strong>{% trans "Фабрика:" %}</strong> {% if order.factory %}{{ order.factory.name }}{% else %}<span class="text-muted">-</span>{% endif %}</p>
+                                <p><strong>{% trans "Страна:" %}</strong> {% if order.factory and order.factory.country %}{{ order.factory.country.name }}{% else %}<span class="text-muted">-</span>{% endif %}</p>
+                                {% if order.factory and order.factory.email %}
                                 <p><strong>{% trans "Email фабрики:" %}</strong> 
                                     <a href="mailto:{{ order.factory.email }}">{{ order.factory.email }}</a>
                                 </p>
+                                {% endif %}
                             </div>
                             <div class="col-md-6">
                                 <p><strong>{% trans "Статус:" %}</strong> {{ order.get_status_display }}</p>
@@ -53,6 +60,18 @@
                                 {% endif %}
                                 {% if order.completed_at %}
                                 <p><strong>{% trans "Дата завершения:" %}</strong> {{ order.completed_at|european_datetime_full }}</p>
+                                {% endif %}
+                                {% if order.cancelled_by_client %}
+                                <p><strong class="text-danger">{% trans "Отменен клиентом:" %}</strong> 
+                                    {% if order.cancelled_by_client_at %}
+                                    <span class="text-danger">{{ order.cancelled_by_client_at|european_datetime_full }}</span>
+                                    {% else %}
+                                    <span class="text-danger">-</span>
+                                    {% endif %}
+                                </p>
+                                {% if order.cancelled_by_client_by %}
+                                <p><strong>{% trans "Отменил:" %}</strong> {{ order.cancelled_by_client_by.username }}</p>
+                                {% endif %}
                                 {% endif %}
                             </div>
                         </div>
@@ -75,6 +94,13 @@
                         <div class="mt-3">
                             <strong>{% trans "Комментарии фабрики:" %}</strong>
                             <p class="mt-2">{{ order.factory_comments|linebreaks }}</p>
+                        </div>
+                        {% endif %}
+
+                        {% if order.cancelled_by_client and order.cancelled_by_client_comment %}
+                        <div class="mt-3">
+                            <strong class="text-danger">{% trans "Комментарий при отмене клиентом:" %}</strong>
+                            <p class="mt-2 text-danger">{{ order.cancelled_by_client_comment|linebreaks }}</p>
                         </div>
                         {% endif %}
                     </div>
@@ -277,6 +303,14 @@
                             </small>
                         </div>
                         {% endif %}
+                        
+                        {% if not order.cancelled_by_client and order.status != 'completed' %}
+                        <div class="mt-3 pt-3 border-top">
+                            <button type="button" class="btn btn-outline-danger w-100" data-bs-toggle="modal" data-bs-target="#cancelByClientModal">
+                                🚫 {% trans "Отменен клиентом" %}
+                            </button>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -286,10 +320,13 @@
                         <h5 class="mb-0">{% trans "Контакты фабрики" %}</h5>
                     </div>
                     <div class="card-body">
-                        <p><strong>{% trans "Название:" %}</strong> {{ order.factory.name }}</p>
+                        {% if order.factory %}
+                    <p><strong>{% trans "Название:" %}</strong> {{ order.factory.name }}</p>
+                        {% if order.factory.email %}
                         <p><strong>{% trans "Email:" %}</strong> 
                             <a href="mailto:{{ order.factory.email }}">{{ order.factory.email }}</a>
                         </p>
+                        {% endif %}
                         {% if order.factory.contact_person %}
                         <p><strong>{% trans "Контактное лицо:" %}</strong> {{ order.factory.contact_person }}</p>
                         {% endif %}
@@ -299,6 +336,9 @@
                         {% if order.factory.address %}
                         <p><strong>{% trans "Адрес:" %}</strong> {{ order.factory.address }}</p>
                         {% endif %}
+                    {% else %}
+                    <p class="text-muted">{% trans "Фабрика не указана" %}</p>
+                    {% endif %}
                     </div>
                 </div>
             </div>
@@ -334,4 +374,40 @@
         </div>
     </div>
 </div>
+
+<!-- Модальное окно для отмены заказа клиентом -->
+{% if not order.cancelled_by_client and order.status != 'completed' %}
+<div class="modal fade" id="cancelByClientModal" tabindex="-1" aria-labelledby="cancelByClientModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cancelByClientModalLabel">{% trans "Отмена заказа клиентом" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'cancel_order_by_client' order.pk %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        {% trans "Вы уверены, что хотите отметить этот заказ как отмененный клиентом?" %}
+                    </div>
+                    <p><strong>{% trans "Заказ:" %}</strong> {{ order.title }}</p>
+                    <p><strong>{% trans "Фабрика:" %}</strong> {% if order.factory %}{{ order.factory.name }}{% else %}<span class="text-muted">-</span>{% endif %}</p>
+                    <div class="mb-3">
+                        <label for="cancelComment" class="form-label">
+                            <strong>{% trans "Комментарий" %} <span class="text-danger">*</span></strong>
+                        </label>
+                        <textarea class="form-control" id="cancelComment" name="comment" rows="4" required placeholder="{% trans 'Укажите причину отмены заказа клиентом...' %}"></textarea>
+                        <small class="form-text text-muted">{% trans "Комментарий обязателен для заполнения" %}</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Отмена" %}</button>
+                    <button type="submit" class="btn btn-danger">{% trans "Отменить заказ" %}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endblock %}
