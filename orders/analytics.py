@@ -19,10 +19,11 @@ class AnalyticsService:
         if hasattr(self.date_to, 'date'):
             self.date_to = self.date_to.date()
         
-        # Базовый queryset заказов
+        # Базовый queryset заказов (исключаем отмененные клиентом)
+        # Используем ~Q для безопасной обработки возможных NULL значений
         self.orders_queryset = Order.objects.filter(
             uploaded_at__date__range=[self.date_from, self.date_to]
-        )
+        ).filter(~Q(cancelled_by_client=True))
         
         if self.user:
             self.orders_queryset = self.orders_queryset.filter(employee=self.user)

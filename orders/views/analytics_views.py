@@ -67,10 +67,10 @@ class AnalyticsDashboardView(TemplateView):
         
         if cached_stats is None:
             cached_stats = {
-                'total_orders': Order.objects.count(),
+                'total_orders': Order.objects.filter(~Q(cancelled_by_client=True)).count(),
                 'total_factories': Factory.objects.count(),
                 'total_countries': Country.objects.count(),
-                'active_users': Order.objects.values('employee').distinct().count(),
+                'active_users': Order.objects.filter(~Q(cancelled_by_client=True)).values('employee').distinct().count(),
             }
             cache.set(cache_key, cached_stats, 600)  # 10 minutes
         

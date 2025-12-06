@@ -292,7 +292,9 @@ def get_user_statistics(request):
     Returns:
         JsonResponse with user statistics
     """
-    user_orders = Order.objects.all()
+    # Исключаем отмененные клиентом заказы из статистики
+    # Используем ~Q для безопасной обработки возможных NULL значений
+    user_orders = Order.objects.filter(~Q(cancelled_by_client=True))
     
     # Calculate basic statistics
     total_orders = user_orders.count()
@@ -373,9 +375,10 @@ def get_factory_details(request, pk: int):
     """
     factory = get_object_or_404(Factory, pk=pk)
     
-    # Get order statistics for this factory
-    orders_count = Order.objects.filter(factory=factory).count()
-    recent_orders = Order.objects.filter(factory=factory).order_by('-uploaded_at')[:5]
+    # Get order statistics for this factory (исключаем отмененные клиентом)
+    # Используем ~Q для безопасной обработки возможных NULL значений
+    orders_count = Order.objects.filter(factory=factory).filter(~Q(cancelled_by_client=True)).count()
+    recent_orders = Order.objects.filter(factory=factory).filter(~Q(cancelled_by_client=True)).order_by('-uploaded_at')[:5]
     
     return JsonResponse({
         'id': factory.id,

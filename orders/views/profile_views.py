@@ -47,7 +47,9 @@ class ProfileView(TemplateView):
         
         # Статистика пользователя
         from ..models import Order, Notification
-        user_orders = Order.objects.all()
+        from django.db.models import Q
+        # Используем ~Q для безопасной обработки возможных NULL значений
+        user_orders = Order.objects.filter(~Q(cancelled_by_client=True))
         user_notifications = Notification.objects.filter(user=user)
         
         context.update({

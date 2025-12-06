@@ -187,8 +187,9 @@ def test_notification(request):
         Redirect to notification settings with success/error message
     """
     if request.method == 'POST':
-        # Get the last order for the user (for testing purposes)
-        last_order = Order.objects.filter(employee=request.user).first()
+        # Get the last order for the user (for testing purposes, исключаем отмененные)
+        # Используем ~Q для безопасной обработки возможных NULL значений
+        last_order = Order.objects.filter(employee=request.user).filter(~Q(cancelled_by_client=True)).first()
         
         if last_order:
             try:

@@ -111,10 +111,10 @@ class HomeView(TemplateView):
         
         if cached_stats is None:
             cached_stats = {
-                'total_orders': Order.objects.count(),
+                'total_orders': Order.objects.filter(~Q(cancelled_by_client=True)).count(),
                 'total_factories': Factory.objects.count(),
                 'total_countries': Country.objects.count(),
-                'active_users': Order.objects.values('employee').distinct().count(),
+                'active_users': Order.objects.filter(~Q(cancelled_by_client=True)).values('employee').distinct().count(),
             }
             cache.set(cache_key, cached_stats, 600)  # 10 minutes
         
@@ -130,8 +130,9 @@ class HomeView(TemplateView):
         now = timezone.now()
         week_ago = now - timedelta(days=TimeConstants.LOG_RETENTION_DAYS)
         
-        # Get all orders with optimized query
-        user_orders = Order.objects.all()
+        # Get all orders with optimized query (исключаем отмененные клиентом)
+        # Используем ~Q для безопасной обработки возможных NULL значений
+        user_orders = Order.objects.filter(~Q(cancelled_by_client=True))
         
         # Calculate status statistics
         status_stats = user_orders.aggregate(
