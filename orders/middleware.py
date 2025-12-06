@@ -36,11 +36,15 @@ class RequestLoggingMiddleware(MiddlewareMixin):
             
             # Логируем только важные запросы
             if request.path.startswith('/orders/') or request.path.startswith('/admin/'):
+                # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасный доступ к request.user
+                username = 'Anonymous'
+                if hasattr(request, 'user') and request.user.is_authenticated:
+                    username = request.user.username
                 logger.info(
                     f"{request.method} {request.path} - "
                     f"Status: {response.status_code} - "
                     f"Duration: {duration:.3f}s - "
-                    f"User: {getattr(request.user, 'username', 'Anonymous')} - "
+                    f"User: {username} - "
                     f"IP: {self.get_client_ip(request)}"
                 )
         
@@ -50,10 +54,13 @@ class RequestLoggingMiddleware(MiddlewareMixin):
         """Получение IP адреса клиента"""
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
         if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0]
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасное извлечение первого IP
+            ip = x_forwarded_for.split(',')[0].strip() if x_forwarded_for else None
+            if not ip:
+                ip = request.META.get('REMOTE_ADDR')
         else:
             ip = request.META.get('REMOTE_ADDR')
-        return ip
+        return ip or 'unknown'
 
 
 class RateLimitMiddleware(MiddlewareMixin):
@@ -101,7 +108,10 @@ class RateLimitMiddleware(MiddlewareMixin):
         """Получение IP адреса клиента"""
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
         if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0]
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасное извлечение первого IP
+            ip = x_forwarded_for.split(',')[0].strip() if x_forwarded_for else None
+            if not ip:
+                ip = request.META.get('REMOTE_ADDR')
         else:
             ip = request.META.get('REMOTE_ADDR')
-        return ip
+        return ip or 'unknown'
