@@ -114,15 +114,20 @@ def send_order(request, pk: int):
         return redirect('confirmation_detail', pk=active_confirmation.pk)
     
     # Create new confirmation
+    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасный доступ к factory и country
+    factory_name = order.factory.name if order.factory else "Без фабрики"
+    factory_email = order.factory.email if order.factory else ""
+    country_name = order.factory.country.name if (order.factory and order.factory.country) else "Не указана"
+    
     confirmation = OrderConfirmation.objects.create(
         order=order,
         action='send_order',
         requested_by=request.user,
         confirmation_data={
             'order_title': order.title,
-            'factory_name': order.factory.name,
-            'factory_email': order.factory.email,
-            'country': order.factory.country.name,
+            'factory_name': factory_name,
+            'factory_email': factory_email,
+            'country': country_name,
         }
     )
     
@@ -167,7 +172,7 @@ def upload_invoice(request, pk: int):
         requested_by=request.user,
         confirmation_data={
             'order_title': order.title,
-            'factory_name': order.factory.name,
+            'factory_name': order.factory.name if order.factory else "Без фабрики",
             'current_status': order.get_status_display(),
             'sent_at': order.sent_at.strftime('%d.%m.%Y %H:%M') if order.sent_at else None,
         }
@@ -234,8 +239,14 @@ def upload_invoice_form(request, pk: int):
     has_existing_file = False
     if hasattr(order, 'invoice') and order.invoice_file:
         has_existing_file = True
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасное извлечение имени файла
+        file_name = order.invoice_file.name
+        if file_name:
+            file_name = file_name.split('/')[-1] if '/' in file_name else file_name
+        else:
+            file_name = "Неизвестный файл"
         invoice_file_info = {
-            'name': order.invoice_file.name.split('/')[-1],  # Только имя файла
+            'name': file_name,
             'size': order.invoice_file.size,
             'url': order.invoice_file.url if hasattr(order.invoice_file, 'url') else None
         }
@@ -533,7 +544,7 @@ def complete_order(request, pk: int):
         requested_by=request.user,
         confirmation_data={
             'order_title': order.title,
-            'factory_name': order.factory.name,
+            'factory_name': order.factory.name if order.factory else "Без фабрики",
             'current_status': order.get_status_display(),
             'uploaded_at': order.uploaded_at.strftime('%d.%m.%Y %H:%M'),
             'sent_at': order.sent_at.strftime('%d.%m.%Y %H:%M') if order.sent_at else None,
@@ -588,7 +599,9 @@ def confirmation_approve(request, pk: int):
             # Execute the appropriate action based on confirmation type
             if confirmation.action == 'send_order':
                 _execute_send_order(confirmation, request.user, comments)
-                messages.success(request, f'Заказ успешно отправлен на фабрику {confirmation.order.factory.name}!')
+                # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасный доступ к factory.name
+                factory_name = confirmation.order.factory.name if (confirmation.order.factory) else "неизвестную фабрику"
+                messages.success(request, f'Заказ успешно отправлен на фабрику {factory_name}!')
                 
             elif confirmation.action == 'upload_invoice':
                 # For invoice upload, redirect to upload form
@@ -681,13 +694,25 @@ def _execute_send_order(confirmation: OrderConfirmation, user, comments: str) ->
     if order.status != 'uploaded':
         raise ValueError('Заказ уже отправлен или имеет другой статус!')
     
+    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем наличие factory и email перед отправкой
+    if not order.factory:
+        raise ValueError('Заказ не имеет привязанной фабрики!')
+    
+    if not order.factory.email:
+        raise ValueError('У фабрики не указан email адрес!')
+    
     # Send email to factory
     try:
         # Determine email language based on factory country
         from ..email_utils import get_language_by_country_code, get_email_template_from_db
         
-        country_code = order.factory.country.code
-        language_code = get_language_by_country_code(country_code)
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасный доступ к country.code
+        country_code = order.factory.country.code if (order.factory and order.factory.country) else None
+        if not country_code:
+            # Если страна не указана, используем английский по умолчанию
+            language_code = 'en'
+        else:
+            language_code = get_language_by_country_code(country_code)
         
         # Get template from database
         template = get_email_template_from_db('order_confirmation', language_code)
@@ -698,11 +723,12 @@ def _execute_send_order(confirmation: OrderConfirmation, user, comments: str) ->
             logger = logging.getLogger('orders')
             logger.info(f'Using database template: {template.name} (ID: {template.id}) for order {order.id}')
             
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасный доступ к factory и country
             context = {
                 'order': order,
-                'factory': order.factory,
+                'factory': order.factory if order.factory else None,
                 'employee': order.employee,
-                'country': order.factory.country,
+                'country': order.factory.country if (order.factory and order.factory.country) else None,
             }
             
             rendered = template.render_template(context)
@@ -729,16 +755,18 @@ def _execute_send_order(confirmation: OrderConfirmation, user, comments: str) ->
             subject = f'{subject_prefix}: {order.title}'
             
             # Render HTML template
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасный доступ к factory
             html_message = render_to_string(html_template_path, {
                 'order': order,
-                'factory': order.factory,
+                'factory': order.factory if order.factory else None,
                 'employee': order.employee,
             })
             
             # Render text template
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасный доступ к factory
             text_message = render_to_string(txt_template_path, {
                 'order': order,
-                'factory': order.factory,
+                'factory': order.factory if order.factory else None,
                 'employee': order.employee,
             })
         
@@ -752,22 +780,28 @@ def _execute_send_order(confirmation: OrderConfirmation, user, comments: str) ->
         email.encoding = 'utf-8'
         
         # Attach Excel file with security check
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасное получение пути к файлу
         if order.excel_file:
-            file_path = order.excel_file.path
-            # Проверка безопасности пути к файлу
-            media_root = os.path.abspath(settings.MEDIA_ROOT)
-            file_path_abs = os.path.abspath(file_path)
-            
-            if file_path_abs.startswith(media_root) and os.path.exists(file_path):
-                email.attach_file(file_path)
-            else:
-                logger.warning(f'Небезопасный путь к файлу или файл не найден: {file_path}')
+            try:
+                file_path = order.excel_file.path
+                # Проверка безопасности пути к файлу
+                media_root = os.path.abspath(settings.MEDIA_ROOT)
+                file_path_abs = os.path.abspath(file_path)
+                
+                if file_path_abs.startswith(media_root) and os.path.exists(file_path):
+                    email.attach_file(file_path)
+                else:
+                    logger.warning(f'Небезопасный путь к файлу или файл не найден: {file_path}')
+            except (ValueError, AttributeError) as e:
+                logger.warning(f'Не удалось получить путь к файлу для заказа {order.id}: {e}')
         
         email.send()
         
         # Log successful email sending
         logger = logging.getLogger('orders')
-        logger.info(f'Email successfully sent to {order.factory.email} for order {order.id} using template: {template.name if template else "static"}')
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасный доступ к factory.email (уже проверено выше)
+        factory_email = order.factory.email if order.factory else "unknown"
+        logger.info(f'Email successfully sent to {factory_email} for order {order.id} using template: {template.name if template else "static"}')
         
     except Exception as e:
         logger = logging.getLogger('orders')

@@ -300,8 +300,8 @@ def create_factory_ajax(request):
                     'name': factory.name,
                     'email': factory.email,
                     'country': {
-                        'id': factory.country.id,
-                        'name': factory.country.name
+                        'id': factory.country.id if factory.country else None,
+                        'name': factory.country.name if factory.country else None
                     }
                 }
             })
@@ -338,8 +338,8 @@ def get_factories(request):
             'name': factory.name,
             'email': factory.email,
             'country': {
-                'id': factory.country.id,
-                'name': factory.country.name
+                'id': factory.country.id if factory.country else None,
+                'name': factory.country.name if factory.country else None
             }
         }
         for factory in factories
