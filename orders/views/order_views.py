@@ -47,6 +47,10 @@ class OrderListView(ListView):
         """Get filtered orders for all users."""
         queryset = Order.objects.select_related('factory', 'factory__country', 'employee')
         
+        # Исключаем отмененные клиентом заказы из общего списка
+        # Используем ~Q для безопасной обработки возможных NULL значений
+        queryset = queryset.filter(~Q(cancelled_by_client=True))
+        
         # Apply filters
         status_filter = self.request.GET.get('status')
         factory_filter = self.request.GET.get('factory')
@@ -178,8 +182,10 @@ def create_order(request):
         file_size = 0
         if 'excel_file' in request.FILES:
             file_size = request.FILES['excel_file'].size
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасный доступ к request.user.username
+        username = request.user.username if (hasattr(request, 'user') and request.user.is_authenticated) else 'Unknown'
         logger.info(
-            f'POST /orders/create/ - User: {request.user.username} - '
+            f'POST /orders/create/ - User: {username} - '
             f'IP: {request.META.get("REMOTE_ADDR")} - '
             f'File size: {file_size / (1024*1024):.2f}MB'
         )
@@ -290,14 +296,19 @@ def download_file(request, pk: int, file_type: str):
     
     order = get_object_or_404(Order, pk=pk)
     
-    if file_type == 'excel' and order.excel_file:
-        file_path = order.excel_file.path
-        filename = os.path.basename(file_path)
-    elif file_type == 'invoice' and order.invoice_file:
-        file_path = order.invoice_file.path
-        filename = os.path.basename(file_path)
-    else:
-        raise Http404("Файл не найден")
+    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасное получение пути к файлу с обработкой исключений
+    try:
+        if file_type == 'excel' and order.excel_file:
+            file_path = order.excel_file.path
+            filename = os.path.basename(file_path)
+        elif file_type == 'invoice' and order.invoice_file:
+            file_path = order.invoice_file.path
+            filename = os.path.basename(file_path)
+        else:
+            raise Http404("Файл не найден")
+    except (ValueError, AttributeError) as e:
+        # Файл может не существовать на диске, даже если запись в БД есть
+        raise Http404("Файл не найден или недоступен")
     
     # Проверка безопасности пути к файлу
     media_root = os.path.abspath(settings.MEDIA_ROOT)
@@ -359,12 +370,16 @@ def preview_file(request, pk: int, file_type: str):
     
     try:
         # Get file path based on file type
-        if file_type == 'excel' and order.excel_file:
-            file_path = order.excel_file.path
-        elif file_type == 'invoice' and order.invoice_file:
-            file_path = order.invoice_file.path
-        else:
-            return JsonResponse({'error': 'Файл не найден'}, status=404)
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасное получение пути к файлу
+        try:
+            if file_type == 'excel' and order.excel_file:
+                file_path = order.excel_file.path
+            elif file_type == 'invoice' and order.invoice_file:
+                file_path = order.invoice_file.path
+            else:
+                return JsonResponse({'error': 'Файл не найден'}, status=404)
+        except (ValueError, AttributeError):
+            return JsonResponse({'error': 'Файл недоступен'}, status=404)
         
         # Проверка безопасности пути к файлу
         media_root = os.path.abspath(settings.MEDIA_ROOT)
@@ -405,16 +420,25 @@ def preview_file_modal(request, pk: int, file_type: str):
     
     try:
         # Get file path based on file type
-        if file_type == 'excel' and order.excel_file:
-            file_path = order.excel_file.path
-        elif file_type == 'invoice' and order.invoice_file:
-            file_path = order.invoice_file.path
-        else:
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасное получение пути к файлу
+        try:
+            if file_type == 'excel' and order.excel_file:
+                file_path = order.excel_file.path
+            elif file_type == 'invoice' and order.invoice_file:
+                file_path = order.invoice_file.path
+            else:
+                return render(request, 'orders/file_preview_modal.html', {
+                    'order': order,
+                    'file_type': file_type,
+                    'file_name': 'Неизвестный файл',
+                    'error': 'Файл не найден'
+                })
+        except (ValueError, AttributeError):
             return render(request, 'orders/file_preview_modal.html', {
                 'order': order,
                 'file_type': file_type,
                 'file_name': 'Неизвестный файл',
-                'error': 'Файл не найден'
+                'error': 'Файл недоступен'
             })
         
         # Проверка безопасности пути к файлу
