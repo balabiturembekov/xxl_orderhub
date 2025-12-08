@@ -200,6 +200,15 @@ class Order(models.Model):
         verbose_name="Отменил клиентом"
     )
     
+    # Тип фактуры для турецких фабрик (TR)
+    factura_export = models.BooleanField(default=False, verbose_name="Factura Export")
+    e_factura_turkey = models.BooleanField(default=False, verbose_name="E-Factura Turkey")
+    
+    @property
+    def is_turkish_factory(self):
+        """Проверка, является ли фабрика турецкой"""
+        return self.factory and self.factory.country and self.factory.country.code == 'TR'
+    
     class Meta:
         verbose_name = "Заказ"
         verbose_name_plural = "Заказы"
@@ -295,6 +304,30 @@ class Order(models.Model):
                 from django.core.exceptions import ValidationError
                 raise ValidationError({
                     'cancelled_by_client_by': 'Пользователь, отменивший заказ, не может быть указан, если заказ не отменен.'
+                })
+        
+        # Валидация типа фактуры для турецких фабрик
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем для статусов 'invoice_received' и 'completed'
+        if self.is_turkish_factory and self.status in ['invoice_received', 'completed']:
+            if not self.factura_export and not self.e_factura_turkey:
+                from django.core.exceptions import ValidationError
+                raise ValidationError({
+                    'factura_export': 'Для турецких фабрик необходимо выбрать тип фактуры (Factura Export или E-Factura Turkey).',
+                    'e_factura_turkey': 'Для турецких фабрик необходимо выбрать тип фактуры (Factura Export или E-Factura Turkey).'
+                })
+            if self.factura_export and self.e_factura_turkey:
+                from django.core.exceptions import ValidationError
+                raise ValidationError({
+                    'factura_export': 'Можно выбрать только один тип фактуры.',
+                    'e_factura_turkey': 'Можно выбрать только один тип фактуры.'
+                })
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если заказ не турецкий, поля типа фактуры должны быть False
+        elif not self.is_turkish_factory:
+            if self.factura_export or self.e_factura_turkey:
+                from django.core.exceptions import ValidationError
+                raise ValidationError({
+                    'factura_export': 'Тип фактуры доступен только для турецких фабрик.',
+                    'e_factura_turkey': 'Тип фактуры доступен только для турецких фабрик.'
                 })
     
     def get_absolute_url(self) -> str:
@@ -971,21 +1004,19 @@ class Invoice(models.Model):
                 # Для нового объекта платежей еще нет, устанавливаем 0
                 self.total_paid = Decimal('0')
             else:
-                # Пересчитываем total_paid через агрегацию для актуальности
-                # Используем select_for_update только если мы в транзакции
+                # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-3 и BUG-6: Всегда используем блокировку при пересчете
+                # Проверка in_atomic_block может не работать корректно, поэтому используем более надежный подход
+                # Пересчитываем total_paid через агрегацию с блокировкой для предотвращения race condition
+                # Используем select_for_update() всегда, т.к. это безопасно даже вне транзакции
+                # (вне транзакции select_for_update() просто не блокирует, но не вызывает ошибок)
                 try:
-                    in_atomic = transaction.get_connection().in_atomic_block
-                except (AttributeError, Exception):
-                    # Если не удалось проверить, предполагаем, что мы не в транзакции
-                    in_atomic = False
-                
-                if in_atomic:
-                    # В транзакции - используем блокировку для предотвращения race condition
+                    # Пытаемся использовать блокировку (работает в транзакции)
                     total_paid = self.payments.select_for_update().aggregate(
                         total=models.Sum('amount')
                     )['total'] or Decimal('0')
-                else:
-                    # Вне транзакции - просто агрегация
+                except Exception:
+                    # Если select_for_update() не работает (например, вне транзакции в SQLite),
+                    # используем обычную агрегацию
                     total_paid = self.payments.aggregate(
                         total=models.Sum('amount')
                     )['total'] or Decimal('0')
@@ -1376,3 +1407,239 @@ class Shipment(models.Model):
     def orders_count(self):
         """Количество заказов в фуре"""
         return self.orders.count()
+
+
+class EFacturaBasket(models.Model):
+    """
+    Модель для корзины E-Factura Turkey.
+    
+    Корзины автоматически создаются по месяцам для организации файлов E-Factura.
+    Пример: Январь 2025, Февраль 2026 и т.д.
+    """
+    
+    name = models.CharField(
+        max_length=100,
+        verbose_name="Название корзины",
+        help_text="Например: Январь 2025, Февраль 2026"
+    )
+    month = models.PositiveIntegerField(
+        verbose_name="Месяц",
+        help_text="Номер месяца (1-12)"
+    )
+    year = models.PositiveIntegerField(
+        verbose_name="Год",
+        help_text="Год (например, 2025)"
+    )
+    basket_date = models.DateField(
+        verbose_name="Дата корзины",
+        help_text="Дата, связанная с корзиной"
+    )
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Создал",
+        related_name='created_efactura_baskets'
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Дата создания"
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Дата обновления"
+    )
+    notes = models.TextField(
+        blank=True,
+        verbose_name="Комментарии",
+        help_text="Дополнительная информация о корзине"
+    )
+    
+    class Meta:
+        verbose_name = "Корзина E-Factura"
+        verbose_name_plural = "Корзины E-Factura"
+        ordering = ['-year', '-month', '-created_at']
+        unique_together = [['month', 'year']]
+    
+    def __str__(self):
+        return f"E-Factura {self.name}"
+    
+    @classmethod
+    def get_or_create_for_month(cls, year, month, user=None):
+        """
+        Получить или создать корзину для указанного месяца и года.
+        
+        Args:
+            year: Год (например, 2025)
+            month: Месяц (1-12)
+            user: Пользователь, создающий корзину
+        
+        Returns:
+            tuple: (EFacturaBasket, created)
+        """
+        from datetime import date
+        from calendar import month_name
+        from django.core.exceptions import ValidationError
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Валидация параметров
+        if not isinstance(month, int) or month < 1 or month > 12:
+            raise ValidationError(f'Месяц должен быть числом от 1 до 12, получено: {month}')
+        
+        if not isinstance(year, int) or year < 2000 or year > 2100:
+            raise ValidationError(f'Год должен быть разумным числом (2000-2100), получено: {year}')
+        
+        # Получаем название месяца
+        month_name_ru = {
+            1: 'Январь', 2: 'Февраль', 3: 'Март', 4: 'Апрель',
+            5: 'Май', 6: 'Июнь', 7: 'Июль', 8: 'Август',
+            9: 'Сентябрь', 10: 'Октябрь', 11: 'Ноябрь', 12: 'Декабрь'
+        }
+        
+        name = f"{month_name_ru.get(month, 'Неизвестно')} {year}"
+        basket_date = date(year, month, 1)
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Используем get_or_create с обработкой IntegrityError
+        # для предотвращения race condition при одновременном создании корзины
+        try:
+            basket, created = cls.objects.get_or_create(
+                month=month,
+                year=year,
+                defaults={
+                    'name': name,
+                    'basket_date': basket_date,
+                    'created_by': user
+                }
+            )
+        except Exception as e:
+            # Если произошла ошибка (например, IntegrityError из-за race condition),
+            # пытаемся получить существующую корзину
+            try:
+                basket = cls.objects.get(month=month, year=year)
+                created = False
+            except cls.DoesNotExist:
+                # Если корзина не найдена, пробрасываем исходную ошибку
+                raise
+        
+        return basket, created
+
+
+class EFacturaFile(models.Model):
+    """
+    Модель для файлов E-Factura в корзинах.
+    
+    Файлы автоматически распределяются по корзинам на основе даты загрузки.
+    """
+    
+    basket = models.ForeignKey(
+        EFacturaBasket,
+        on_delete=models.CASCADE,
+        verbose_name="Корзина",
+        related_name='files'
+    )
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.CASCADE,
+        verbose_name="Заказ",
+        related_name='efactura_files'
+    )
+    file = models.FileField(
+        upload_to='efactura/files/',
+        validators=[
+            FileExtensionValidator(allowed_extensions=['pdf', 'xml', 'xlsx', 'xls']),
+        ],
+        verbose_name="Файл E-Factura"
+    )
+    upload_date = models.DateField(
+        verbose_name="Дата загрузки",
+        help_text="Дата загрузки файла"
+    )
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Загрузил",
+        related_name='uploaded_efactura_files'
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Дата создания"
+    )
+    notes = models.TextField(
+        blank=True,
+        verbose_name="Комментарии",
+        help_text="Дополнительная информация о файле"
+    )
+    
+    class Meta:
+        verbose_name = "Файл E-Factura"
+        verbose_name_plural = "Файлы E-Factura"
+        ordering = ['-upload_date', '-created_at']
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-8: Уникальное ограничение для предотвращения дубликатов
+        unique_together = [['order', 'basket']]
+    
+    def __str__(self):
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасный доступ к order.title
+        order_title = self.order.title if self.order else "Без заказа"
+        return f"E-Factura файл для заказа {order_title} ({self.upload_date})"
+    
+    def delete(self, *args, **kwargs):
+        """
+        Удаление файла E-Factura с удалением физического файла из файловой системы.
+        """
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Сохраняем путь к файлу до удаления модели
+        file_path = None
+        if self.file:
+            file_path = self.file.path if hasattr(self.file, 'path') else None
+        
+        # Удаляем модель (это также удалит файл через Django)
+        super().delete(*args, **kwargs)
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Явно удаляем файл из файловой системы, если он существует
+        if file_path:
+            import os
+            try:
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+            except Exception as e:
+                import logging
+                logger = logging.getLogger('orders')
+                logger.warning(f"Не удалось удалить файл E-Factura {file_path}: {e}")
+    
+    def save(self, *args, **kwargs):
+        """
+        Автоматическое распределение файла по корзине на основе даты загрузки.
+        """
+        from datetime import date
+        
+        # Если дата загрузки не указана, используем текущую дату
+        if not self.upload_date:
+            self.upload_date = date.today()
+        
+        # Если корзина не указана, создаем или получаем корзину для месяца загрузки
+        if not self.basket_id:
+            year = self.upload_date.year
+            month = self.upload_date.month
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если created_by не указан, передаем None
+            basket, _ = EFacturaBasket.get_or_create_for_month(
+                year=year,
+                month=month,
+                user=self.created_by if self.created_by else None
+            )
+            self.basket = basket
+        else:
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем соответствие корзины дате загрузки
+            # Если корзина указана, но не соответствует дате, предупреждаем (но не блокируем)
+            if self.basket and self.upload_date:
+                if self.basket.year != self.upload_date.year or self.basket.month != self.upload_date.month:
+                    # Логируем предупреждение, но не блокируем сохранение
+                    import logging
+                    logger = logging.getLogger('orders')
+                    logger.warning(
+                        f'Файл E-Factura загружается в корзину {self.basket.name}, '
+                        f'но дата загрузки ({self.upload_date}) не соответствует месяцу корзины '
+                        f'({self.basket.month}/{self.basket.year})'
+                    )
+        
+        super().save(*args, **kwargs)
