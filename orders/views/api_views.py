@@ -12,7 +12,7 @@ from typing import Dict, Any
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 from django.db.models import Q
@@ -34,10 +34,18 @@ def get_factories(request):
     Returns:
         JsonResponse with factories data
     """
+    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-56: Валидация country_id
     country_id = request.GET.get('country_id')
     
     if country_id:
-        factories = Factory.objects.filter(country_id=country_id).select_related('country')
+        try:
+            country_id = int(country_id)
+            if country_id > 0:
+                factories = Factory.objects.filter(country_id=country_id).select_related('country')
+            else:
+                factories = Factory.objects.select_related('country')
+        except (ValueError, TypeError):
+            factories = Factory.objects.select_related('country')
     else:
         factories = Factory.objects.select_related('country')
     
@@ -80,10 +88,20 @@ def get_countries(request):
     return JsonResponse({'countries': countries_data})
 
 
+from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
+
 @login_required
 @require_http_methods(["POST"])
-@csrf_exempt  # ВАЖНО: @csrf_exempt используется для AJAX, но это должно быть защищено через другие механизмы
+@csrf_protect
+@ensure_csrf_cookie
 def create_country_ajax(request):
+    """
+    Create a new country via AJAX.
+    
+    КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-50: Убрали @csrf_exempt, используем стандартную CSRF защиту Django.
+    CSRF токен должен передаваться через заголовок X-CSRFToken в AJAX запросах.
+    @ensure_csrf_cookie гарантирует установку CSRF cookie для проверки токена.
+    """
     """
     Create a new country via AJAX.
     
@@ -150,8 +168,16 @@ def create_country_ajax(request):
 
 @login_required
 @require_http_methods(["POST"])
-@csrf_exempt  # ВАЖНО: @csrf_exempt используется для AJAX, но это должно быть защищено через другие механизмы
+@csrf_protect
+@ensure_csrf_cookie
 def create_factory_ajax(request):
+    """
+    Create a new factory via AJAX.
+    
+    КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-50: Убрали @csrf_exempt, используем стандартную CSRF защиту Django.
+    CSRF токен должен передаваться через заголовок X-CSRFToken в AJAX запросах.
+    @ensure_csrf_cookie гарантирует установку CSRF cookie для проверки токена.
+    """
     """
     Create a new factory via AJAX.
     
@@ -329,15 +355,24 @@ def search_factories(request):
     Returns:
         JsonResponse with matching factories
     """
+    from ..constants import ViewConstants
+    
+    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-49 и BUG-51: Валидация query и limit
     query = request.GET.get('q', '').strip()
+    if len(query) > ViewConstants.SEARCH_MAX_LENGTH:
+        query = query[:ViewConstants.SEARCH_MAX_LENGTH]
+    
     try:
         limit = int(request.GET.get('limit', 10))
-        if limit < 1 or limit > 100:
-            limit = 10  # Значение по умолчанию при недопустимом значении
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-51: Более строгая валидация limit
+        if limit < 1:
+            limit = 1
+        elif limit > ViewConstants.MAX_PAGE_SIZE:
+            limit = ViewConstants.MAX_PAGE_SIZE
     except (ValueError, TypeError):
         limit = 10  # Значение по умолчанию при ошибке преобразования
     
-    if not query:
+    if not query or len(query) < ViewConstants.SEARCH_MIN_LENGTH:
         return JsonResponse({'factories': []})
     
     factories = Factory.objects.filter(
