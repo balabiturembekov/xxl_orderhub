@@ -304,7 +304,7 @@
                                 <div class="form-check mb-2">
                                     <input class="form-check-input" type="checkbox" name="factura_export" id="facturaExport" 
                                            {% if order.factura_export %}checked{% endif %}
-                                           onchange="updateFacturaType();">
+                                           onchange="updateFacturaType(this);">
                                     <label class="form-check-label" for="facturaExport">
                                         {% trans "Factura Export" %}
                                     </label>
@@ -312,24 +312,86 @@
                                 <div class="form-check mb-2">
                                     <input class="form-check-input" type="checkbox" name="e_factura_turkey" id="eFacturaTurkey" 
                                            {% if order.e_factura_turkey %}checked{% endif %}
-                                           onchange="updateFacturaType();">
+                                           onchange="updateFacturaType(this);">
                                     <label class="form-check-label" for="eFacturaTurkey">
                                         {% trans "E-Factura Turkey" %}
                                     </label>
                                 </div>
-                                {% if not order.factura_export and not order.e_factura_turkey %}
-                                <small class="text-danger d-block mt-2">
+                                <small id="facturaWarning" class="text-danger d-block mt-2" style="display: none;">
                                     ⚠️ {% trans "Необходимо выбрать тип фактуры для завершения заказа" %}
                                 </small>
-                                {% endif %}
                             </form>
                             <script>
-                            function updateFacturaType() {
-                                // Небольшая задержка для предотвращения случайных кликов
+                            function updateFacturaType(checkbox) {
+                                const facturaExport = document.getElementById('facturaExport');
+                                const eFacturaTurkey = document.getElementById('eFacturaTurkey');
+                                const warning = document.getElementById('facturaWarning');
+                                
+                                // Сохраняем текущее состояние (до изменения)
+                                const wasFacturaExportChecked = facturaExport.checked;
+                                const wasEFacturaTurkeyChecked = eFacturaTurkey.checked;
+                                
+                                // Определяем новое состояние после изменения
+                                let newFacturaExportChecked = wasFacturaExportChecked;
+                                let newEFacturaTurkeyChecked = wasEFacturaTurkeyChecked;
+                                
+                                if (checkbox.id === 'facturaExport') {
+                                    newFacturaExportChecked = checkbox.checked;
+                                } else {
+                                    newEFacturaTurkeyChecked = checkbox.checked;
+                                }
+                                
+                                // Проверяем, что хотя бы один checkbox будет выбран после изменения
+                                const willHaveSelection = newFacturaExportChecked || newEFacturaTurkeyChecked;
+                                
+                                // Если пытаются снять последний выбранный checkbox
+                                if (!willHaveSelection) {
+                                    // Возвращаем checkbox в исходное состояние
+                                    checkbox.checked = !checkbox.checked;
+                                    
+                                    // Показываем предупреждение
+                                    warning.style.display = 'block';
+                                    
+                                    // Показываем сообщение пользователю
+                                    alert('{% trans "Необходимо выбрать хотя бы один тип фактуры (Factura Export или E-Factura Turkey)!" %}');
+                                    return;
+                                }
+                                
+                                // Если оба checkbox выбраны, снимаем другой (взаимоисключающий выбор)
+                                if (newFacturaExportChecked && newEFacturaTurkeyChecked) {
+                                    // Если только что был выбран текущий checkbox, снимаем другой
+                                    if (checkbox.id === 'facturaExport' && !wasFacturaExportChecked) {
+                                        eFacturaTurkey.checked = false;
+                                        newEFacturaTurkeyChecked = false;
+                                    } else if (checkbox.id === 'eFacturaTurkey' && !wasEFacturaTurkeyChecked) {
+                                        facturaExport.checked = false;
+                                        newFacturaExportChecked = false;
+                                    }
+                                }
+                                
+                                // Скрываем предупреждение, если есть выбор
+                                if (newFacturaExportChecked || newEFacturaTurkeyChecked) {
+                                    warning.style.display = 'none';
+                                }
+                                
+                                // Отправляем форму
                                 setTimeout(function() {
                                     document.getElementById('facturaTypeForm').submit();
                                 }, 100);
                             }
+                            
+                            // Инициализация: показываем предупреждение при загрузке страницы, если ничего не выбрано
+                            document.addEventListener('DOMContentLoaded', function() {
+                                const facturaExport = document.getElementById('facturaExport');
+                                const eFacturaTurkey = document.getElementById('eFacturaTurkey');
+                                const warning = document.getElementById('facturaWarning');
+                                
+                                if (facturaExport && eFacturaTurkey && warning) {
+                                    if (!facturaExport.checked && !eFacturaTurkey.checked) {
+                                        warning.style.display = 'block';
+                                    }
+                                }
+                            });
                             </script>
                         </div>
                         {% endif %}
