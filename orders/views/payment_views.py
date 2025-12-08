@@ -267,12 +267,15 @@ class InvoiceDetailView(DetailView):
         page_number = self.request.GET.get('page')
         payments_page = paginator.get_page(page_number)
         
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-43: Используем len() вместо count() для уже загруженного queryset
+        total_payments = len(payments)
+        
         # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем, что order существует и имеет pk
         if not hasattr(invoice, 'order') or not invoice.order or not invoice.order.pk:
             # Если order не существует, возвращаем контекст без CBM
             context.update({
                 'payments': payments_page,
-                'total_payments': payments.count(),
+                'total_payments': total_payments,
                 'payment_progress': invoice.payment_progress_percentage,
                 'is_overdue': invoice.is_overdue,
                 'order': None,
@@ -289,7 +292,7 @@ class InvoiceDetailView(DetailView):
         
         context.update({
             'payments': payments_page,
-            'total_payments': payments.count(),
+            'total_payments': total_payments,
             'payment_progress': invoice.payment_progress_percentage,
             'is_overdue': invoice.is_overdue,
             'order': invoice.order,
@@ -841,19 +844,31 @@ class InvoiceListView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # Статистика
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-43 и BUG-48: Используем один запрос aggregate() вместо множественных count()
+        from django.db.models import Count, Q
+        
         queryset = self.get_queryset()
-        context.update({
-            'total_invoices': queryset.count(),
-            'pending_invoices': queryset.filter(status='pending').count(),
-            'partial_invoices': queryset.filter(status='partial').count(),
-            'paid_invoices': queryset.filter(status='paid').count(),
-            'overdue_invoices': queryset.filter(
+        stats = queryset.aggregate(
+            total_invoices=Count('id'),
+            pending_invoices=Count('id', filter=Q(status='pending')),
+            partial_invoices=Count('id', filter=Q(status='partial')),
+            paid_invoices=Count('id', filter=Q(status='paid')),
+            overdue_invoices=Count('id', filter=Q(
                 due_date__lt=timezone.now().date(),
                 status__in=['pending', 'partial']
-            ).count(),
-            'total_amount': queryset.aggregate(Sum('balance')).get('balance__sum') or 0,
-            'total_paid': queryset.aggregate(Sum('total_paid')).get('total_paid__sum') or 0,
+            )),
+            total_amount=Sum('balance'),
+            total_paid=Sum('total_paid'),
+        )
+        
+        context.update({
+            'total_invoices': stats['total_invoices'] or 0,
+            'pending_invoices': stats['pending_invoices'] or 0,
+            'partial_invoices': stats['partial_invoices'] or 0,
+            'paid_invoices': stats['paid_invoices'] or 0,
+            'overdue_invoices': stats['overdue_invoices'] or 0,
+            'total_amount': stats['total_amount'] or 0,
+            'total_paid': stats['total_paid'] or 0,
         })
         
         return context
@@ -866,10 +881,16 @@ def payment_analytics(request):
     """
     user_invoices = Invoice.objects.all()
     
-    # Общая статистика
-    total_invoices = user_invoices.count()
-    total_amount = user_invoices.aggregate(Sum('balance')).get('balance__sum') or 0
-    total_paid = user_invoices.aggregate(Sum('total_paid')).get('total_paid__sum') or 0
+    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-48: Используем один запрос aggregate() вместо множественных
+    stats = user_invoices.aggregate(
+        total_invoices=Count('id'),
+        total_amount=Sum('balance'),
+        total_paid=Sum('total_paid'),
+    )
+    
+    total_invoices = stats['total_invoices'] or 0
+    total_amount = stats['total_amount'] or 0
+    total_paid = stats['total_paid'] or 0
     remaining_amount = total_amount - total_paid
     
     # Статистика по статусам
