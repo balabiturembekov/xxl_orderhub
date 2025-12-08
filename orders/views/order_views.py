@@ -472,6 +472,83 @@ def preview_file_modal(request, pk: int, file_type: str):
 
 @login_required
 @require_http_methods(["POST"])
+def update_factura_type(request, pk: int):
+    """
+    Обновление типа фактуры для турецких фабрик.
+    
+    Args:
+        pk: Order primary key
+    
+    Returns:
+        Redirect to order detail page
+    """
+    order = get_object_or_404(Order, pk=pk)
+    
+    # Проверка, что фабрика турецкая
+    if not order.is_turkish_factory:
+        messages.error(request, 'Выбор типа фактуры доступен только для турецких фабрик!')
+        return redirect('order_detail', pk=pk)
+    
+    # Проверка статуса заказа
+    if order.status not in ['invoice_received']:
+        messages.error(request, 'Тип фактуры можно выбрать только для заказов со статусом "Инвойс получен"!')
+        return redirect('order_detail', pk=pk)
+    
+    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Нельзя менять тип фактуры у завершенного заказа
+    if order.status == 'completed':
+        messages.error(request, 'Нельзя изменить тип фактуры у завершенного заказа!')
+        return redirect('order_detail', pk=pk)
+    
+    # Получаем значения из POST
+    factura_export = request.POST.get('factura_export') == 'on'
+    e_factura_turkey = request.POST.get('e_factura_turkey') == 'on'
+    
+    # Валидация: должен быть выбран хотя бы один тип
+    if not factura_export and not e_factura_turkey:
+        messages.error(request, 'Необходимо выбрать хотя бы один тип фактуры (Factura Export или E-Factura Turkey)!')
+        return redirect('order_detail', pk=pk)
+    
+    # Валидация: нельзя выбрать оба типа одновременно
+    if factura_export and e_factura_turkey:
+        messages.error(request, 'Можно выбрать только один тип фактуры!')
+        return redirect('order_detail', pk=pk)
+    
+    try:
+        with transaction.atomic():
+            old_factura_export = order.factura_export
+            old_e_factura_turkey = order.e_factura_turkey
+            
+            # Обновляем значения
+            order.factura_export = factura_export
+            order.e_factura_turkey = e_factura_turkey
+            order.save()
+            
+            # Создаем audit log
+            factura_type = 'Factura Export' if factura_export else 'E-Factura Turkey'
+            old_factura_type = 'Factura Export' if old_factura_export else ('E-Factura Turkey' if old_e_factura_turkey else 'Не выбран')
+            
+            OrderAuditLog.log_action(
+                order=order,
+                user=request.user,
+                action='updated',
+                field_name='factura_type',
+                old_value=old_factura_type,
+                new_value=factura_type,
+                comments=f'Тип фактуры изменен с "{old_factura_type}" на "{factura_type}"'
+            )
+        
+        messages.success(request, f'Тип фактуры успешно обновлен: {factura_type}')
+    except Exception as e:
+        import logging
+        logger = logging.getLogger('orders')
+        logger.error(f"Ошибка при обновлении типа фактуры для заказа {order.id}: {e}", exc_info=True)
+        messages.error(request, f'Ошибка при обновлении типа фактуры: {str(e)}')
+    
+    return redirect('order_detail', pk=pk)
+
+
+@login_required
+@require_http_methods(["POST"])
 def cancel_order_by_client(request, pk: int):
     """
     Mark order as cancelled by client.

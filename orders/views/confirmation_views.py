@@ -41,7 +41,11 @@ class ConfirmationListView(ListView):
     
     def get_queryset(self):
         """Get confirmations for orders belonging to the current user."""
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-2: Фильтруем подтверждения по пользователю
+        # Пользователь может видеть только подтверждения для своих заказов или те, которые он создал
+        from django.db.models import Q
         queryset = OrderConfirmation.objects.filter(
+            Q(order__employee=self.request.user) | Q(requested_by=self.request.user)
         ).select_related('order', 'requested_by', 'confirmed_by').order_by('-requested_at')
         
         # Apply status filter
@@ -370,8 +374,11 @@ def upload_invoice_execute(request, pk: int):
                         })
                         active_confirmation.confirmation_data = confirmation_data
                         
-                        # Confirm operation (обновляем данные перед подтверждением)
-                        active_confirmation.confirm(request.user, f"Дополнительный платеж добавлен и файл инвойса обновлен: {invoice_file.name}")
+                        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-7: Проверяем статус перед confirm()
+                        # Метод confirm() сам проверяет статус атомарно, но лучше явно проверить для ясности
+                        if active_confirmation.status == 'pending':
+                            # Confirm operation (обновляем данные перед подтверждением)
+                            active_confirmation.confirm(request.user, f"Дополнительный платеж добавлен и файл инвойса обновлен: {invoice_file.name}")
                         # Сохраняем обновленные confirmation_data
                         active_confirmation.save(update_fields=['confirmation_data'])
                     else:
@@ -386,8 +393,10 @@ def upload_invoice_execute(request, pk: int):
                         })
                         active_confirmation.confirmation_data = confirmation_data
                         
-                        # Confirm operation
-                        active_confirmation.confirm(request.user, f"Дополнительный платеж добавлен")
+                        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-7: Проверяем статус перед confirm()
+                        if active_confirmation.status == 'pending':
+                            # Confirm operation
+                            active_confirmation.confirm(request.user, f"Дополнительный платеж добавлен")
                         # Сохраняем обновленные confirmation_data
                         active_confirmation.save(update_fields=['confirmation_data'])
                     
@@ -456,12 +465,14 @@ def upload_invoice_execute(request, pk: int):
                     active_confirmation.confirmation_data.update(confirmation_data)
                     active_confirmation.save()
                     
+                    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-7: Проверяем статус перед confirm()
                     # Confirm operation для нового инвойса
                     # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: invoice_file гарантированно существует для нового инвойса
-                    if payment:
-                        active_confirmation.confirm(request.user, f"Инвойс {invoice_file.name} успешно загружен с платежом")
-                    else:
-                        active_confirmation.confirm(request.user, f"Инвойс {invoice_file.name} успешно загружен без платежа")
+                    if active_confirmation.status == 'pending':
+                        if payment:
+                            active_confirmation.confirm(request.user, f"Инвойс {invoice_file.name} успешно загружен с платежом")
+                        else:
+                            active_confirmation.confirm(request.user, f"Инвойс {invoice_file.name} успешно загружен без платежа")
                     
                     # Create audit log для нового инвойса
                     comments = f'Загружен инвойс: {invoice_file.name}'
@@ -525,6 +536,21 @@ def complete_order(request, pk: int):
         messages.error(request, 'Заказ можно завершить только после получения инвойса!')
         return redirect('order_detail', pk=pk)
     
+    # Проверка выбора типа фактуры для турецких фабрик
+    if order.is_turkish_factory:
+        if not order.factura_export and not order.e_factura_turkey:
+            messages.error(
+                request,
+                'Для турецких фабрик необходимо выбрать тип фактуры (Factura Export или E-Factura Turkey) перед завершением заказа!'
+            )
+            return redirect('order_detail', pk=pk)
+        if order.factura_export and order.e_factura_turkey:
+            messages.error(
+                request,
+                'Можно выбрать только один тип фактуры (Factura Export или E-Factura Turkey)!'
+            )
+            return redirect('order_detail', pk=pk)
+    
     # Check for existing active confirmation
     active_confirmation = OrderConfirmation.objects.filter(
         order=order,
@@ -549,6 +575,8 @@ def complete_order(request, pk: int):
             'uploaded_at': order.uploaded_at.strftime('%d.%m.%Y %H:%M') if order.uploaded_at else None,
             'sent_at': order.sent_at.strftime('%d.%m.%Y %H:%M') if order.sent_at else None,
             'invoice_received_at': order.invoice_received_at.strftime('%d.%m.%Y %H:%M') if order.invoice_received_at else None,
+            'factura_export': order.factura_export,
+            'e_factura_turkey': order.e_factura_turkey,
         }
     )
     
@@ -580,22 +608,19 @@ def confirmation_approve(request, pk: int):
         messages.error(request, 'Вы не можете подтвердить эту операцию!')
         return redirect('confirmation_detail', pk=pk)
     
-    if confirmation.status != 'pending':
-        messages.error(request, 'Это подтверждение уже обработано!')
-        return redirect('confirmation_detail', pk=pk)
-    
-    if confirmation.is_expired():
-        # Автоматически помечаем как истекшее
-        if confirmation.status == 'pending':
-            confirmation.status = 'expired'
-            confirmation.save(update_fields=['status'])
-        messages.error(request, 'Срок подтверждения истек!')
-        return redirect('confirmation_detail', pk=pk)
+    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-1 и BUG-5: Убрали двойную проверку статуса
+    # Полагаемся только на атомарную проверку в методе confirm()
+    # Это предотвращает race condition между проверкой статуса и выполнением операции
     
     if request.method == 'POST':
         comments = request.POST.get('comments', '')
         
         try:
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Сначала подтверждаем операцию атомарно
+            # Метод confirm() проверяет статус, истечение срока и права доступа атомарно
+            confirmation.confirm(request.user, comments)
+            
+            # Только после успешного подтверждения выполняем операцию
             # Execute the appropriate action based on confirmation type
             if confirmation.action == 'send_order':
                 _execute_send_order(confirmation, request.user, comments)
@@ -610,9 +635,6 @@ def confirmation_approve(request, pk: int):
             elif confirmation.action == 'complete_order':
                 _execute_complete_order(confirmation, request.user, comments)
                 messages.success(request, f'Заказ "{confirmation.order.title}" успешно завершен!')
-            
-            # Confirm the operation
-            confirmation.confirm(request.user, comments)
             
         except ValueError as e:
             # Обработка ошибок валидации (права доступа, уже обработано)
@@ -853,11 +875,21 @@ def _execute_complete_order(confirmation: OrderConfirmation, user, comments: str
         user: User executing the operation
         comments: User comments
     """
+    from ..models import EFacturaBasket, EFacturaFile
+    from datetime import date
+    
     order = confirmation.order
     
     # Validate order status
     if order.status not in ['invoice_received']:
         raise ValueError('Заказ можно завершить только после получения инвойса!')
+    
+    # Проверка выбора типа фактуры для турецких фабрик
+    if order.is_turkish_factory:
+        if not order.factura_export and not order.e_factura_turkey:
+            raise ValueError('Для турецких фабрик необходимо выбрать тип фактуры!')
+        if order.factura_export and order.e_factura_turkey:
+            raise ValueError('Можно выбрать только один тип фактуры!')
     
     # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Обновление статуса заказа и создание audit log
     # должны быть в транзакции для обеспечения атомарности операции
@@ -865,8 +897,81 @@ def _execute_complete_order(confirmation: OrderConfirmation, user, comments: str
     
     try:
         with transaction.atomic():
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Блокируем заказ для предотвращения race condition
+            # Два пользователя не смогут одновременно завершить один и тот же заказ
+            order = Order.objects.select_for_update().get(pk=order.pk)
+            
+            # Повторная проверка статуса после блокировки
+            if order.status not in ['invoice_received']:
+                raise ValueError('Заказ можно завершить только после получения инвойса!')
+            
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-9: Проверяем, что заказ еще не завершен
+            if order.status == 'completed':
+                raise ValueError('Заказ уже завершен!')
+            
             # Complete the order
             order.mark_as_completed()
+            
+            # Если выбран E-Factura Turkey, автоматически добавляем заказ в корзину
+            if order.is_turkish_factory and order.e_factura_turkey:
+                # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем дубликаты внутри транзакции
+                existing_file = EFacturaFile.objects.filter(order=order).first()
+                if not existing_file and order.invoice_file:
+                    # Создаем или получаем корзину для текущего месяца
+                    today = date.today()
+                    basket, _ = EFacturaBasket.get_or_create_for_month(
+                        year=today.year,
+                        month=today.month,
+                        user=user
+                    )
+                    
+                    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Копируем файл правильно
+                    # Используем имя файла из исходного файла
+                    import os
+                    from django.core.files.base import ContentFile
+                    
+                    # Открываем исходный файл и копируем его содержимое
+                    try:
+                        # Генерируем имя файла для нового места
+                        original_filename = os.path.basename(order.invoice_file.name) if order.invoice_file.name else 'invoice.pdf'
+                        
+                        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Копируем файл через ContentFile
+                        # Это правильный способ копирования файлов в Django
+                        efactura_file = EFacturaFile(
+                            basket=basket,
+                            order=order,
+                            upload_date=today,
+                            created_by=user,
+                            notes=f'Автоматически добавлен при завершении заказа {order.title}'
+                        )
+                        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Копируем файл порциями для больших файлов
+                        # Используем порционное чтение для файлов больше 10MB
+                        file_size = order.invoice_file.size if hasattr(order.invoice_file, 'size') else 0
+                        chunk_size = 1024 * 1024  # 1MB chunks
+                        
+                        from django.core.files.base import ContentFile
+                        from io import BytesIO
+                        
+                        with order.invoice_file.open('rb') as source_file:
+                            if file_size > 10 * 1024 * 1024:  # Если файл больше 10MB
+                                # Используем порционное чтение для больших файлов
+                                buffer = BytesIO()
+                                while True:
+                                    chunk = source_file.read(chunk_size)
+                                    if not chunk:
+                                        break
+                                    buffer.write(chunk)
+                                buffer.seek(0)
+                                efactura_file.file.save(original_filename, ContentFile(buffer.getvalue()), save=True)
+                            else:
+                                # Для небольших файлов используем обычное чтение
+                                file_content = source_file.read()
+                                efactura_file.file.save(original_filename, ContentFile(file_content), save=True)
+                    except Exception as e:
+                        import logging
+                        logger = logging.getLogger('orders')
+                        logger.error(f"Ошибка при копировании файла инвойса для E-Factura: {e}", exc_info=True)
+                        # Не прерываем завершение заказа, просто логируем ошибку
             
             # Create audit log
             OrderAuditLog.objects.create(
