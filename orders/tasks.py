@@ -27,6 +27,12 @@ def send_notification_email(self, notification_id):
 
         user = notification.user
 
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-18: Проверяем наличие email адреса у пользователя
+        if not user.email:
+            return (
+                f"User {user.username} has no email address. Cannot send notification."
+            )
+
         # Проверяем настройки пользователя
         try:
             settings_obj = NotificationSettings.objects.get(user=user)
@@ -147,84 +153,120 @@ def send_notification_email(self, notification_id):
         return f"Error sending email after {self.max_retries} attempts: {str(e)}"
 
 
-@shared_task
-def check_overdue_orders():
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def check_overdue_orders(self):
     """Проверка просроченных заказов и отправка напоминаний"""
-    now = timezone.now()
-    notifications_sent = 0
+    try:
+        now = timezone.now()
+        notifications_sent = 0
 
-    # Получаем все заказы, которые нуждаются в напоминаниях
-    # Используем настройки пользователя для определения периода
-    overdue_orders = Order.objects.filter(
-        models.Q(
-            status="uploaded",
-            uploaded_at__lte=now
-            - timedelta(days=TimeConstants.MIN_REMINDER_DAYS),  # Минимум 1 день
-        )
-        | models.Q(
-            status="sent",
-            sent_at__lte=now
-            - timedelta(days=TimeConstants.MIN_REMINDER_DAYS),  # Минимум 1 день
-        )
-    ).select_related("employee", "factory")
+        # Получаем все заказы, которые нуждаются в напоминаниях
+        # Используем настройки пользователя для определения периода
+        overdue_orders = Order.objects.filter(
+            models.Q(
+                status="uploaded",
+                uploaded_at__lte=now
+                - timedelta(days=TimeConstants.MIN_REMINDER_DAYS),  # Минимум 1 день
+            )
+            | models.Q(
+                status="sent",
+                sent_at__lte=now
+                - timedelta(days=TimeConstants.MIN_REMINDER_DAYS),  # Минимум 1 день
+            )
+        ).select_related("employee", "factory")
 
-    for order in overdue_orders:
-        # Проверяем настройки пользователя
-        try:
-            settings_obj = NotificationSettings.objects.get(user=order.employee)
+        for order in overdue_orders:
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-24: Проверяем наличие employee у заказа
+            if not order.employee:
+                continue
+
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-20: Проверяем наличие email адреса у пользователя
+            if not order.employee.email:
+                continue
+
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-23: Используем get_or_create() для предотвращения race condition
+            settings_obj, created = NotificationSettings.objects.get_or_create(
+                user=order.employee
+            )
+
             if not settings_obj.email_notifications:
                 continue
-        except NotificationSettings.DoesNotExist:
-            # Создаем настройки по умолчанию
-            settings_obj = NotificationSettings.objects.create(user=order.employee)
 
-        # Определяем тип уведомления
-        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасный доступ к factory.name
-        factory_name = order.factory.name if order.factory else "Без фабрики"
-        if order.status == "uploaded" and settings_obj.notify_uploaded_reminder:
-            notification_type = "uploaded_reminder"
-            title = f"Reminder: Order '{order.title}' not sent for {order.days_since_upload} days"
-            message = f"Order '{order.title}' for factory '{factory_name}' was uploaded {order.days_since_upload} days ago but has not been sent yet. Please send the order to the factory."
-        elif order.status == "sent" and settings_obj.notify_sent_reminder:
-            notification_type = "sent_reminder"
-            title = f"Reminder: Order '{order.title}' sent but invoice not received for {order.days_since_sent} days"
-            message = f"Order '{order.title}' for factory '{factory_name}' was sent {order.days_since_sent} days ago but the invoice has not been received yet. Please contact the factory."
-        else:
-            continue
+            # Определяем тип уведомления
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасный доступ к factory.name
+            factory_name = order.factory.name if order.factory else "Без фабрики"
+            if order.status == "uploaded" and settings_obj.notify_uploaded_reminder:
+                notification_type = "uploaded_reminder"
+                title = f"Reminder: Order '{order.title}' not sent for {order.days_since_upload} days"
+                message = f"Order '{order.title}' for factory '{factory_name}' was uploaded {order.days_since_upload} days ago but has not been sent yet. Please send the order to the factory."
+            elif order.status == "sent" and settings_obj.notify_sent_reminder:
+                notification_type = "sent_reminder"
+                title = f"Reminder: Order '{order.title}' sent but invoice not received for {order.days_since_sent} days"
+                message = f"Order '{order.title}' for factory '{factory_name}' was sent {order.days_since_sent} days ago but the invoice has not been received yet. Please contact the factory."
+            else:
+                continue
 
-        # Проверяем, не отправляли ли мы уже напоминание недавно
-        last_reminder = Notification.objects.filter(
-            user=order.employee,
-            order=order,
-            notification_type=notification_type,
-            created_at__gte=now - timedelta(days=settings_obj.reminder_frequency),
-        ).first()
+            # Проверяем, не отправляли ли мы уже напоминание недавно
+            last_reminder = Notification.objects.filter(
+                user=order.employee,
+                order=order,
+                notification_type=notification_type,
+                created_at__gte=now - timedelta(days=settings_obj.reminder_frequency),
+            ).first()
 
-        if last_reminder:
-            continue
+            if last_reminder:
+                continue
 
-        # Создаем уведомление
-        notification = Notification.objects.create(
-            user=order.employee,
-            order=order,
-            notification_type=notification_type,
-            title=title,
-            message=message,
+            # Создаем уведомление
+            notification = Notification.objects.create(
+                user=order.employee,
+                order=order,
+                notification_type=notification_type,
+                title=title,
+                message=message,
+            )
+
+            # Отправляем email асинхронно
+            send_notification_email.delay(notification.id)
+            notifications_sent += 1
+
+        return f"Sent {notifications_sent} reminders about overdue orders"
+
+    except Exception as e:
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-22: Добавляем retry механизм для обработки временных ошибок
+        import logging
+
+        logger = logging.getLogger("orders")
+        logger.error(
+            f"Ошибка при проверке просроченных заказов: {str(e)}", exc_info=True
         )
 
-        # Отправляем email асинхронно
-        send_notification_email.delay(notification.id)
-        notifications_sent += 1
+        # Retry при временных ошибках (проблемы с БД, сетью и т.д.)
+        if self.request.retries < self.max_retries:
+            raise self.retry(countdown=60 * (2**self.request.retries))
 
-    return f"Sent {notifications_sent} reminders about overdue orders"
+        return (
+            f"Error checking overdue orders after {self.max_retries} attempts: {str(e)}"
+        )
 
 
-@shared_task
-def send_order_notification(order_id, notification_type):
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def send_order_notification(self, order_id, notification_type):
     """Отправка уведомления о изменении статуса заказа"""
     try:
         order = Order.objects.get(id=order_id)
+
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-24: Проверяем наличие employee у заказа
+        if not order.employee:
+            return f"Order {order_id} has no employee assigned"
+
         user = order.employee
+
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-19: Проверяем наличие email адреса у пользователя
+        if not user.email:
+            return (
+                f"User {user.username} has no email address. Cannot send notification."
+            )
 
         # Проверяем настройки пользователя
         try:
@@ -278,7 +320,20 @@ def send_order_notification(order_id, notification_type):
     except Order.DoesNotExist:
         return f"Order with ID {order_id} not found"
     except Exception as e:
-        return f"Error sending notification: {str(e)}"
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-22: Добавляем retry механизм для обработки временных ошибок
+        import logging
+
+        logger = logging.getLogger("orders")
+        logger.error(
+            f"Ошибка при отправке уведомления для заказа {order_id}: {str(e)}",
+            exc_info=True,
+        )
+
+        # Retry при временных ошибках (проблемы с БД, сетью и т.д.)
+        if self.request.retries < self.max_retries:
+            raise self.retry(countdown=60 * (2**self.request.retries))
+
+        return f"Error sending notification after {self.max_retries} attempts: {str(e)}"
 
 
 @shared_task
