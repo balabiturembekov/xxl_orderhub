@@ -735,9 +735,17 @@ def confirmation_reject(request, pk: int):
         return redirect('confirmation_detail', pk=pk)
     
     if request.method == 'POST':
-        rejection_reason = request.POST.get('rejection_reason', '')
-        if not rejection_reason.strip():
+        rejection_reason = request.POST.get('rejection_reason', '').strip()
+        if not rejection_reason:
             messages.error(request, 'Необходимо указать причину отклонения!')
+            return render(request, 'orders/confirmation_reject.html', {
+                'confirmation': confirmation,
+            })
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-52: Ограничиваем длину причины отклонения
+        MAX_REJECTION_REASON_LENGTH = 2000  # Соответствует max_length в модели OrderConfirmation
+        if len(rejection_reason) > MAX_REJECTION_REASON_LENGTH:
+            messages.error(request, f'Причина отклонения слишком длинная. Максимум {MAX_REJECTION_REASON_LENGTH} символов.')
             return render(request, 'orders/confirmation_reject.html', {
                 'confirmation': confirmation,
             })

@@ -51,20 +51,23 @@ class EFacturaBasketListView(ListView):
         ).select_related('created_by').order_by('-year', '-month', '-created_at')
         
         # Фильтрация по году
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-53: Валидация диапазона year
         year = self.request.GET.get('year')
         if year:
             try:
                 year = int(year)
-                queryset = queryset.filter(year=year)
+                if 2000 <= year <= 2100:
+                    queryset = queryset.filter(year=year)
             except (ValueError, TypeError):
                 pass
         
-        # Фильтрация по месяцу
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-53: Валидация диапазона month
         month = self.request.GET.get('month')
         if month:
             try:
                 month = int(month)
-                queryset = queryset.filter(month=month)
+                if 1 <= month <= 12:
+                    queryset = queryset.filter(month=month)
             except (ValueError, TypeError):
                 pass
         
