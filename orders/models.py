@@ -217,6 +217,14 @@ class Order(models.Model):
             models.Index(fields=['cancelled_by_client'], name='order_cancelled_idx'),
             models.Index(fields=['cancelled_by_client_at'], name='order_cancelled_at_idx'),
             models.Index(fields=['cancelled_by_client', 'cancelled_by_client_at'], name='order_cancelled_comp_idx'),
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-42: Добавляем индексы на часто используемые поля
+            models.Index(fields=['status'], name='order_status_idx'),
+            models.Index(fields=['uploaded_at'], name='order_uploaded_at_idx'),
+            models.Index(fields=['employee'], name='order_employee_idx'),
+            models.Index(fields=['factory'], name='order_factory_idx'),
+            # Составные индексы для частых комбинаций
+            models.Index(fields=['status', 'uploaded_at'], name='order_status_upld_idx'),
+            models.Index(fields=['employee', 'status'], name='order_empl_status_idx'),
         ]
     
     def __str__(self):
@@ -521,6 +529,11 @@ class OrderConfirmation(models.Model):
         verbose_name = "Подтверждение операции"
         verbose_name_plural = "Подтверждения операций"
         ordering = ['-requested_at']
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-46: Добавляем индексы для оптимизации запросов
+        indexes = [
+            models.Index(fields=['status', 'expires_at'], name='conf_status_expires_idx'),
+            models.Index(fields=['order', 'status'], name='conf_order_status_idx'),
+        ]
     
     def __str__(self):
         # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасный доступ к order.title
@@ -986,6 +999,11 @@ class Invoice(models.Model):
         verbose_name = "Инвойс"
         verbose_name_plural = "Инвойсы"
         ordering = ['-created_at']
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-47: Добавляем индексы для оптимизации запросов
+        indexes = [
+            models.Index(fields=['status', 'due_date'], name='inv_status_due_date_idx'),
+            models.Index(fields=['order'], name='invoice_order_idx'),
+        ]
     
     def __str__(self):
         # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасный доступ к order.title
@@ -1495,6 +1513,11 @@ class EFacturaBasket(models.Model):
         verbose_name_plural = "Корзины E-Factura"
         ordering = ['-year', '-month', '-created_at']
         unique_together = [['month', 'year']]
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-44: Добавляем индексы для оптимизации запросов
+        indexes = [
+            models.Index(fields=['year', 'month'], name='efactura_basket_ym_idx'),
+            models.Index(fields=['created_by'], name='efactura_basket_cb_idx'),
+        ]
     
     def __str__(self):
         return f"E-Factura {self.name}"
