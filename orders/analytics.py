@@ -118,7 +118,13 @@ class AnalyticsService:
     def get_time_series_data(self, period='day'):
         """Данные для временных рядов"""
         
-        # Используем SQLite-совместимые функции
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-16: Используем безопасный способ группировки по датам
+        # Валидируем period для предотвращения SQL injection
+        valid_periods = ['day', 'week', 'month']
+        if period not in valid_periods:
+            period = 'day'  # По умолчанию
+        
+        # Используем SQLite-совместимые функции (значения period валидированы выше)
         if period == 'day':
             date_trunc_sql = "DATE(uploaded_at)"
         elif period == 'week':
@@ -129,6 +135,7 @@ class AnalyticsService:
             date_trunc_sql = "DATE(uploaded_at)"
         
         # Группируем по датам используя SQLite-совместимый синтаксис
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: date_trunc_sql безопасен, т.к. period валидирован выше
         time_series = self.orders_queryset.extra(
             select={'period': date_trunc_sql}
         ).values('period').annotate(
