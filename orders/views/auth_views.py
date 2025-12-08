@@ -20,6 +20,7 @@ from datetime import timedelta
 
 from ..models import Order, Factory, Country
 from ..constants import TimeConstants
+from django.contrib.auth.models import User
 
 
 class SignUpView(CreateView):
@@ -105,18 +106,29 @@ class HomeView(TemplateView):
         Returns:
             Dictionary with public statistics
         """
-        # Cache public statistics for 10 minutes
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Уменьшено время кэширования до 1 минуты для более актуальных данных
+        # Данные теперь обновляются каждую минуту вместо 10 минут
         cache_key = "public_statistics"
         cached_stats = cache.get(cache_key)
         
         if cached_stats is None:
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Получаем динамические данные из базы данных в реальном времени
+            # Данные обновляются при каждом запросе (кэш на 1 минуту для производительности)
             cached_stats = {
-                'total_orders': Order.objects.filter(~Q(cancelled_by_client=True)).count(),
-                'total_factories': Factory.objects.count(),
+                'total_orders': Order.objects.filter(
+                    ~Q(cancelled_by_client=True),
+                    ~Q(status='cancelled')
+                ).count(),
+                'total_factories': Factory.objects.filter(is_active=True).count(),
                 'total_countries': Country.objects.count(),
-                'active_users': Order.objects.filter(~Q(cancelled_by_client=True)).values('employee').distinct().count(),
+                # Подсчитываем активных пользователей, которые имеют заказы
+                # Используем обратную связь order_set (Django автоматически создает её для ForeignKey без related_name)
+                'active_users': User.objects.filter(
+                    is_active=True,
+                    order_set__isnull=False  # order_set - автоматическая обратная связь для employee ForeignKey
+                ).distinct().count(),
             }
-            cache.set(cache_key, cached_stats, 600)  # 10 minutes
+            cache.set(cache_key, cached_stats, 60)  # 1 минута вместо 10 минут для более актуальных данных
         
         return cached_stats
     
