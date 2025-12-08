@@ -34,8 +34,15 @@ def load_manufacturers():
             phone = fields.get('phone_number', '')
             
             # Извлекаем страну из названия
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасный доступ к split()[0]
             if '(' in name and ')' in name:
-                country_code = name.split('(')[-1].rstrip(')').split()[0]
+                parts = name.split('(')
+                if len(parts) > 1:
+                    country_part = parts[-1].rstrip(')')
+                    country_parts = country_part.split()
+                    country_code = country_parts[0] if country_parts else 'UNKNOWN'
+                else:
+                    country_code = 'UNKNOWN'
             else:
                 country_code = 'UNKNOWN'
             

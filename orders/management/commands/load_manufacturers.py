@@ -111,15 +111,17 @@ class Command(BaseCommand):
             parts = name.split('(')
             if len(parts) > 1:
                 country_part = parts[-1].rstrip(')')
-                # Убираем дату если есть (например "20.12.24")
-                country_code = country_part.split()[0]
-                
-                # Очищаем код от лишних символов
-                country_code = country_code.strip(')').strip()
-                
-                # Проверяем, что код не слишком длинный
-                if len(country_code) <= 3:
-                    return country_code
+                # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасный доступ к split()[0]
+                country_parts = country_part.split()
+                if country_parts:
+                    country_code = country_parts[0]
+                    
+                    # Очищаем код от лишних символов
+                    country_code = country_code.strip(')').strip()
+                    
+                    # Проверяем, что код не слишком длинный
+                    if len(country_code) <= 3:
+                        return country_code
         
         # Если код не найден, возвращаем "UNKNOWN"
         return "UNKNOWN"
