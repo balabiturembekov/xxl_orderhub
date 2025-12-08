@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Корзины E-Factura" %} - XXL OrderHub{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Главная" %}</a></li>
+                <li class="breadcrumb-item active">{% trans "Корзины E-Factura" %}</li>
+            </ol>
+        </nav>
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>{% trans "Корзины E-Factura" %}</h2>
+        </div>
+
+        <!-- Фильтры -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="year" class="form-label">{% trans "Год" %}</label>
+                        <select class="form-select" id="year" name="year">
+                            <option value="">{% trans "Все годы" %}</option>
+                            {% for year in years %}
+                            <option value="{{ year }}" {% if selected_year == year|stringformat:"s" %}selected{% endif %}>
+                                {{ year }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="month" class="form-label">{% trans "Месяц" %}</label>
+                        <select class="form-select" id="month" name="month">
+                            <option value="">{% trans "Все месяцы" %}</option>
+                            {% for month in months %}
+                            <option value="{{ month }}" {% if selected_month == month|stringformat:"s" %}selected{% endif %}>
+                                {% if month == 1 %}{% trans "Январь" %}
+                                {% elif month == 2 %}{% trans "Февраль" %}
+                                {% elif month == 3 %}{% trans "Март" %}
+                                {% elif month == 4 %}{% trans "Апрель" %}
+                                {% elif month == 5 %}{% trans "Май" %}
+                                {% elif month == 6 %}{% trans "Июнь" %}
+                                {% elif month == 7 %}{% trans "Июль" %}
+                                {% elif month == 8 %}{% trans "Август" %}
+                                {% elif month == 9 %}{% trans "Сентябрь" %}
+                                {% elif month == 10 %}{% trans "Октябрь" %}
+                                {% elif month == 11 %}{% trans "Ноябрь" %}
+                                {% elif month == 12 %}{% trans "Декабрь" %}
+                                {% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">{% trans "Применить фильтры" %}</button>
+                        <a href="{% url 'efactura_basket_list' %}" class="btn btn-outline-secondary">{% trans "Сбросить" %}</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Список корзин -->
+        {% if baskets %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>{% trans "Название корзины" %}</th>
+                        <th>{% trans "Год" %}</th>
+                        <th>{% trans "Месяц" %}</th>
+                        <th>{% trans "Количество файлов" %}</th>
+                        <th>{% trans "Создана" %}</th>
+                        <th>{% trans "Действия" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for basket in baskets %}
+                    <tr>
+                        <td>
+                            <strong>{{ basket.name }}</strong>
+                        </td>
+                        <td>{{ basket.year }}</td>
+                        <td>
+                            {% if basket.month == 1 %}{% trans "Январь" %}
+                            {% elif basket.month == 2 %}{% trans "Февраль" %}
+                            {% elif basket.month == 3 %}{% trans "Март" %}
+                            {% elif basket.month == 4 %}{% trans "Апрель" %}
+                            {% elif basket.month == 5 %}{% trans "Май" %}
+                            {% elif basket.month == 6 %}{% trans "Июнь" %}
+                            {% elif basket.month == 7 %}{% trans "Июль" %}
+                            {% elif basket.month == 8 %}{% trans "Август" %}
+                            {% elif basket.month == 9 %}{% trans "Сентябрь" %}
+                            {% elif basket.month == 10 %}{% trans "Октябрь" %}
+                            {% elif basket.month == 11 %}{% trans "Ноябрь" %}
+                            {% elif basket.month == 12 %}{% trans "Декабрь" %}
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-info">{{ basket.files_count }}</span>
+                        </td>
+                        <td>
+                            {% if basket.created_by %}
+                                {{ basket.created_by.username }}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                            <br>
+                            <small class="text-muted">{{ basket.created_at|date:"d.m.Y H:i" }}</small>
+                        </td>
+                        <td>
+                            <a href="{% url 'efactura_basket_detail' basket.pk %}" class="btn btn-sm btn-primary">
+                                {% trans "Открыть" %}
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Пагинация -->
+        {% if is_paginated %}
+        <nav aria-label="{% trans 'Навигация по страницам' %}">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1{% if selected_year %}&year={{ selected_year }}{% endif %}{% if selected_month %}&month={{ selected_month }}{% endif %}">{% trans "Первая" %}</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if selected_year %}&year={{ selected_year }}{% endif %}{% if selected_month %}&month={{ selected_month }}{% endif %}">{% trans "Предыдущая" %}</a>
+                </li>
+                {% endif %}
+                
+                <li class="page-item active">
+                    <span class="page-link">
+                        {% trans "Страница" %} {{ page_obj.number }} {% trans "из" %} {{ page_obj.paginator.num_pages }}
+                    </span>
+                </li>
+                
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if selected_year %}&year={{ selected_year }}{% endif %}{% if selected_month %}&month={{ selected_month }}{% endif %}">{% trans "Следующая" %}</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if selected_year %}&year={{ selected_year }}{% endif %}{% if selected_month %}&month={{ selected_month }}{% endif %}">{% trans "Последняя" %}</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        {% else %}
+        <div class="alert alert-info">
+            <p class="mb-0">{% trans "Корзины E-Factura не найдены." %}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

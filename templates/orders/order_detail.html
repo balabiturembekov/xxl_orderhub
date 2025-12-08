@@ -296,6 +296,43 @@
                                 ✅ {% trans "Инвойс получен" %}
                             </small>
                         </div>
+                        {% if order.is_turkish_factory and order.status != 'completed' %}
+                        <div class="mt-3 pt-3 border-top">
+                            <h6 class="mb-2">{% trans "Тип фактуры (TR)" %}</h6>
+                            <form method="post" action="{% url 'update_factura_type' order.pk %}" id="facturaTypeForm">
+                                {% csrf_token %}
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" name="factura_export" id="facturaExport" 
+                                           {% if order.factura_export %}checked{% endif %}
+                                           onchange="updateFacturaType();">
+                                    <label class="form-check-label" for="facturaExport">
+                                        {% trans "Factura Export" %}
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" name="e_factura_turkey" id="eFacturaTurkey" 
+                                           {% if order.e_factura_turkey %}checked{% endif %}
+                                           onchange="updateFacturaType();">
+                                    <label class="form-check-label" for="eFacturaTurkey">
+                                        {% trans "E-Factura Turkey" %}
+                                    </label>
+                                </div>
+                                {% if not order.factura_export and not order.e_factura_turkey %}
+                                <small class="text-danger d-block mt-2">
+                                    ⚠️ {% trans "Необходимо выбрать тип фактуры для завершения заказа" %}
+                                </small>
+                                {% endif %}
+                            </form>
+                            <script>
+                            function updateFacturaType() {
+                                // Небольшая задержка для предотвращения случайных кликов
+                                setTimeout(function() {
+                                    document.getElementById('facturaTypeForm').submit();
+                                }, 100);
+                            }
+                            </script>
+                        </div>
+                        {% endif %}
                         {% elif order.status == 'completed' %}
                         <div class="mt-3">
                             <small class="text-success">
