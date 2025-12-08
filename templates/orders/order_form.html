@@ -82,6 +82,9 @@
                                         <i class="bi bi-plus-circle"></i> {% trans "Добавить фабрику" %}
                                     </button>
                                 </div>
+                                <div class="form-text mt-1">
+                                    <i class="fas fa-info-circle"></i> {% trans "Начните вводить название фабрики для быстрого поиска. Фабрики сгруппированы по странам." %}
+                                </div>
                                 {% if form.factory.errors %}
                                     <div class="text-danger">
                                         {% for error in form.factory.errors %}
@@ -290,66 +293,152 @@
         </div>
     </div>
 </div>
+{% endblock content %}
 
+{% block extra_css %}
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<style>
+    /* Стили для Select2 */
+    .select2-container--bootstrap-5 .select2-selection {
+        min-height: 38px;
+        border: 1px solid #ced4da;
+    }
+    .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+        line-height: 36px;
+    }
+    .select2-container--bootstrap-5 .select2-selection--single .select2-selection__arrow {
+        height: 36px;
+    }
+    .select2-results__option {
+        padding: 8px 12px;
+    }
+    .select2-results__group {
+        font-weight: 600;
+        color: #495057;
+        background-color: #f8f9fa;
+        padding: 8px 12px;
+    }
+</style>
+{% endblock extra_css %}
+
+{% block extra_js %}
+<!-- jQuery (required for Select2) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Загружаем страны при открытии модального окна фабрики
-    document.getElementById('addFactoryModal').addEventListener('show.bs.modal', function() {
-        loadCountries();
-    });
+    // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-36: Проверяем существование элементов перед добавлением обработчиков
+    const addFactoryModal = document.getElementById('addFactoryModal');
+    if (addFactoryModal) {
+        addFactoryModal.addEventListener('show.bs.modal', function() {
+            loadCountries();
+        });
+    }
     
-    // Обработка добавления страны
-    document.getElementById('addCountryForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        addCountry();
-    });
+    const addCountryForm = document.getElementById('addCountryForm');
+    if (addCountryForm) {
+        addCountryForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            addCountry();
+        });
+    }
     
-    // Обработка добавления фабрики
-    document.getElementById('addFactoryForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        addFactory();
-    });
+    const addFactoryForm = document.getElementById('addFactoryForm');
+    if (addFactoryForm) {
+        addFactoryForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            addFactory();
+        });
+    }
     
-    // Обработка добавления страны из модального окна фабрики
-    document.getElementById('addCountryModal').addEventListener('hidden.bs.modal', function() {
-        loadCountries();
-    });
+    const addCountryModal = document.getElementById('addCountryModal');
+    if (addCountryModal) {
+        addCountryModal.addEventListener('hidden.bs.modal', function() {
+            loadCountries();
+        });
+    }
 });
 
 function loadCountries() {
     fetch('{% url "get_countries" %}')
-        .then(response => response.json())
+        .then(response => {
+            // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-35: Проверяем статус ответа перед парсингом JSON
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
+            // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-36: Проверяем существование элемента
             const select = document.getElementById('factory_country');
+            if (!select) {
+                console.error('Country select element not found');
+                return;
+            }
             select.innerHTML = '<option value="">{% trans "Выберите страну" %}</option>';
-            data.countries.forEach(country => {
-                const option = document.createElement('option');
-                option.value = country.id;
-                option.textContent = country.name;
-                select.appendChild(option);
-            });
+            if (data.countries && Array.isArray(data.countries)) {
+                data.countries.forEach(country => {
+                    const option = document.createElement('option');
+                    option.value = country.id;
+                    option.textContent = country.name;
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(error => {
+            // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-33: Обработка ошибок загрузки стран
+            console.error('Error loading countries:', error);
+            if (typeof showAlert === 'function') {
+                showAlert('Ошибка при загрузке списка стран. Пожалуйста, обновите страницу.', 'danger');
+            } else {
+                alert('Ошибка при загрузке списка стран. Пожалуйста, обновите страницу.');
+            }
         });
 }
 
 function addCountry() {
-    const formData = new FormData(document.getElementById('addCountryForm'));
+    const form = document.getElementById('addCountryForm');
+    if (!form) {
+        showAlert('Форма не найдена', 'danger');
+        return;
+    }
+    
+    const formData = new FormData(form);
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (!csrfToken) {
+        showAlert('Ошибка безопасности. Пожалуйста, обновите страницу.', 'danger');
+        return;
+    }
     
     fetch('{% url "create_country_ajax" %}', {
         method: 'POST',
         body: formData,
         headers: {
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            'X-CSRFToken': csrfToken.value
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-35: Проверяем статус ответа перед парсингом JSON
+        if (!response.ok) {
+            return response.json().then(err => {
+                throw new Error(err.message || `HTTP error! status: ${response.status}`);
+            });
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             // Закрываем модальное окно
             const modal = bootstrap.Modal.getInstance(document.getElementById('addCountryModal'));
-            modal.hide();
+            if (modal) {
+                modal.hide();
+            }
             
             // Очищаем форму
-            document.getElementById('addCountryForm').reset();
+            form.reset();
             
             // Показываем сообщение об успехе
             showAlert('Страна успешно добавлена!', 'success');
@@ -357,8 +446,14 @@ function addCountry() {
             // Обновляем список стран в модальном окне фабрики
             loadCountries();
         } else {
-            showAlert('Ошибка при добавлении страны: ' + JSON.stringify(data.errors), 'danger');
+            const errorMessage = data.errors ? JSON.stringify(data.errors) : (data.message || 'Неизвестная ошибка');
+            showAlert('Ошибка при добавлении страны: ' + errorMessage, 'danger');
         }
+    })
+    .catch(error => {
+        // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-40: Обработка сетевых ошибок
+        console.error('Error adding country:', error);
+        showAlert('Ошибка при добавлении страны: ' + error.message, 'danger');
     });
 }
 
@@ -415,12 +510,22 @@ function addFactory() {
             'X-CSRFToken': csrfToken
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-35: Проверяем статус ответа перед парсингом JSON
+        if (!response.ok) {
+            return response.json().then(err => {
+                throw new Error(err.message || `HTTP error! status: ${response.status}`);
+            });
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             // Закрываем модальное окно
             const modal = bootstrap.Modal.getInstance(document.getElementById('addFactoryModal'));
-            modal.hide();
+            if (modal) {
+                modal.hide();
+            }
             
             // Очищаем форму
             form.reset();
@@ -429,7 +534,8 @@ function addFactory() {
             showAlert('Фабрика успешно добавлена!', 'success');
             
             // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Обновляем список фабрик без перезагрузки страницы
-            updateFactorySelect(data.factory.id, data.factory.name);
+            const countryName = (data.factory.country && data.factory.country.name) || 'Без страны';
+            updateFactorySelect(data.factory.id, data.factory.name, countryName);
         } else {
             const errorMessage = data.message || data.errors || 'Неизвестная ошибка';
             showAlert('Ошибка при добавлении фабрики: ' + errorMessage, 'danger');
@@ -441,7 +547,7 @@ function addFactory() {
     });
 }
 
-function updateFactorySelect(factoryId, factoryName) {
+function updateFactorySelect(factoryId, factoryName, countryName) {
     // Обновляем select с фабриками, добавляя новую фабрику
     // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Ищем select по классу или по имени поля
     // Используем более специфичный селектор для избежания конфликтов
@@ -449,20 +555,52 @@ function updateFactorySelect(factoryId, factoryName) {
                           document.querySelector('#id_factory');
     
     if (factorySelect) {
+        // Если используется Select2, вызываем глобальную функцию
+        if (window.updateFactorySelect && typeof window.updateFactorySelect === 'function') {
+            window.updateFactorySelect(factoryId, factoryName, countryName || 'Без страны');
+            return;
+        }
+        
         // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем, не существует ли уже такая фабрика
         const existingOption = factorySelect.querySelector(`option[value="${factoryId}"]`);
         if (existingOption) {
             // Фабрика уже есть в списке, просто выбираем её
             existingOption.selected = true;
+            if (typeof jQuery !== 'undefined' && typeof jQuery.fn.select2 !== 'undefined') {
+                jQuery(factorySelect).trigger('change');
+            }
             return;
+        }
+        
+        // Находим соответствующую группу или создаем новую
+        let optgroup = null;
+        const optgroups = factorySelect.querySelectorAll('optgroup');
+        for (let i = 0; i < optgroups.length; i++) {
+            if (optgroups[i].label === (countryName || 'Без страны')) {
+                optgroup = optgroups[i];
+                break;
+            }
+        }
+        
+        if (!optgroup) {
+            optgroup = document.createElement('optgroup');
+            optgroup.label = countryName || 'Без страны';
+            factorySelect.appendChild(optgroup);
         }
         
         // Создаем новую опцию
         const option = document.createElement('option');
         option.value = factoryId;
         option.textContent = factoryName;
+        option.setAttribute('data-country', countryName || 'Без страны');
+        option.setAttribute('data-group', countryName || 'Без страны');
         option.selected = true;
-        factorySelect.appendChild(option);
+        optgroup.appendChild(option);
+        
+        // Обновляем Select2 если он инициализирован
+        if (typeof jQuery !== 'undefined' && typeof jQuery.fn.select2 !== 'undefined') {
+            jQuery(factorySelect).trigger('change');
+        }
     } else {
         // Если не нашли select, перезагружаем страницу
         console.warn('Factory select not found, reloading page');
@@ -471,12 +609,21 @@ function updateFactorySelect(factoryId, factoryName) {
 }
 
 function showAlert(message, type) {
+    // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-34: Используем безопасные методы вместо innerHTML для предотвращения XSS
     const alertDiv = document.createElement('div');
     alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-    alertDiv.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
+    
+    // Безопасное добавление текста сообщения
+    const messageText = document.createTextNode(message);
+    alertDiv.appendChild(messageText);
+    
+    // Создаем кнопку закрытия безопасным способом
+    const closeButton = document.createElement('button');
+    closeButton.type = 'button';
+    closeButton.className = 'btn-close';
+    closeButton.setAttribute('data-bs-dismiss', 'alert');
+    closeButton.setAttribute('aria-label', 'Close');
+    alertDiv.appendChild(closeButton);
     
     // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасная вставка alert с проверкой существования элемента
     const content = document.querySelector('.main-content') || 
@@ -502,4 +649,5 @@ function showAlert(message, type) {
     }
 }
 </script>
-{% endblock %}
+{% endblock extra_js %}
+
