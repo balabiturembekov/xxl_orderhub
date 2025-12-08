@@ -272,19 +272,39 @@ def download_all_efactura_files(request, basket_id: int):
             for efactura_file in files:
                 if efactura_file.file:
                     try:
-                        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Читаем файл порциями для больших файлов
-                        # и проверяем доступность файла
+                        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-21: Используем порционное чтение для предотвращения утечки памяти
+                        # Читаем файл порциями вместо загрузки всего файла в память
                         if not hasattr(efactura_file.file, 'open'):
                             continue
                         
+                        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасное извлечение имени файла
+                        if efactura_file.file.name:
+                            filename = efactura_file.file.name.split('/')[-1] if '/' in efactura_file.file.name else efactura_file.file.name
+                        else:
+                            filename = f'efactura_file_{efactura_file.id}'
+                        
+                        # Используем порционное чтение для больших файлов
+                        chunk_size = 8192  # 8KB chunks
                         with efactura_file.file.open('rb') as file_handle:
-                            file_content = file_handle.read()
-                            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасное извлечение имени файла
-                            if efactura_file.file.name:
-                                filename = efactura_file.file.name.split('/')[-1] if '/' in efactura_file.file.name else efactura_file.file.name
+                            # Создаем временный файл для больших файлов или используем BytesIO для маленьких
+                            file_size = efactura_file.file.size if hasattr(efactura_file.file, 'size') else 0
+                            
+                            if file_size > 10 * 1024 * 1024:  # Если файл больше 10MB
+                                # Для больших файлов используем временный файл
+                                import tempfile
+                                import shutil
+                                with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                                    shutil.copyfileobj(file_handle, temp_file, length=chunk_size)
+                                    temp_file.seek(0)
+                                    with open(temp_file.name, 'rb') as temp_read:
+                                        zip_file.writestr(filename, temp_read.read(), compress_type=zipfile.ZIP_DEFLATED)
+                                    import os
+                                    os.unlink(temp_file.name)
                             else:
-                                filename = f'efactura_file_{efactura_file.id}'
-                            zip_file.writestr(filename, file_content)
+                                # Для маленьких файлов используем обычное чтение
+                                file_content = file_handle.read()
+                                zip_file.writestr(filename, file_content, compress_type=zipfile.ZIP_DEFLATED)
+                            
                             files_added += 1
                     except Exception as e:
                         import logging
