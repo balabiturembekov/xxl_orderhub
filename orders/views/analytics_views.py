@@ -44,8 +44,34 @@ class AnalyticsDashboardView(TemplateView):
         context = super().get_context_data(**kwargs)
         
         if self.request.user.is_authenticated:
-            # Get analytics data for the authenticated user
-            analytics_data = get_analytics_data(self.request.user)
+            # Получаем параметры фильтрации по датам из GET запроса
+            date_from = self.request.GET.get('date_from')
+            date_to = self.request.GET.get('date_to')
+            
+            # Конвертируем даты если они переданы
+            if date_from:
+                try:
+                    date_from = datetime.strptime(date_from, '%Y-%m-%d').date()
+                except (ValueError, AttributeError):
+                    date_from = None
+            else:
+                date_from = None  # По умолчанию - все заказы (без ограничения по дате)
+            
+            if date_to:
+                try:
+                    date_to = datetime.strptime(date_to, '%Y-%m-%d').date()
+                except (ValueError, AttributeError):
+                    date_to = None
+            else:
+                date_to = None  # По умолчанию - до текущей даты
+            
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Передаем параметры дат в get_analytics_data
+            # Если даты не указаны, будут показаны все заказы (или за большой период)
+            analytics_data = get_analytics_data(
+                user=self.request.user,
+                date_from=date_from,
+                date_to=date_to
+            )
             context.update(analytics_data)
         else:
             # For unauthenticated users, show public statistics
@@ -85,8 +111,33 @@ def analytics_export(request):
     Returns:
         HttpResponse with CSV file containing analytics data
     """
-    # Get analytics data
-    analytics_data = get_analytics_data(request.user)
+    # Получаем параметры фильтрации по датам из GET запроса
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    
+    # Конвертируем даты если они переданы
+    if date_from:
+        try:
+            date_from = datetime.strptime(date_from, '%Y-%m-%d').date()
+        except (ValueError, AttributeError):
+            date_from = None
+    else:
+        date_from = None
+    
+    if date_to:
+        try:
+            date_to = datetime.strptime(date_to, '%Y-%m-%d').date()
+        except (ValueError, AttributeError):
+            date_to = None
+    else:
+        date_to = None
+    
+    # Get analytics data with date filters
+    analytics_data = get_analytics_data(
+        user=request.user,
+        date_from=date_from,
+        date_to=date_to
+    )
     
     # Create CSV response
     response = HttpResponse(content_type='text/csv')
@@ -98,19 +149,26 @@ def analytics_export(request):
     writer.writerow(['Metric', 'Value'])
     
     # Write data
-    writer.writerow(['Total Orders', analytics_data.get('total_orders', 0)])
+    overview = analytics_data.get('overview', {})
+    writer.writerow(['Total Orders', overview.get('total_orders', 0)])
     writer.writerow(['Orders by Status'])
-    
-    for status, count in analytics_data.get('orders_by_status', {}).items():
-        writer.writerow([f'  {status}', count])
+    writer.writerow(['  uploaded', overview.get('uploaded', 0)])
+    writer.writerow(['  sent', overview.get('sent', 0)])
+    writer.writerow(['  invoice_received', overview.get('invoice_received', 0)])
+    writer.writerow(['  completed', overview.get('completed', 0)])
+    writer.writerow(['  cancelled', overview.get('cancelled', 0)])
     
     writer.writerow(['Orders by Factory'])
-    for factory_name, count in analytics_data.get('orders_by_factory', {}).items():
-        writer.writerow([f'  {factory_name}', count])
+    factory_stats = analytics_data.get('factory_stats', [])
+    for factory_stat in factory_stats:
+        factory_name = factory_stat.get('factory__name', 'Unknown')
+        writer.writerow([f'  {factory_name}', factory_stat.get('total_orders', 0)])
     
     writer.writerow(['Orders by Country'])
-    for country_name, count in analytics_data.get('orders_by_country', {}).items():
-        writer.writerow([f'  {country_name}', count])
+    country_stats = analytics_data.get('country_stats', [])
+    for country_stat in country_stats:
+        country_name = country_stat.get('factory__country__name', 'Unknown')
+        writer.writerow([f'  {country_name}', country_stat.get('total_orders', 0)])
     
     return response
 
@@ -125,24 +183,62 @@ def analytics_api(request):
     Returns:
         JsonResponse with analytics data
     """
-    analytics_data = get_analytics_data(request.user)
+    # Получаем параметры фильтрации по датам из GET запроса
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    
+    # Конвертируем даты если они переданы
+    if date_from:
+        try:
+            date_from = datetime.strptime(date_from, '%Y-%m-%d').date()
+        except (ValueError, AttributeError):
+            date_from = None
+    else:
+        date_from = None
+    
+    if date_to:
+        try:
+            date_to = datetime.strptime(date_to, '%Y-%m-%d').date()
+        except (ValueError, AttributeError):
+            date_to = None
+    else:
+        date_to = None
+    
+    # Get analytics data with date filters
+    analytics_data = get_analytics_data(
+        user=request.user,
+        date_from=date_from,
+        date_to=date_to
+    )
     
     # Format data for charts
+    overview = analytics_data.get('overview', {})
+    factory_stats = analytics_data.get('factory_stats', [])
+    country_stats = analytics_data.get('country_stats', [])
+    time_series = analytics_data.get('time_series', [])
+    kpi_metrics = analytics_data.get('kpi_metrics', {})
+    
     chart_data = {
         'orders_by_status': {
-            'labels': list(analytics_data.get('orders_by_status', {}).keys()),
-            'data': list(analytics_data.get('orders_by_status', {}).values())
+            'labels': ['uploaded', 'sent', 'invoice_received', 'completed', 'cancelled'],
+            'data': [
+                overview.get('uploaded', 0),
+                overview.get('sent', 0),
+                overview.get('invoice_received', 0),
+                overview.get('completed', 0),
+                overview.get('cancelled', 0)
+            ]
         },
         'orders_by_factory': {
-            'labels': list(analytics_data.get('orders_by_factory', {}).keys())[:10],  # Top 10
-            'data': list(analytics_data.get('orders_by_factory', {}).values())[:10]
+            'labels': [stat.get('factory__name', 'Unknown') for stat in factory_stats[:10]],  # Top 10
+            'data': [stat.get('total_orders', 0) for stat in factory_stats[:10]]
         },
         'orders_by_country': {
-            'labels': list(analytics_data.get('orders_by_country', {}).keys()),
-            'data': list(analytics_data.get('orders_by_country', {}).values())
+            'labels': [stat.get('factory__country__name', 'Unknown') for stat in country_stats],
+            'data': [stat.get('total_orders', 0) for stat in country_stats]
         },
-        'monthly_trends': analytics_data.get('monthly_trends', {}),
-        'performance_metrics': analytics_data.get('performance_metrics', {})
+        'monthly_trends': time_series,
+        'performance_metrics': kpi_metrics
     }
     
     return JsonResponse(chart_data)
@@ -204,6 +300,9 @@ class CBMAnalyticsView(TemplateView):
         if self.request.user and not self.request.user.is_superuser:
             cbm_queryset = cbm_queryset.filter(order__employee=self.request.user)
         
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Исключаем отмененные клиентом заказы
+        cbm_queryset = cbm_queryset.filter(order__cancelled_by_client=False)
+        
         # Группируем по странам и считаем сумму CBM
         country_cbm_stats = cbm_queryset.values(
             'order__factory__country__code',
@@ -222,9 +321,13 @@ class CBMAnalyticsView(TemplateView):
             total_cbm = stat['total_cbm'] or Decimal('0')
             total_cbm_all += total_cbm
             
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасный доступ к country code и name
+            country_code = stat.get('order__factory__country__code') or 'UNKNOWN'
+            country_name = stat.get('order__factory__country__name') or 'Не указана'
+            
             country_stats.append({
-                'country_code': stat['order__factory__country__code'],
-                'country_name': stat['order__factory__country__name'],
+                'country_code': country_code,
+                'country_name': country_name,
                 'total_cbm': total_cbm,
                 'total_orders': stat['total_orders'],
                 'total_records': stat['total_records'],

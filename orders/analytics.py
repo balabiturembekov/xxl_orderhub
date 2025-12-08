@@ -10,8 +10,19 @@ class AnalyticsService:
     
     def __init__(self, user=None, date_from=None, date_to=None):
         self.user = user
-        self.date_from = date_from or timezone.now() - timedelta(days=TimeConstants.METRICS_RETENTION_DAYS)
-        self.date_to = date_to or timezone.now()
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если date_from не указан, показываем все заказы
+        # Используем очень старую дату как начало (например, 10 лет назад)
+        if date_from is None:
+            self.date_from = timezone.now().date() - timedelta(days=3650)  # 10 лет назад
+        else:
+            self.date_from = date_from
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если date_to не указан, используем текущую дату
+        if date_to is None:
+            self.date_to = timezone.now().date()
+        else:
+            self.date_to = date_to
         
         # Конвертируем в date объекты если нужно
         if hasattr(self.date_from, 'date'):
@@ -19,13 +30,20 @@ class AnalyticsService:
         if hasattr(self.date_to, 'date'):
             self.date_to = self.date_to.date()
         
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Валидация диапазона дат
+        # Если date_from больше date_to, меняем их местами
+        if self.date_from > self.date_to:
+            self.date_from, self.date_to = self.date_to, self.date_from
+        
         # Базовый queryset заказов (исключаем отмененные клиентом)
         # Используем ~Q для безопасной обработки возможных NULL значений
         self.orders_queryset = Order.objects.filter(
             uploaded_at__date__range=[self.date_from, self.date_to]
         ).filter(~Q(cancelled_by_client=True))
         
-        if self.user:
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Фильтруем по пользователю только если он не суперпользователь
+        # Суперпользователи должны видеть все заказы
+        if self.user and not self.user.is_superuser:
             self.orders_queryset = self.orders_queryset.filter(employee=self.user)
     
     def get_orders_overview(self):
@@ -161,7 +179,7 @@ class AnalyticsService:
         from django.db.models import Avg
         avg_duration = completed_orders.aggregate(
             avg_processing=Avg('processing_time')
-        )['avg_processing']
+        ).get('avg_processing')
         
         if avg_duration:
             return round(avg_duration.total_seconds() / (24 * 3600), 1)  # Конвертируем в дни
