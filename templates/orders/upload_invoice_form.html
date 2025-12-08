@@ -23,15 +23,24 @@
                 </h4>
             </div>
             <div class="card-body">
+                {% if confirmation %}
                 <div class="alert alert-info">
                     <h5><i class="fas fa-info-circle"></i> {% trans "Информация о подтверждении" %}</h5>
                     <p class="mb-0">
                         {% trans "Операция загрузки инвойса была подтверждена. Теперь вы можете загрузить PDF файл инвойса." %}
                     </p>
                 </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <h5><i class="fas fa-info-circle"></i> {% trans "Загрузка инвойса" %}</h5>
+                    <p class="mb-0">
+                        {% trans "Загрузите PDF файл инвойса и заполните информацию об инвойсе." %}
+                    </p>
+                </div>
+                {% endif %}
 
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-{% if confirmation %}6{% else %}12{% endif %}">
                         <div class="card mb-3">
                             <div class="card-header">
                                 <h6 class="mb-0">{% trans "Информация о заказе" %}</h6>
@@ -50,6 +59,7 @@
                         </div>
                     </div>
                     
+                    {% if confirmation %}
                     <div class="col-md-6">
                         <div class="card mb-3">
                             <div class="card-header">
@@ -64,6 +74,7 @@
                             </div>
                         </div>
                     </div>
+                    {% endif %}
                 </div>
 
                 <form method="post" action="{% url 'upload_invoice_execute' order.pk %}" enctype="multipart/form-data">
@@ -262,9 +273,15 @@
                     </div>
 
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        {% if confirmation %}
                         <a href="{% url 'confirmation_detail' confirmation.pk %}" class="btn btn-outline-secondary me-md-2">
                             <i class="fas fa-arrow-left"></i> {% trans "Назад к подтверждению" %}
                         </a>
+                        {% else %}
+                        <a href="{% url 'order_detail' order.pk %}" class="btn btn-outline-secondary me-md-2">
+                            <i class="fas fa-arrow-left"></i> {% trans "Назад к заказу" %}
+                        </a>
+                        {% endif %}
                         <button type="submit" class="btn btn-success" id="uploadBtn" disabled>
                             {% if has_existing_file %}
                                 <i class="fas fa-plus"></i> {% trans "Добавить платеж" %}
