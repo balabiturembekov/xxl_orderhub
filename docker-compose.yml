@@ -2,13 +2,13 @@ services:
   # PostgreSQL Database
   db:
     image: postgres:15-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: xxl_orderhub
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres123
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    # Убираем внешний порт - доступ только внутри Docker сети
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -20,7 +20,7 @@ services:
   # Redis Cache & Message Broker
   redis:
     image: redis:7-alpine
-    # Убираем внешний порт - доступ только внутри Docker сети
+    restart: unless-stopped
     volumes:
       - redis_data:/data
     healthcheck:
@@ -33,10 +33,10 @@ services:
 
   # Django Web Application
   web:
+    restart: unless-stopped
     build: .
-    # Убираем внешний порт - доступ только через nginx
     env_file:
-      - docker.env.local  # Для локальной разработки
+      - docker.env.local
     volumes:
       - ./media:/app/media
       - ./logs:/app/logs
@@ -59,7 +59,7 @@ services:
   worker:
     build: .
     env_file:
-      - docker.env.local  # Для локальной разработки
+      - docker.env.local
     volumes:
       - ./media:/app/media
       - ./logs:/app/logs
@@ -74,9 +74,10 @@ services:
 
   # Celery Beat Scheduler
   beat:
+    restart: unless-stopped
     build: .
     env_file:
-      - docker.env.local  # Для локальной разработки
+      - docker.env.local
     volumes:
       - ./media:/app/media
       - ./logs:/app/logs
@@ -94,10 +95,10 @@ services:
 
   # Flower - Celery Monitoring
   flower:
+    restart: unless-stopped
     build: .
-    # Убираем внешний порт - доступ только через nginx
     env_file:
-      - docker.env.local  # Для локальной разработки
+      - docker.env.local
     volumes:
       - ./logs:/app/logs
     depends_on:
@@ -109,14 +110,15 @@ services:
 
   # Nginx Reverse Proxy
   nginx:
+    restart: unless-stopped
     image: nginx:alpine
     container_name: xxl_orderhub_nginx
     ports:
-      - "8280:80"  # 👉 только этот порт наружу (изменен на 8280)
+      - "8280:80"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./media:/app/media:ro  # Только для чтения
-      - static_files:/app/static:ro  # Только для чтения
+      - ./media:/app/media:ro
+      - static_files:/app/static:ro
     depends_on:
       - web
       - flower
