@@ -138,10 +138,15 @@ class OrderForm(forms.ModelForm):
     
     # Переопределяем поле factory для добавления пустой опции
     # Оптимизация: используем select_related для избежания N+1 запросов
+    # Улучшение UX: используем Select2 для удобного поиска и группировки по странам
     factory = forms.ModelChoiceField(
-        queryset=Factory.objects.filter(is_active=True).select_related('country').only('id', 'name', 'country__name'),
+        queryset=Factory.objects.filter(is_active=True).select_related('country').only('id', 'name', 'country__name', 'country__code').order_by('country__name', 'name'),
         empty_label="Выберите фабрику из списка",
-        widget=forms.Select(attrs={'class': 'form-select'}),
+        widget=forms.Select(attrs={
+            'class': 'form-select factory-select',
+            'data-placeholder': 'Начните вводить название фабрики...',
+            'data-allow-clear': 'true'
+        }),
         label="Фабрика"
     )
     
@@ -491,8 +496,12 @@ class InvoicePaymentForm(forms.ModelForm):
         
         # Проверка, что сумма не превышает остаток по инвойсу
         if self.invoice and amount:
-            # Обновляем remaining_amount перед проверкой
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-26: Проверяем статус инвойса
             self.invoice.refresh_from_db()
+            if self.invoice.status == 'paid':
+                raise forms.ValidationError("Нельзя добавлять платежи к уже оплаченному инвойсу.")
+            
+            # Обновляем remaining_amount перед проверкой
             remaining = self.invoice.remaining_amount
             if amount > remaining:
                 raise forms.ValidationError(
@@ -500,6 +509,32 @@ class InvoicePaymentForm(forms.ModelForm):
                 )
         
         return amount
+    
+    def clean_payment_date(self):
+        """Валидация даты платежа"""
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        payment_date = self.cleaned_data.get('payment_date')
+        if payment_date:
+            today = timezone.now().date()
+            
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-27: Проверка на будущие даты (не более 1 дня вперед для учета часовых поясов)
+            if payment_date > today + timedelta(days=1):
+                raise forms.ValidationError("Дата платежа не может быть в будущем.")
+            
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-27: Проверка на даты раньше создания инвойса
+            if self.invoice:
+                self.invoice.refresh_from_db()
+                if self.invoice.created_at and payment_date < self.invoice.created_at.date():
+                    raise forms.ValidationError("Дата платежа не может быть раньше даты создания инвойса.")
+            
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-27: Проверка на слишком старые даты (не более 10 лет назад)
+            min_past_date = today - timedelta(days=3650)
+            if payment_date < min_past_date:
+                raise forms.ValidationError("Дата платежа не может быть более чем 10 лет назад.")
+        
+        return payment_date
     
     def clean_payment_receipt(self):
         """Валидация файла чека оплаты"""
@@ -747,6 +782,26 @@ class InvoiceWithPaymentForm(forms.Form):
             )
         
         return amount
+    
+    def clean_payment_date(self):
+        """Валидация даты платежа"""
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        payment_date = self.cleaned_data.get('payment_date')
+        if payment_date:
+            today = timezone.now().date()
+            
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-31: Проверка на будущие даты (не более 1 дня вперед)
+            if payment_date > today + timedelta(days=1):
+                raise forms.ValidationError("Дата платежа не может быть в будущем.")
+            
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-31: Проверка на слишком старые даты
+            min_past_date = today - timedelta(days=3650)
+            if payment_date < min_past_date:
+                raise forms.ValidationError("Дата платежа не может быть более чем 10 лет назад.")
+        
+        return payment_date
     
     def clean(self):
         """Валидация всей формы - проверяем, что если указан платеж, то все поля заполнены"""
