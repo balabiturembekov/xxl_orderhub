@@ -247,12 +247,18 @@ class Order(models.Model):
     
     def mark_as_sent(self):
         """Отметить заказ как отправленный"""
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-29: Проверяем валидность перехода статуса
+        if self.status != 'uploaded':
+            raise ValueError(f'Нельзя отметить как отправленный заказ со статусом {self.status}. Ожидается статус "uploaded".')
         self.status = 'sent'
         self.sent_at = timezone.now()
         self.save()
     
     def mark_invoice_received(self, invoice_file):
         """Отметить получение инвойса"""
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-29: Проверяем валидность перехода статуса
+        if self.status != 'sent':
+            raise ValueError(f'Нельзя отметить получение инвойса для заказа со статусом {self.status}. Ожидается статус "sent".')
         self.status = 'invoice_received'
         self.invoice_file = invoice_file
         self.invoice_received_at = timezone.now()
@@ -260,6 +266,9 @@ class Order(models.Model):
     
     def mark_as_completed(self):
         """Отметить заказ как завершенный"""
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-29: Проверяем валидность перехода статуса
+        if self.status != 'invoice_received':
+            raise ValueError(f'Нельзя завершить заказ со статусом {self.status}. Ожидается статус "invoice_received".')
         self.status = 'completed'
         self.completed_at = timezone.now()
         self.save()
@@ -983,6 +992,26 @@ class Invoice(models.Model):
         order_title = self.order.title if self.order else "Без заказа"
         return f"Инвойс {self.invoice_number} для заказа {order_title}"
     
+    def clean(self):
+        """Валидация модели Invoice"""
+        from django.core.exceptions import ValidationError
+        from django.utils import timezone
+        
+        super().clean()
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-32: Проверка что due_date не раньше created_at
+        if self.due_date and self.created_at:
+            if self.due_date < self.created_at.date():
+                raise ValidationError({
+                    'due_date': 'Срок оплаты не может быть раньше даты создания инвойса.'
+                })
+        
+        # Проверка что balance положительный
+        if self.balance is not None and self.balance <= 0:
+            raise ValidationError({
+                'balance': 'Сумма инвойса должна быть больше нуля.'
+            })
+    
     def save(self, *args, **kwargs):
         """Автоматический расчет остатка при сохранении"""
         from decimal import Decimal
@@ -1054,7 +1083,12 @@ class Invoice(models.Model):
                 if last_payment.payment_type == 'deposit':
                     self.status = 'pending'  # Депозит - ожидает доплаты
                 elif last_payment.payment_type == 'final_payment':
-                    self.status = 'paid'  # Финальный платеж - полностью оплачен
+                    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-25: Проверяем, что сумма действительно покрывает остаток
+                    # Финальный платеж должен покрывать весь остаток, иначе это частичный платеж
+                    if self.total_paid >= balance_decimal:
+                        self.status = 'paid'  # Финальный платеж покрыл весь остаток
+                    else:
+                        self.status = 'partial'  # Финальный платеж, но сумма недостаточна
                 else:
                     self.status = 'partial'  # Частичный платеж
             else:
