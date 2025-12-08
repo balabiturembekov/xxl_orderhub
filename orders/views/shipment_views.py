@@ -123,13 +123,14 @@ class ShipmentDetailView(DetailView):
         orders_data = []
         from decimal import Decimal
         
-        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Используем prefetch_related для оптимизации
-        # и фильтруем только существующие заказы (на случай если заказ был удален)
-        for order in shipment.orders.select_related('factory', 'factory__country').all():
-            # Get total CBM from records
-            order_cbm = order.cbm_records.aggregate(
-                total=Sum('cbm_value')
-            )['total'] or Decimal('0')
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-41: Используем annotate для предотвращения N+1 запросов
+        # Предварительно вычисляем CBM для всех заказов одним запросом
+        orders_with_cbm = shipment.orders.select_related('factory', 'factory__country').annotate(
+            total_cbm=Sum('cbm_records__cbm_value')
+        )
+        
+        for order in orders_with_cbm:
+            order_cbm = order.total_cbm or Decimal('0')
             
             orders_data.append({
                 'order': order,
