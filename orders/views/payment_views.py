@@ -230,7 +230,7 @@ class InvoiceDetailView(DetailView):
         cbm_records = invoice.order.cbm_records.select_related('created_by').order_by('-date', '-created_at')
         # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Вычисляем total_cbm из уже загруженных записей вместо запроса к БД
         # Используем QuerySet до применения order_by для агрегации
-        total_cbm = invoice.order.cbm_records.aggregate(total=Sum('cbm_value'))['total'] or 0
+        total_cbm = invoice.order.cbm_records.aggregate(total=Sum('cbm_value')).get('total') or 0
         
         context.update({
             'payments': payments_page,
@@ -503,7 +503,7 @@ class CBMCreateView(CreateView):
         
         # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Вычисляем total_cbm через агрегацию вместо property
         from django.db.models import Sum
-        total_cbm = order.cbm_records.aggregate(total=Sum('cbm_value'))['total'] or 0
+        total_cbm = order.cbm_records.aggregate(total=Sum('cbm_value')).get('total') or 0
         
         # Добавляем информацию о заказе для отображения
         # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасный доступ к factory.name
@@ -533,7 +533,7 @@ class CBMCreateView(CreateView):
                 # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Вычисляем total_cbm через агрегацию вместо property
                 # Используем агрегацию из уже загруженных записей для производительности
                 from django.db.models import Sum
-                total_cbm = order.cbm_records.aggregate(total=Sum('cbm_value'))['total'] or 0
+                total_cbm = order.cbm_records.aggregate(total=Sum('cbm_value')).get('total') or 0
                 
                 # Создаем запись аудита
                 OrderAuditLog.log_action(
@@ -556,7 +556,7 @@ class CBMCreateView(CreateView):
         
         # Вычисляем total_cbm для сообщения через агрегацию
         from django.db.models import Sum
-        total_cbm = order.cbm_records.aggregate(total=Sum('cbm_value'))['total'] or 0
+        total_cbm = order.cbm_records.aggregate(total=Sum('cbm_value')).get('total') or 0
         
         messages.success(
             self.request,
@@ -602,7 +602,7 @@ class CBMUpdateView(UpdateView):
         
         # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Вычисляем total_cbm через агрегацию вместо property
         from django.db.models import Sum
-        total_cbm = order.cbm_records.aggregate(total=Sum('cbm_value'))['total'] or 0
+        total_cbm = order.cbm_records.aggregate(total=Sum('cbm_value')).get('total') or 0
         
         # Добавляем информацию о заказе для отображения
         # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасный доступ к factory.name
@@ -631,7 +631,7 @@ class CBMUpdateView(UpdateView):
                 # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Вычисляем total_cbm через агрегацию вместо property
                 # Используем агрегацию из уже загруженных записей для производительности
                 from django.db.models import Sum
-                total_cbm = order.cbm_records.aggregate(total=Sum('cbm_value'))['total'] or 0
+                total_cbm = order.cbm_records.aggregate(total=Sum('cbm_value')).get('total') or 0
                 
                 # Создаем запись аудита
                 OrderAuditLog.log_action(
@@ -764,8 +764,8 @@ class InvoiceListView(ListView):
                 due_date__lt=timezone.now().date(),
                 status__in=['pending', 'partial']
             ).count(),
-            'total_amount': queryset.aggregate(Sum('balance'))['balance__sum'] or 0,
-            'total_paid': queryset.aggregate(Sum('total_paid'))['total_paid__sum'] or 0,
+            'total_amount': queryset.aggregate(Sum('balance')).get('balance__sum') or 0,
+            'total_paid': queryset.aggregate(Sum('total_paid')).get('total_paid__sum') or 0,
         })
         
         return context
@@ -780,8 +780,8 @@ def payment_analytics(request):
     
     # Общая статистика
     total_invoices = user_invoices.count()
-    total_amount = user_invoices.aggregate(Sum('balance'))['balance__sum'] or 0
-    total_paid = user_invoices.aggregate(Sum('total_paid'))['total_paid__sum'] or 0
+    total_amount = user_invoices.aggregate(Sum('balance')).get('balance__sum') or 0
+    total_paid = user_invoices.aggregate(Sum('total_paid')).get('total_paid__sum') or 0
     remaining_amount = total_amount - total_paid
     
     # Статистика по статусам

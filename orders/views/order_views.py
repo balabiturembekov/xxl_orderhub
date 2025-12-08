@@ -148,7 +148,7 @@ class OrderDetailView(DetailView):
         from decimal import Decimal
         
         cbm_records = order.cbm_records.select_related('created_by').order_by('-date', '-created_at')
-        total_cbm = cbm_records.aggregate(total=Sum('cbm_value'))['total'] or Decimal('0')
+        total_cbm = cbm_records.aggregate(total=Sum('cbm_value')).get('total') or Decimal('0')
         
         context['cbm_records'] = cbm_records
         context['total_cbm'] = total_cbm
@@ -263,7 +263,7 @@ def create_order(request):
             else:
                 # Логируем ошибки валидации
                 logger.warning(f'Order form validation failed: {form.errors}')
-                if 'excel_file' in form.errors:
+                if 'excel_file' in form.errors and form.errors['excel_file']:
                     messages.error(request, f'Ошибка в файле: {form.errors["excel_file"][0]}')
                 elif 'factory' in form.errors:
                     messages.error(request, 'Пожалуйста, выберите фабрику.')

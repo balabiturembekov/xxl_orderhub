@@ -546,7 +546,7 @@ def complete_order(request, pk: int):
             'order_title': order.title,
             'factory_name': order.factory.name if order.factory else "Без фабрики",
             'current_status': order.get_status_display(),
-            'uploaded_at': order.uploaded_at.strftime('%d.%m.%Y %H:%M'),
+            'uploaded_at': order.uploaded_at.strftime('%d.%m.%Y %H:%M') if order.uploaded_at else None,
             'sent_at': order.sent_at.strftime('%d.%m.%Y %H:%M') if order.sent_at else None,
             'invoice_received_at': order.invoice_received_at.strftime('%d.%m.%Y %H:%M') if order.invoice_received_at else None,
         }
