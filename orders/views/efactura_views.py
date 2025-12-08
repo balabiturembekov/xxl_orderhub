@@ -72,8 +72,18 @@ class EFacturaBasketListView(ListView):
     
     def get_context_data(self, **kwargs):
         """Add additional context."""
+        from django.core.cache import cache
+        
         context = super().get_context_data(**kwargs)
-        context['years'] = EFacturaBasket.objects.values_list('year', flat=True).distinct().order_by('-year')
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-45: Кэшируем список годов на 1 час
+        cache_key = 'efactura_basket_years'
+        years = cache.get(cache_key)
+        if years is None:
+            years = list(EFacturaBasket.objects.values_list('year', flat=True).distinct().order_by('-year'))
+            cache.set(cache_key, years, 3600)  # 1 час
+        
+        context['years'] = years
         context['months'] = list(range(1, 13))
         context['selected_year'] = self.request.GET.get('year', '')
         context['selected_month'] = self.request.GET.get('month', '')
