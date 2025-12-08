@@ -830,14 +830,20 @@ class InvoiceListView(ListView):
                 status__in=['pending', 'partial']
             )
         
-        # Поиск по номеру инвойса
-        search = self.request.GET.get('search')
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-49: Валидация длины search для предотвращения DoS атак
+        from ..constants import ViewConstants
+        
+        search = self.request.GET.get('search', '').strip()
         if search:
-            queryset = queryset.filter(
-                Q(invoice_number__icontains=search) |
-                Q(order__title__icontains=search) |
-                Q(order__factory__name__icontains=search)
-            )
+            if len(search) > ViewConstants.SEARCH_MAX_LENGTH:
+                search = search[:ViewConstants.SEARCH_MAX_LENGTH]
+            
+            if len(search) >= ViewConstants.SEARCH_MIN_LENGTH:
+                queryset = queryset.filter(
+                    Q(invoice_number__icontains=search) |
+                    Q(order__title__icontains=search) |
+                    Q(order__factory__name__icontains=search)
+                )
         
         return queryset.order_by('-created_at')
     

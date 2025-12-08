@@ -42,13 +42,19 @@ class ShipmentListView(ListView):
         """Get filtered shipments."""
         queryset = Shipment.objects.prefetch_related('orders', 'orders__factory', 'orders__factory__country')
         
-        # Filter by search query
-        search_query = self.request.GET.get('search')
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-49: Валидация длины search_query для предотвращения DoS атак
+        from ..constants import ViewConstants
+        
+        search_query = self.request.GET.get('search', '').strip()
         if search_query:
-            queryset = queryset.filter(
-                Q(shipment_number__icontains=search_query) |
-                Q(notes__icontains=search_query)
-            )
+            if len(search_query) > ViewConstants.SEARCH_MAX_LENGTH:
+                search_query = search_query[:ViewConstants.SEARCH_MAX_LENGTH]
+            
+            if len(search_query) >= ViewConstants.SEARCH_MIN_LENGTH:
+                queryset = queryset.filter(
+                    Q(shipment_number__icontains=search_query) |
+                    Q(notes__icontains=search_query)
+                )
         
         # Filter by date range
         date_from = self.request.GET.get('date_from')

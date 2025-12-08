@@ -52,26 +52,45 @@ class OrderListView(ListView):
         queryset = queryset.filter(~Q(cancelled_by_client=True))
         
         # Apply filters
+        from ..constants import ViewConstants
+        
         status_filter = self.request.GET.get('status')
         factory_filter = self.request.GET.get('factory')
         country_filter = self.request.GET.get('country')
-        search_query = self.request.GET.get('search')
+        search_query = self.request.GET.get('search', '').strip()
         
         if status_filter:
             queryset = queryset.filter(status=status_filter)
         
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-55: Валидация factory_id
         if factory_filter:
-            queryset = queryset.filter(factory_id=factory_filter)
+            try:
+                factory_id = int(factory_filter)
+                if factory_id > 0:
+                    queryset = queryset.filter(factory_id=factory_id)
+            except (ValueError, TypeError):
+                pass  # Игнорируем невалидные значения
         
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-55: Валидация country_id
         if country_filter:
-            queryset = queryset.filter(factory__country_id=country_filter)
+            try:
+                country_id = int(country_filter)
+                if country_id > 0:
+                    queryset = queryset.filter(factory__country_id=country_id)
+            except (ValueError, TypeError):
+                pass  # Игнорируем невалидные значения
         
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-49: Валидация длины search_query для предотвращения DoS атак
         if search_query:
-            queryset = queryset.filter(
-                Q(title__icontains=search_query) |
-                Q(description__icontains=search_query) |
-                Q(factory__name__icontains=search_query)
-            )
+            if len(search_query) > ViewConstants.SEARCH_MAX_LENGTH:
+                search_query = search_query[:ViewConstants.SEARCH_MAX_LENGTH]
+            
+            if len(search_query) >= ViewConstants.SEARCH_MIN_LENGTH:
+                queryset = queryset.filter(
+                    Q(title__icontains=search_query) |
+                    Q(description__icontains=search_query) |
+                    Q(factory__name__icontains=search_query)
+                )
         
         return queryset.order_by('-uploaded_at')
     
