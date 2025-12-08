@@ -204,7 +204,8 @@ def upload_invoice_form(request, pk: int):
         messages.error(request, 'Инвойс можно прикрепить только после отправки заказа на фабрику!')
         return redirect('order_detail', pk=pk)
     
-    # Check for active confirmation
+    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем активное подтверждение
+    # Если подтверждения нет, разрешаем загрузку без подтверждения для упрощения процесса
     active_confirmation = OrderConfirmation.objects.filter(
         order=order,
         action='upload_invoice',
@@ -212,9 +213,8 @@ def upload_invoice_form(request, pk: int):
         expires_at__gt=timezone.now()
     ).first()
     
-    if not active_confirmation:
-        messages.error(request, 'Нет активного подтверждения для загрузки инвойса!')
-        return redirect('order_detail', pk=pk)
+    # Если подтверждения нет, разрешаем загрузку без подтверждения
+    # Это упрощает процесс для пользователей
     
     # Используем новую форму для создания инвойса с платежом
     from ..forms import InvoiceWithPaymentForm
@@ -295,7 +295,8 @@ def upload_invoice_execute(request, pk: int):
         messages.error(request, 'Инвойс можно прикрепить только после отправки заказа на фабрику!')
         return redirect('order_detail', pk=pk)
     
-    # Check for active confirmation
+    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем активное подтверждение
+    # Если подтверждения нет, разрешаем загрузку без подтверждения для упрощения процесса
     active_confirmation = OrderConfirmation.objects.filter(
         order=order,
         action='upload_invoice',
@@ -303,14 +304,13 @@ def upload_invoice_execute(request, pk: int):
         expires_at__gt=timezone.now()
     ).first()
     
-    if not active_confirmation:
-        messages.error(request, 'Нет активного подтверждения для загрузки инвойса!')
-        return redirect('order_detail', pk=pk)
-    
-    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем права доступа перед обработкой
-    if not active_confirmation.can_be_confirmed_by(request.user):
-        messages.error(request, 'Вы не можете подтвердить эту операцию!')
-        return redirect('order_detail', pk=pk)
+    # Если подтверждение есть, проверяем права доступа
+    if active_confirmation:
+        if not active_confirmation.can_be_confirmed_by(request.user):
+            messages.error(request, 'Вы не можете подтвердить эту операцию!')
+            return redirect('order_detail', pk=pk)
+    # Если подтверждения нет, разрешаем загрузку без подтверждения
+    # Это упрощает процесс для пользователей
     
     if request.method != 'POST':
         return redirect('upload_invoice_form', pk=pk)
@@ -361,44 +361,48 @@ def upload_invoice_execute(request, pk: int):
                         order.invoice_file = invoice_file
                         order.save()
                         
-                        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Перезагружаем confirmation перед обновлением
-                        # для предотвращения потери данных при race condition
-                        active_confirmation.refresh_from_db()
-                        # Update confirmation data
-                        confirmation_data = active_confirmation.confirmation_data.copy()
-                        confirmation_data.update({
-                            'invoice_file_name': invoice_file.name,
-                            'invoice_file_size': invoice_file.size,
-                            'payment_amount': str(payment.amount),
-                            'payment_type': payment.payment_type,
-                        })
-                        active_confirmation.confirmation_data = confirmation_data
-                        
-                        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-7: Проверяем статус перед confirm()
-                        # Метод confirm() сам проверяет статус атомарно, но лучше явно проверить для ясности
-                        if active_confirmation.status == 'pending':
-                            # Confirm operation (обновляем данные перед подтверждением)
-                            active_confirmation.confirm(request.user, f"Дополнительный платеж добавлен и файл инвойса обновлен: {invoice_file.name}")
-                        # Сохраняем обновленные confirmation_data
-                        active_confirmation.save(update_fields=['confirmation_data'])
+                        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Обновляем данные подтверждения только если оно есть
+                        if active_confirmation:
+                            # Перезагружаем confirmation перед обновлением
+                            # для предотвращения потери данных при race condition
+                            active_confirmation.refresh_from_db()
+                            # Update confirmation data
+                            confirmation_data = active_confirmation.confirmation_data.copy()
+                            confirmation_data.update({
+                                'invoice_file_name': invoice_file.name,
+                                'invoice_file_size': invoice_file.size,
+                                'payment_amount': str(payment.amount),
+                                'payment_type': payment.payment_type,
+                            })
+                            active_confirmation.confirmation_data = confirmation_data
+                            
+                            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-7: Подтверждаем операцию только если есть активное подтверждение
+                            # Метод confirm() сам проверяет статус атомарно, но лучше явно проверить для ясности
+                            if active_confirmation.status == 'pending':
+                                # Confirm operation (обновляем данные перед подтверждением)
+                                active_confirmation.confirm(request.user, f"Дополнительный платеж добавлен и файл инвойса обновлен: {invoice_file.name}")
+                            # Сохраняем обновленные confirmation_data
+                            active_confirmation.save(update_fields=['confirmation_data'])
                     else:
-                        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Перезагружаем confirmation перед обновлением
-                        # для предотвращения потери данных при race condition
-                        active_confirmation.refresh_from_db()
-                        # Update confirmation data для дополнительного платежа
-                        confirmation_data = active_confirmation.confirmation_data.copy()
-                        confirmation_data.update({
-                            'payment_amount': str(payment.amount),
-                            'payment_type': payment.payment_type,
-                        })
-                        active_confirmation.confirmation_data = confirmation_data
-                        
-                        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-7: Проверяем статус перед confirm()
-                        if active_confirmation.status == 'pending':
-                            # Confirm operation
-                            active_confirmation.confirm(request.user, f"Дополнительный платеж добавлен")
-                        # Сохраняем обновленные confirmation_data
-                        active_confirmation.save(update_fields=['confirmation_data'])
+                        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Обновляем данные подтверждения только если оно есть
+                        if active_confirmation:
+                            # Перезагружаем confirmation перед обновлением
+                            # для предотвращения потери данных при race condition
+                            active_confirmation.refresh_from_db()
+                            # Update confirmation data для дополнительного платежа
+                            confirmation_data = active_confirmation.confirmation_data.copy()
+                            confirmation_data.update({
+                                'payment_amount': str(payment.amount),
+                                'payment_type': payment.payment_type,
+                            })
+                            active_confirmation.confirmation_data = confirmation_data
+                            
+                            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-7: Подтверждаем операцию только если есть активное подтверждение
+                            if active_confirmation.status == 'pending':
+                                # Confirm operation
+                                active_confirmation.confirm(request.user, f"Дополнительный платеж добавлен")
+                            # Сохраняем обновленные confirmation_data
+                            active_confirmation.save(update_fields=['confirmation_data'])
                     
                     # Create audit log для дополнительного платежа
                     OrderAuditLog.objects.create(
@@ -449,30 +453,86 @@ def upload_invoice_execute(request, pk: int):
                     order.invoice_received_at = timezone.now()
                     order.save()
                     
-                    # Update confirmation data для нового инвойса
-                    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: invoice_file гарантированно существует для нового инвойса
-                    confirmation_data = {
-                        'invoice_file_name': invoice_file.name,
-                        'invoice_file_size': invoice_file.size,
-                        'invoice_number': invoice.invoice_number,
-                        'balance': str(invoice.balance),
-                    }
-                    if payment:
-                        confirmation_data.update({
-                            'payment_amount': str(payment.amount),
-                            'payment_type': payment.payment_type,
-                        })
-                    active_confirmation.confirmation_data.update(confirmation_data)
-                    active_confirmation.save()
+                    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если выбран E-Factura Turkey, автоматически добавляем файл в корзину
+                    if order.is_turkish_factory and order.e_factura_turkey and invoice_file:
+                        from ..models import EFacturaBasket, EFacturaFile
+                        from datetime import date
+                        import os
+                        from django.core.files.base import ContentFile
+                        from io import BytesIO
+                        import logging
+                        
+                        logger = logging.getLogger('orders')
+                        
+                        try:
+                            # Проверяем, не добавлен ли уже файл для этого заказа
+                            existing_file = EFacturaFile.objects.filter(order=order).first()
+                            if not existing_file:
+                                # Создаем или получаем корзину для текущего месяца
+                                today = date.today()
+                                basket, _ = EFacturaBasket.get_or_create_for_month(
+                                    year=today.year,
+                                    month=today.month,
+                                    user=request.user
+                                )
+                                
+                                # Копируем файл в корзину E-Factura
+                                original_filename = os.path.basename(invoice_file.name) if invoice_file.name else 'invoice.pdf'
+                                efactura_file = EFacturaFile(
+                                    basket=basket,
+                                    order=order,
+                                    upload_date=today,
+                                    created_by=request.user,
+                                    notes=f'Автоматически добавлен при загрузке инвойса для заказа {order.title}'
+                                )
+                                
+                                file_size = invoice_file.size if hasattr(invoice_file, 'size') else 0
+                                chunk_size = 1024 * 1024  # 1MB chunks
+                                
+                                with invoice_file.open('rb') as source_file:
+                                    if file_size > 10 * 1024 * 1024:  # Если файл больше 10MB
+                                        buffer = BytesIO()
+                                        while True:
+                                            chunk = source_file.read(chunk_size)
+                                            if not chunk:
+                                                break
+                                            buffer.write(chunk)
+                                        buffer.seek(0)
+                                        efactura_file.file.save(original_filename, ContentFile(buffer.getvalue()), save=True)
+                                    else:
+                                        file_content = source_file.read()
+                                        efactura_file.file.save(original_filename, ContentFile(file_content), save=True)
+                                
+                                logger.info(f'Файл инвойса автоматически добавлен в корзину E-Factura для заказа {order.id}')
+                        except Exception as e:
+                            logger.error(f"Ошибка при автоматическом добавлении файла в корзину E-Factura: {e}", exc_info=True)
+                            # Не прерываем процесс загрузки инвойса, только логируем ошибку
                     
-                    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-7: Проверяем статус перед confirm()
-                    # Confirm operation для нового инвойса
+                    # Update confirmation data для нового инвойса (только если есть подтверждение)
                     # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: invoice_file гарантированно существует для нового инвойса
-                    if active_confirmation.status == 'pending':
+                    if active_confirmation:
+                        confirmation_data = {
+                            'invoice_file_name': invoice_file.name,
+                            'invoice_file_size': invoice_file.size,
+                            'invoice_number': invoice.invoice_number,
+                            'balance': str(invoice.balance),
+                        }
                         if payment:
-                            active_confirmation.confirm(request.user, f"Инвойс {invoice_file.name} успешно загружен с платежом")
-                        else:
-                            active_confirmation.confirm(request.user, f"Инвойс {invoice_file.name} успешно загружен без платежа")
+                            confirmation_data.update({
+                                'payment_amount': str(payment.amount),
+                                'payment_type': payment.payment_type,
+                            })
+                        active_confirmation.confirmation_data.update(confirmation_data)
+                        active_confirmation.save()
+                        
+                        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-7: Подтверждаем операцию только если есть активное подтверждение
+                        # Confirm operation для нового инвойса
+                        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: invoice_file гарантированно существует для нового инвойса
+                        if active_confirmation.status == 'pending':
+                            if payment:
+                                active_confirmation.confirm(request.user, f"Инвойс {invoice_file.name} успешно загружен с платежом")
+                            else:
+                                active_confirmation.confirm(request.user, f"Инвойс {invoice_file.name} успешно загружен без платежа")
                     
                     # Create audit log для нового инвойса
                     comments = f'Загружен инвойс: {invoice_file.name}'

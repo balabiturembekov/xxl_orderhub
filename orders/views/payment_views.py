@@ -36,7 +36,8 @@ def upload_invoice_with_payment(request, pk):
     """
     order = get_object_or_404(Order, id=pk)
     
-    # Проверяем активное подтверждение (если вызывается через старый URL)
+    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем активное подтверждение (если вызывается через старый URL)
+    # Если подтверждения нет, разрешаем загрузку без подтверждения для упрощения процесса
     active_confirmation = None
     if request.resolver_match.url_name == 'upload_invoice_execute':
         active_confirmation = OrderConfirmation.objects.filter(
@@ -46,14 +47,13 @@ def upload_invoice_with_payment(request, pk):
             expires_at__gt=timezone.now()
         ).first()
         
-        if not active_confirmation:
-            messages.error(request, _('Нет активного подтверждения для загрузки инвойса!'))
-            return redirect('order_detail', pk=order.id)
-        
-        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем права доступа перед обработкой
-        if not active_confirmation.can_be_confirmed_by(request.user):
-            messages.error(request, _('Вы не можете подтвердить эту операцию!'))
-            return redirect('order_detail', pk=order.id)
+        # Если подтверждение есть, проверяем права доступа
+        if active_confirmation:
+            if not active_confirmation.can_be_confirmed_by(request.user):
+                messages.error(request, _('Вы не можете подтвердить эту операцию!'))
+                return redirect('order_detail', pk=order.id)
+        # Если подтверждения нет, разрешаем загрузку без подтверждения
+        # Это упрощает процесс для пользователей
     
     # Проверяем, что у заказа еще нет инвойса (только если нет активного подтверждения)
     if not active_confirmation and hasattr(order, 'invoice'):
@@ -104,6 +104,61 @@ def upload_invoice_with_payment(request, pk):
                     order.status = 'invoice_received'
                     order.invoice_received_at = timezone.now()
                     order.save()
+                    
+                    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если выбран E-Factura Turkey, автоматически добавляем файл в корзину
+                    if order.is_turkish_factory and order.e_factura_turkey and invoice_file:
+                        from ..models import EFacturaBasket, EFacturaFile
+                        from datetime import date
+                        import os
+                        from django.core.files.base import ContentFile
+                        from io import BytesIO
+                        import logging
+                        
+                        logger = logging.getLogger('orders')
+                        
+                        try:
+                            # Проверяем, не добавлен ли уже файл для этого заказа
+                            existing_file = EFacturaFile.objects.filter(order=order).first()
+                            if not existing_file:
+                                # Создаем или получаем корзину для текущего месяца
+                                today = date.today()
+                                basket, _ = EFacturaBasket.get_or_create_for_month(
+                                    year=today.year,
+                                    month=today.month,
+                                    user=request.user
+                                )
+                                
+                                # Копируем файл в корзину E-Factura
+                                original_filename = os.path.basename(invoice_file.name) if invoice_file.name else 'invoice.pdf'
+                                efactura_file = EFacturaFile(
+                                    basket=basket,
+                                    order=order,
+                                    upload_date=today,
+                                    created_by=request.user,
+                                    notes=f'Автоматически добавлен при загрузке инвойса для заказа {order.title}'
+                                )
+                                
+                                file_size = invoice_file.size if hasattr(invoice_file, 'size') else 0
+                                chunk_size = 1024 * 1024  # 1MB chunks
+                                
+                                with invoice_file.open('rb') as source_file:
+                                    if file_size > 10 * 1024 * 1024:  # Если файл больше 10MB
+                                        buffer = BytesIO()
+                                        while True:
+                                            chunk = source_file.read(chunk_size)
+                                            if not chunk:
+                                                break
+                                            buffer.write(chunk)
+                                        buffer.seek(0)
+                                        efactura_file.file.save(original_filename, ContentFile(buffer.getvalue()), save=True)
+                                    else:
+                                        file_content = source_file.read()
+                                        efactura_file.file.save(original_filename, ContentFile(file_content), save=True)
+                                
+                                logger.info(f'Файл инвойса автоматически добавлен в корзину E-Factura для заказа {order.id}')
+                        except Exception as e:
+                            logger.error(f"Ошибка при автоматическом добавлении файла в корзину E-Factura: {e}", exc_info=True)
+                            # Не прерываем процесс загрузки инвойса, только логируем ошибку
                     
                     # Обрабатываем подтверждение (если есть)
                     # Используем active_confirmation, полученный выше, не делаем повторный запрос
@@ -299,6 +354,14 @@ class PaymentCreateView(CreateView):
         
         invoice = self.get_invoice()
         
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-26: Проверяем статус инвойса перед созданием платежа
+        if invoice.status == 'paid':
+            messages.error(
+                self.request,
+                _('Нельзя добавлять платежи к уже оплаченному инвойсу!')
+            )
+            return self.form_invalid(form)
+        
         # Валидация уже выполнена в форме, дополнительная проверка не нужна
         
         # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Используем транзакцию для атомарности операции
@@ -384,6 +447,31 @@ class PaymentUpdateView(UpdateView):
         payment = self.get_object()
         old_amount = payment.amount
         invoice = payment.invoice
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-30: Проверяем статус инвойса перед обновлением платежа
+        invoice.refresh_from_db()
+        if invoice.status == 'paid':
+            messages.error(
+                self.request,
+                _('Нельзя редактировать платежи для уже оплаченного инвойса!')
+            )
+            return self.form_invalid(form)
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-30: Проверяем что новый amount не превышает remaining_amount
+        # (с учетом того, что текущий платеж будет обновлен)
+        new_amount = form.cleaned_data.get('amount')
+        if new_amount:
+            # Вычисляем remaining_amount без текущего платежа
+            remaining_without_current = invoice.remaining_amount + old_amount
+            if new_amount > remaining_without_current:
+                messages.error(
+                    self.request,
+                    _('Сумма платежа ({amount}) не может превышать остаток к доплате ({remaining}).').format(
+                        amount=new_amount,
+                        remaining=remaining_without_current
+                    )
+                )
+                return self.form_invalid(form)
         
         # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Используем транзакцию для атомарности операции
         # Это предотвращает race condition при обновлении платежа и пересчете invoice
