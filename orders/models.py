@@ -1556,8 +1556,10 @@ class EFacturaBasket(models.Model):
         name = f"{month_name_ru.get(month, 'Неизвестно')} {year}"
         basket_date = date(year, month, 1)
         
-        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Используем get_or_create с обработкой IntegrityError
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-54: Используем get_or_create с обработкой только IntegrityError
         # для предотвращения race condition при одновременном создании корзины
+        from django.db import IntegrityError
+        
         try:
             basket, created = cls.objects.get_or_create(
                 month=month,
@@ -1568,15 +1570,14 @@ class EFacturaBasket(models.Model):
                     'created_by': user
                 }
             )
+        except IntegrityError:
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-54: Обрабатываем только IntegrityError
+            # Используем select_for_update для предотвращения race condition
+            basket = cls.objects.select_for_update().get(month=month, year=year)
+            created = False
         except Exception as e:
-            # Если произошла ошибка (например, IntegrityError из-за race condition),
-            # пытаемся получить существующую корзину
-            try:
-                basket = cls.objects.get(month=month, year=year)
-                created = False
-            except cls.DoesNotExist:
-                # Если корзина не найдена, пробрасываем исходную ошибку
-                raise
+            # Другие ошибки пробрасываем дальше
+            raise
         
         return basket, created
 
