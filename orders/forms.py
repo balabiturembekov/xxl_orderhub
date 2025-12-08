@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.utils import timezone
-from .models import UserProfile, Order, Factory, NotificationSettings, Notification, Country, Invoice, InvoicePayment, OrderCBM, Shipment
+from .models import UserProfile, Order, Factory, NotificationSettings, Notification, Country, Invoice, InvoicePayment, OrderCBM, Shipment, EFacturaFile, EFacturaBasket
 from .constants import FileConstants
 
 
@@ -898,3 +898,49 @@ class ShipmentForm(forms.ModelForm):
                 )
         
         return received_date
+
+
+class EFacturaFileForm(forms.ModelForm):
+    """
+    Форма для загрузки файлов E-Factura в корзину.
+    """
+    
+    class Meta:
+        model = EFacturaFile
+        fields = ['order', 'file', 'upload_date', 'notes']
+        widgets = {
+            'order': forms.Select(attrs={'class': 'form-select'}),
+            'file': forms.FileInput(attrs={'class': 'form-control', 'accept': '.pdf,.xml,.xlsx,.xls'}),
+            'upload_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+        labels = {
+            'order': 'Заказ',
+            'file': 'Файл E-Factura',
+            'upload_date': 'Дата загрузки',
+            'notes': 'Комментарии',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        basket = kwargs.pop('basket', None)
+        super().__init__(*args, **kwargs)
+        
+        # Фильтруем заказы: только турецкие фабрики с выбранным E-Factura Turkey
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Убрано дублирование кода
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Исключаем отмененные клиентом заказы
+        from django.db.models import Q
+        queryset = Order.objects.filter(
+            factory__country__code='TR',
+            e_factura_turkey=True
+        ).exclude(
+            Q(cancelled_by_client=True) | Q(status='cancelled')
+        ).select_related('factory', 'factory__country').order_by('-uploaded_at')
+        
+        # Если корзина указана, можно дополнительно фильтровать (например, исключить уже добавленные)
+        # Пока оставляем все заказы, так как один заказ может иметь несколько файлов E-Factura
+        self.fields['order'].queryset = queryset
+        
+        # Устанавливаем дату по умолчанию
+        if not self.instance.pk:
+            from datetime import date
+            self.initial['upload_date'] = date.today()

@@ -3,7 +3,10 @@ from django.contrib.auth import views as auth_views
 from .views import (
     # Order views
     OrderListView, OrderDetailView, create_order, download_file, preview_file, preview_file_modal,
-    cancel_order_by_client, CancelledByClientOrderListView,
+    cancel_order_by_client, CancelledByClientOrderListView, update_factura_type,
+    # E-Factura views
+    EFacturaBasketListView, EFacturaBasketDetailView, upload_efactura_file,
+    download_efactura_file, download_all_efactura_files,
     # Confirmation views
     ConfirmationListView, confirmation_detail, send_order, upload_invoice, upload_invoice_form,
     upload_invoice_execute, complete_order, confirmation_approve, confirmation_reject,
@@ -62,6 +65,7 @@ urlpatterns = [
     path("orders/create/", create_order, name="create_order"),
     path("orders/<int:pk>/", OrderDetailView.as_view(), name="order_detail"),
     path("orders/<int:pk>/cancel-by-client/", cancel_order_by_client, name="cancel_order_by_client"),
+    path("orders/<int:pk>/update-factura-type/", update_factura_type, name="update_factura_type"),
     path("orders/cancelled-by-client/", CancelledByClientOrderListView.as_view(), name="cancelled_by_client_list"),
     path("orders/<int:pk>/send/", send_order, name="send_order"),
     path("orders/<int:pk>/upload-invoice/", upload_invoice, name="upload_invoice"),
@@ -148,4 +152,11 @@ urlpatterns = [
     path("email-templates/import/", email_template_import, name="email_template_import"),
     path("email-templates/variables-help/", email_template_variables_help, name="email_template_variables_help"),
     path("email-templates/preview-ajax/", email_template_preview_ajax, name="email_template_preview_ajax"),
+    
+    # Управление корзинами E-Factura
+    path("efactura/baskets/", EFacturaBasketListView.as_view(), name="efactura_basket_list"),
+    path("efactura/baskets/<int:pk>/", EFacturaBasketDetailView.as_view(), name="efactura_basket_detail"),
+    path("efactura/baskets/<int:basket_id>/upload/", upload_efactura_file, name="upload_efactura_file"),
+    path("efactura/files/<int:file_id>/download/", download_efactura_file, name="download_efactura_file"),
+    path("efactura/baskets/<int:basket_id>/download-all/", download_all_efactura_files, name="download_all_efactura_files"),
 ]
