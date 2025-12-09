@@ -14,6 +14,7 @@ import os
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
 from django.views.generic import ListView
 from django.utils import timezone
 from django.core.mail import EmailMessage
@@ -25,6 +26,7 @@ from ..forms import InvoiceUploadForm
 from ..tasks import send_order_notification
 
 
+@method_decorator(login_required, name='dispatch')
 class ConfirmationListView(ListView):
     """
     Display a list of order confirmations for the authenticated user.
