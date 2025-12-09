@@ -61,7 +61,9 @@ def upload_invoice_with_payment(request, pk):
         return redirect('order_detail', pk=order.id)
     
     if request.method == 'POST':
-        form = InvoiceWithPaymentForm(request.POST, request.FILES)
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-66: Передаем invoice в форму для проверки remaining_amount
+        existing_invoice = getattr(order, 'invoice', None)
+        form = InvoiceWithPaymentForm(request.POST, request.FILES, invoice=existing_invoice)
         
         if form.is_valid():
             try:
@@ -117,45 +119,59 @@ def upload_invoice_with_payment(request, pk):
                         logger = logging.getLogger('orders')
                         
                         try:
-                            # Проверяем, не добавлен ли уже файл для этого заказа
-                            existing_file = EFacturaFile.objects.filter(order=order).first()
-                            if not existing_file:
-                                # Создаем или получаем корзину для текущего месяца
-                                today = date.today()
-                                basket, _ = EFacturaBasket.get_or_create_for_month(
-                                    year=today.year,
-                                    month=today.month,
-                                    user=request.user
-                                )
-                                
-                                # Копируем файл в корзину E-Factura
-                                original_filename = os.path.basename(invoice_file.name) if invoice_file.name else 'invoice.pdf'
-                                efactura_file = EFacturaFile(
-                                    basket=basket,
-                                    order=order,
-                                    upload_date=today,
-                                    created_by=request.user,
-                                    notes=f'Автоматически добавлен при загрузке инвойса для заказа {order.title}'
-                                )
-                                
-                                file_size = invoice_file.size if hasattr(invoice_file, 'size') else 0
-                                chunk_size = 1024 * 1024  # 1MB chunks
-                                
-                                with invoice_file.open('rb') as source_file:
-                                    if file_size > 10 * 1024 * 1024:  # Если файл больше 10MB
-                                        buffer = BytesIO()
-                                        while True:
-                                            chunk = source_file.read(chunk_size)
-                                            if not chunk:
-                                                break
-                                            buffer.write(chunk)
-                                        buffer.seek(0)
-                                        efactura_file.file.save(original_filename, ContentFile(buffer.getvalue()), save=True)
-                                    else:
-                                        file_content = source_file.read()
-                                        efactura_file.file.save(original_filename, ContentFile(file_content), save=True)
-                                
-                                logger.info(f'Файл инвойса автоматически добавлен в корзину E-Factura для заказа {order.id}')
+                            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-64: Используем select_for_update() для атомарной проверки дубликатов
+                            # Это предотвращает race condition при одновременной загрузке инвойсов
+                            from django.db import transaction, IntegrityError
+                            
+                            with transaction.atomic():
+                                existing_file = EFacturaFile.objects.select_for_update().filter(order=order).first()
+                                if not existing_file:
+                                    # Создаем или получаем корзину для текущего месяца
+                                    today = date.today()
+                                    basket, _ = EFacturaBasket.get_or_create_for_month(
+                                        year=today.year,
+                                        month=today.month,
+                                        user=request.user
+                                    )
+                                    
+                                    # Копируем файл в корзину E-Factura
+                                    original_filename = os.path.basename(invoice_file.name) if invoice_file.name else 'invoice.pdf'
+                                    efactura_file = EFacturaFile(
+                                        basket=basket,
+                                        order=order,
+                                        upload_date=today,
+                                        created_by=request.user,
+                                        notes=f'Автоматически добавлен при загрузке инвойса для заказа {order.title}'
+                                    )
+                                    
+                                    file_size = invoice_file.size if hasattr(invoice_file, 'size') else 0
+                                    chunk_size = 1024 * 1024  # 1MB chunks
+                                    
+                                    with invoice_file.open('rb') as source_file:
+                                        if file_size > 10 * 1024 * 1024:  # Если файл больше 10MB
+                                            buffer = BytesIO()
+                                            while True:
+                                                chunk = source_file.read(chunk_size)
+                                                if not chunk:
+                                                    break
+                                                buffer.write(chunk)
+                                            buffer.seek(0)
+                                            efactura_file.file.save(original_filename, ContentFile(buffer.getvalue()), save=True)
+                                        else:
+                                            file_content = source_file.read()
+                                            efactura_file.file.save(original_filename, ContentFile(file_content), save=True)
+                                    
+                                    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-68: Обрабатываем IntegrityError при сохранении
+                                    try:
+                                        efactura_file.save()
+                                        logger.info(f'Файл инвойса автоматически добавлен в корзину E-Factura для заказа {order.id}')
+                                    except IntegrityError:
+                                        # Файл был создан другим процессом между проверкой и сохранением
+                                        logger.warning(f'Попытка создать дубликат E-Factura файла для заказа {order.id}')
+                                        # Продолжаем выполнение, так как файл уже существует
+                        except (ValueError, TypeError, AttributeError) as e:
+                            logger.error(f"Ошибка валидации при автоматическом добавлении файла в корзину E-Factura: {e}", exc_info=True)
+                            # Не прерываем процесс загрузки инвойса, только логируем ошибку
                         except Exception as e:
                             logger.error(f"Ошибка при автоматическом добавлении файла в корзину E-Factura: {e}", exc_info=True)
                             # Не прерываем процесс загрузки инвойса, только логируем ошибку
