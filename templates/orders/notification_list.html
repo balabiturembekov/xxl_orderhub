@@ -303,8 +303,12 @@ document.addEventListener('DOMContentLoaded', function() {
             badge.remove();
         }
         
-        // Меняем кнопку на галочку
-        button.innerHTML = '<i class="fas fa-check-circle me-1"></i>{% trans "Прочитано" %}';
+        // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-59: Используем безопасное создание элементов вместо innerHTML
+        button.innerHTML = '';
+        const icon = document.createElement('i');
+        icon.className = 'fas fa-check-circle me-1';
+        button.appendChild(icon);
+        button.appendChild(document.createTextNode('{% trans "Прочитано" %}'));
         button.classList.remove('btn-outline-primary', 'mark-read-btn');
         button.classList.add('text-success');
         button.disabled = true;

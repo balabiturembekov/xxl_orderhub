@@ -288,12 +288,23 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => response.json())
         .then(data => {
+            // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-59: Функция для экранирования HTML
+            function escapeHtml(text) {
+                if (text == null) return '';
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+            
             if (data.success) {
+                // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-59: Экранируем пользовательские данные
+                // data.html_content оставляем как есть, так как это HTML шаблон, который должен отображаться
+                // но data.subject и data.text_content экранируем
                 previewContent.innerHTML = `
                     <div class="row">
                         <div class="col-12">
                             <h6>{% trans "Тема письма" %}</h6>
-                            <div class="alert alert-info">${data.subject}</div>
+                            <div class="alert alert-info">${escapeHtml(data.subject)}</div>
                         </div>
                     </div>
                     <div class="row">
@@ -305,26 +316,32 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                         <div class="col-md-6">
                             <h6>{% trans "Текстовая версия" %}</h6>
-                            <pre class="bg-light p-3" style="max-height: 300px; overflow-y: auto;">${data.text_content}</pre>
+                            <pre class="bg-light p-3" style="max-height: 300px; overflow-y: auto;">${escapeHtml(data.text_content)}</pre>
                         </div>
                     </div>
                 `;
             } else {
+                // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-59: Экранируем сообщение об ошибке
                 previewContent.innerHTML = `
                     <div class="alert alert-danger">
                         <h6>{% trans "Ошибка предварительного просмотра" %}</h6>
-                        <p>${data.error}</p>
+                        <p>${escapeHtml(data.error)}</p>
                     </div>
                 `;
             }
         })
         .catch(error => {
-            previewContent.innerHTML = `
-                <div class="alert alert-danger">
-                    <h6>{% trans "Ошибка загрузки" %}</h6>
-                    <p>{% trans "Не удалось загрузить предварительный просмотр" %}</p>
-                </div>
-            `;
+            // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-59: Используем безопасное создание элементов
+            previewContent.innerHTML = '';
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-danger';
+            const titleH6 = document.createElement('h6');
+            titleH6.textContent = '{% trans "Ошибка загрузки" %}';
+            alertDiv.appendChild(titleH6);
+            const messageP = document.createElement('p');
+            messageP.textContent = '{% trans "Не удалось загрузить предварительный просмотр" %}';
+            alertDiv.appendChild(messageP);
+            previewContent.appendChild(alertDiv);
         });
     });
 });
