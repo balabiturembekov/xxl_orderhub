@@ -733,6 +733,8 @@ class InvoiceWithPaymentForm(forms.Form):
     )
     
     def __init__(self, *args, **kwargs):
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-66: Сохраняем invoice для проверки remaining_amount
+        self.invoice = kwargs.pop('invoice', None)
         super().__init__(*args, **kwargs)
         # Устанавливаем текущую дату по умолчанию
         self.fields['payment_date'].initial = timezone.now().date()
@@ -780,6 +782,16 @@ class InvoiceWithPaymentForm(forms.Form):
             raise forms.ValidationError(
                 f"Сумма платежа ({amount}) не может превышать общую сумму инвойса ({balance})."
             )
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-66: Проверяем remaining_amount для существующих инвойсов
+        # Если инвойс уже существует и частично оплачен, проверяем остаток к доплате
+        if self.invoice and self.invoice.pk:
+            self.invoice.refresh_from_db()
+            remaining = self.invoice.remaining_amount
+            if amount > remaining:
+                raise forms.ValidationError(
+                    f"Сумма платежа ({amount}) не может превышать остаток к доплате ({remaining})."
+                )
         
         return amount
     
