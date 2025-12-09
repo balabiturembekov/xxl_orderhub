@@ -122,10 +122,13 @@ class HomeView(TemplateView):
                 'total_factories': Factory.objects.filter(is_active=True).count(),
                 'total_countries': Country.objects.count(),
                 # Подсчитываем активных пользователей, которые имеют заказы
-                # Используем обратную связь order_set (Django автоматически создает её для ForeignKey без related_name)
+                # Используем Order.objects для подсчета уникальных активных пользователей
                 'active_users': User.objects.filter(
                     is_active=True,
-                    order_set__isnull=False  # order_set - автоматическая обратная связь для employee ForeignKey
+                    id__in=Order.objects.filter(
+                        ~Q(cancelled_by_client=True),
+                        ~Q(status='cancelled')
+                    ).values_list('employee_id', flat=True).distinct()
                 ).distinct().count(),
             }
             cache.set(cache_key, cached_stats, 60)  # 1 минута вместо 10 минут для более актуальных данных
