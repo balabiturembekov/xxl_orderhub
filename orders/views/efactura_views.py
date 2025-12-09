@@ -44,6 +44,25 @@ class EFacturaBasketListView(ListView):
     context_object_name = 'baskets'
     paginate_by = 20
     
+    def get_paginate_by(self, queryset):
+        """
+        КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-60: Валидация paginate_by для предотвращения DoS атак.
+        Если в будущем будет добавлена возможность изменять размер страницы через параметры,
+        это предотвратит очень большие запросы к БД.
+        """
+        from ..constants import ViewConstants
+        
+        page_size = self.request.GET.get('page_size', self.paginate_by)
+        try:
+            page_size = int(page_size)
+            if page_size < 1:
+                page_size = self.paginate_by
+            elif page_size > ViewConstants.MAX_PAGE_SIZE:
+                page_size = ViewConstants.MAX_PAGE_SIZE
+        except (ValueError, TypeError):
+            page_size = self.paginate_by
+        return page_size
+    
     def get_queryset(self):
         """Get filtered baskets."""
         queryset = EFacturaBasket.objects.annotate(
@@ -119,10 +138,14 @@ class EFacturaBasketDetailView(DetailView):
         """Add files and form to context."""
         context = super().get_context_data(**kwargs)
         basket = self.get_object()
-        context['files'] = basket.files.all().order_by('-upload_date', '-created_at')
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-57: Используем len() для уже загруженных объектов
+        # prefetch_related('files') в get_queryset уже загрузил все файлы
+        files_list = list(basket.files.all())
+        context['files'] = sorted(files_list, key=lambda f: (f.upload_date or date.min, f.created_at), reverse=True)
         # Передаем basket в форму для фильтрации заказов
         context['form'] = EFacturaFileForm(basket=basket)
-        context['total_files'] = basket.files.count()
+        # Используем len() вместо count() для уже загруженных объектов
+        context['total_files'] = len(files_list)
         return context
 
 
@@ -202,11 +225,25 @@ def upload_efactura_file(request, basket_id: int):
                     )
             
             messages.success(request, 'Файл E-Factura успешно загружен в корзину!')
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError) as e:
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-61: Обрабатываем специфичные ошибки валидации
             import logging
             logger = logging.getLogger('orders')
-            logger.error(f"Ошибка при загрузке файла E-Factura: {e}", exc_info=True)
-            messages.error(request, f'Ошибка при загрузке файла: {str(e)}')
+            logger.error(f"Ошибка валидации при загрузке файла E-Factura: {e}", exc_info=True)
+            messages.error(request, f'Ошибка валидации: {str(e)}')
+        except (IOError, OSError) as e:
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-61: Обрабатываем ошибки файловой системы отдельно
+            import logging
+            logger = logging.getLogger('orders')
+            logger.error(f"Ошибка файловой системы при загрузке файла E-Factura: {e}", exc_info=True)
+            messages.error(request, 'Ошибка при работе с файлом. Попробуйте еще раз.')
+        except Exception as e:
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-61: Общий обработчик только для неожиданных ошибок
+            import logging
+            logger = logging.getLogger('orders')
+            logger.exception(f"Неожиданная ошибка при загрузке файла E-Factura: {e}")
+            messages.error(request, 'Произошла неожиданная ошибка. Обратитесь к администратору.')
+            raise  # Пробрасываем дальше для обработки на верхнем уровне
     else:
         messages.error(request, 'Ошибка при загрузке файла. Проверьте форму.')
         for field, errors in form.errors.items():
@@ -252,11 +289,18 @@ def download_efactura_file(request, file_id: int):
             filename = f'efactura_file_{efactura_file.id}'
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         return response
-    except Exception as e:
+    except (IOError, OSError, FileNotFoundError) as e:
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-61: Обрабатываем ошибки файловой системы отдельно
         import logging
         logger = logging.getLogger('orders')
-        logger.error(f"Ошибка при скачивании файла E-Factura {file_id}: {e}", exc_info=True)
-        raise Http404("Ошибка при открытии файла")
+        logger.error(f"Ошибка файловой системы при скачивании файла E-Factura {file_id}: {e}", exc_info=True)
+        raise Http404("Файл недоступен")
+    except Exception as e:
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-61: Общий обработчик только для неожиданных ошибок
+        import logging
+        logger = logging.getLogger('orders')
+        logger.exception(f"Неожиданная ошибка при скачивании файла E-Factura {file_id}: {e}")
+        raise Http404("Файл недоступен")
 
 
 @login_required
@@ -319,10 +363,17 @@ def download_all_efactura_files(request, basket_id: int):
                                 zip_file.writestr(filename, file_content, compress_type=zipfile.ZIP_DEFLATED)
                             
                             files_added += 1
-                    except Exception as e:
+                    except (IOError, OSError, FileNotFoundError) as e:
+                        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-61: Обрабатываем ошибки файловой системы отдельно
                         import logging
                         logger = logging.getLogger('orders')
-                        logger.error(f"Ошибка при добавлении файла {efactura_file.id} в ZIP: {e}", exc_info=True)
+                        logger.error(f"Ошибка файловой системы при добавлении файла {efactura_file.id} в ZIP: {e}", exc_info=True)
+                        continue
+                    except Exception as e:
+                        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-61: Общий обработчик только для неожиданных ошибок
+                        import logging
+                        logger = logging.getLogger('orders')
+                        logger.exception(f"Неожиданная ошибка при добавлении файла {efactura_file.id} в ZIP: {e}")
                         continue
         
         # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем, что хотя бы один файл был добавлен
@@ -340,10 +391,18 @@ def download_all_efactura_files(request, basket_id: int):
         response = HttpResponse(zip_buffer.read(), content_type='application/zip')
         response['Content-Disposition'] = f'attachment; filename="{zip_filename}"; filename*=UTF-8\'\'{urllib.parse.quote(zip_filename)}'
         return response
-    except Exception as e:
+    except (IOError, OSError, MemoryError) as e:
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-61: Обрабатываем ошибки файловой системы и памяти отдельно
         import logging
         logger = logging.getLogger('orders')
-        logger.error(f"Ошибка при создании ZIP архива для корзины {basket_id}: {e}", exc_info=True)
-        messages.error(request, f'Ошибка при создании архива: {str(e)}')
+        logger.error(f"Ошибка файловой системы/памяти при создании ZIP архива для корзины {basket_id}: {e}", exc_info=True)
+        messages.error(request, 'Ошибка при создании архива. Возможно, файлы слишком большие.')
+        return redirect('efactura_basket_detail', pk=basket_id)
+    except Exception as e:
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-61: Общий обработчик только для неожиданных ошибок
+        import logging
+        logger = logging.getLogger('orders')
+        logger.exception(f"Неожиданная ошибка при создании ZIP архива для корзины {basket_id}: {e}")
+        messages.error(request, 'Произошла неожиданная ошибка. Обратитесь к администратору.')
         return redirect('efactura_basket_detail', pk=basket_id)
 

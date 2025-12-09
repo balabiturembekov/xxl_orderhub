@@ -203,10 +203,17 @@ def factory_delete(request, pk: int):
     Returns:
         Rendered confirmation template or redirect to factory list
     """
-    factory = get_object_or_404(Factory, pk=pk)
+    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-58: Используем annotate() для оптимизации запроса
+    # Это предотвращает дополнительный SQL запрос для подсчета заказов
+    from django.db.models import Count
+    
+    factory = get_object_or_404(
+        Factory.objects.annotate(orders_count=Count('order')),
+        pk=pk
+    )
     
     # Check if factory has associated orders
-    orders_count = factory.order_set.count()
+    orders_count = factory.orders_count
     
     if request.method == 'POST':
         if orders_count > 0:
