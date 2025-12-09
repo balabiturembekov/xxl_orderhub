@@ -26,6 +26,9 @@ except ImportError:
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Application version
+VERSION = '1.0.0'
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -89,6 +92,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "orders.context_processors.notification_count",
+                "orders.context_processors.app_version",
             ],
         },
     },
