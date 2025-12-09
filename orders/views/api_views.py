@@ -35,6 +35,8 @@ def get_factories(request):
         JsonResponse with factories data
     """
     # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-56: Валидация country_id
+    from ..constants import ViewConstants
+    
     country_id = request.GET.get('country_id')
     
     if country_id:
@@ -48,6 +50,9 @@ def get_factories(request):
             factories = Factory.objects.select_related('country')
     else:
         factories = Factory.objects.select_related('country')
+    
+    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-74: Ограничиваем количество результатов
+    factories = factories[:ViewConstants.MAX_PAGE_SIZE]
     
     factories_data = [
         {
@@ -101,9 +106,6 @@ def create_country_ajax(request):
     КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-50: Убрали @csrf_exempt, используем стандартную CSRF защиту Django.
     CSRF токен должен передаваться через заголовок X-CSRFToken в AJAX запросах.
     @ensure_csrf_cookie гарантирует установку CSRF cookie для проверки токена.
-    """
-    """
-    Create a new country via AJAX.
     
     Request Body:
         JSON with country data (name, code)
@@ -116,11 +118,37 @@ def create_country_ajax(request):
     try:
         data = json.loads(request.body)
         
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-72: Валидация и нормализация полей
+        name = data.get('name', '').strip()
+        code = data.get('code', '').strip().upper()
+        
         # Validate required fields
-        if not data.get('name') or not data.get('code'):
+        if not name or not code:
             return JsonResponse({
                 'success': False,
                 'message': 'Название и код страны обязательны'
+            })
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-72: Валидация длины полей
+        if len(name) > 100:  # Согласно модели Country (max_length=100)
+            return JsonResponse({
+                'success': False,
+                'message': 'Название страны слишком длинное (максимум 100 символов)'
+            })
+        
+        if len(code) > 3:  # Согласно модели Country (max_length=3)
+            return JsonResponse({
+                'success': False,
+                'message': 'Код страны слишком длинный (максимум 3 символа)'
+            })
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-73: Валидация формата кода страны
+        # Код должен быть 2-3 буквы латиницы (ISO 3166-1 alpha-2 или alpha-3)
+        import re
+        if not re.match(r'^[A-Z]{2,3}$', code):
+            return JsonResponse({
+                'success': False,
+                'message': 'Код страны должен состоять из 2-3 букв латиницы'
             })
         
         # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Используем транзакцию для атомарности операции
@@ -130,8 +158,8 @@ def create_country_ajax(request):
                 # Проверяем существование в транзакции с блокировкой
                 # Используем get_or_create для атомарности
                 country, created = Country.objects.get_or_create(
-                    code=data['code'],
-                    defaults={'name': data['name']}
+                    code=code,
+                    defaults={'name': name}
                 )
                 
                 if not created:
@@ -177,9 +205,6 @@ def create_factory_ajax(request):
     КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-50: Убрали @csrf_exempt, используем стандартную CSRF защиту Django.
     CSRF токен должен передаваться через заголовок X-CSRFToken в AJAX запросах.
     @ensure_csrf_cookie гарантирует установку CSRF cookie для проверки токена.
-    """
-    """
-    Create a new factory via AJAX.
     
     Request Body:
         JSON with factory data (name, email, country_id)
@@ -192,15 +217,49 @@ def create_factory_ajax(request):
     try:
         data = json.loads(request.body)
         
-        # Validate required fields
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-72: Валидация и нормализация полей
         name = data.get('name', '').strip()
         email = data.get('email', '').strip()
         country_id = data.get('country_id')
+        contact_person = data.get('contact_person', '').strip()
+        phone = data.get('phone', '').strip()
+        address = data.get('address', '').strip()
         
         if not all([name, email, country_id]):
             return JsonResponse({
                 'success': False,
                 'message': 'Все поля обязательны'
+            })
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-72: Валидация длины полей
+        if len(name) > 200:  # Согласно модели Factory (max_length=200)
+            return JsonResponse({
+                'success': False,
+                'message': 'Название фабрики слишком длинное (максимум 200 символов)'
+            })
+        
+        if len(email) > 254:  # Стандарт RFC 5321 для email
+            return JsonResponse({
+                'success': False,
+                'message': 'Email адрес слишком длинный (максимум 254 символа)'
+            })
+        
+        if contact_person and len(contact_person) > 100:  # Согласно модели Factory (max_length=100)
+            return JsonResponse({
+                'success': False,
+                'message': 'Имя контактного лица слишком длинное (максимум 100 символов)'
+            })
+        
+        if phone and len(phone) > 50:  # Согласно модели Factory (max_length=50)
+            return JsonResponse({
+                'success': False,
+                'message': 'Телефон слишком длинный (максимум 50 символов)'
+            })
+        
+        if address and len(address) > 10000:  # Разумное ограничение для TextField
+            return JsonResponse({
+                'success': False,
+                'message': 'Адрес слишком длинный (максимум 10000 символов)'
             })
         
         # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Валидация email формата
@@ -240,9 +299,9 @@ def create_factory_ajax(request):
                     name=name,
                     email=email,
                     country=country,
-                    contact_person=data.get('contact_person', '').strip(),
-                    phone=data.get('phone', '').strip(),
-                    address=data.get('address', '').strip(),
+                    contact_person=contact_person,
+                    phone=phone,
+                    address=address,
                     is_active=data.get('is_active', True)  # По умолчанию активна
                 )
         except Exception as db_error:
@@ -434,7 +493,7 @@ def get_factory_details(request, pk: int):
                 'title': order.title,
                 'status': order.status,
                 'status_display': order.get_status_display(),
-                'uploaded_at': order.uploaded_at.isoformat(),
+                'uploaded_at': order.uploaded_at.isoformat() if order.uploaded_at else None,
             }
             for order in recent_orders
         ]
