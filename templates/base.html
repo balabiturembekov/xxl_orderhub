@@ -344,6 +344,7 @@
             </button>
             <a class="navbar-brand" href="{% url 'home' %}">
                 <i class="fas fa-shopping-cart me-2"></i>XXL OrderHub
+                {% if app_version %}<small class="text-white-50 ms-2" style="font-size: 0.7em;">v{{ app_version }}</small>{% endif %}
             </a>
             
             <div class="navbar-nav ms-auto">
