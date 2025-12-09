@@ -80,7 +80,10 @@ def get_countries(request):
     Returns:
         JsonResponse with countries data
     """
-    countries = Country.objects.all().order_by('name')
+    from ..constants import ViewConstants
+    
+    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-74: Ограничиваем количество результатов
+    countries = Country.objects.all().order_by('name')[:ViewConstants.MAX_PAGE_SIZE]
     countries_data = [
         {
             'id': country.id,
