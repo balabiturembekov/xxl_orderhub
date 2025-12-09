@@ -38,6 +38,25 @@ class ShipmentListView(ListView):
     context_object_name = 'shipments'
     paginate_by = 20
     
+    def get_paginate_by(self, queryset):
+        """
+        КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-60: Валидация paginate_by для предотвращения DoS атак.
+        Если в будущем будет добавлена возможность изменять размер страницы через параметры,
+        это предотвратит очень большие запросы к БД.
+        """
+        from ..constants import ViewConstants
+        
+        page_size = self.request.GET.get('page_size', self.paginate_by)
+        try:
+            page_size = int(page_size)
+            if page_size < 1:
+                page_size = self.paginate_by
+            elif page_size > ViewConstants.MAX_PAGE_SIZE:
+                page_size = ViewConstants.MAX_PAGE_SIZE
+        except (ValueError, TypeError):
+            page_size = self.paginate_by
+        return page_size
+    
     def get_queryset(self):
         """Get filtered shipments."""
         queryset = Shipment.objects.prefetch_related('orders', 'orders__factory', 'orders__factory__country')
