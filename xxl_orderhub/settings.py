@@ -27,7 +27,7 @@ except ImportError:
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Application version
-VERSION = '1.0.0'
+VERSION = '1.0.1'
 
 
 # Quick-start development settings - unsuitable for production
