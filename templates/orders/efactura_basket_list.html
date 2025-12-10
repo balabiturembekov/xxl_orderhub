@@ -153,8 +153,13 @@
         </nav>
         {% endif %}
         {% else %}
-        <div class="alert alert-info">
-            <p class="mb-0">{% trans "Корзины E-Factura не найдены." %}</p>
+        <div class="alert alert-info text-center">
+            <h4>{% trans "Корзины E-Factura не найдены" %}</h4>
+            <p>{% trans "Корзины будут создаваться автоматически при добавлении файлов E-Factura для турецких фабрик." %}</p>
+            <p class="text-muted mb-0">
+                <i class="bi bi-info-circle"></i> 
+                {% trans "Корзины создаются по месяцам и годам при загрузке инвойсов для заказов с турецкими фабриками." %}
+            </p>
         </div>
         {% endif %}
     </div>
