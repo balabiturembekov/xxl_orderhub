@@ -13,6 +13,42 @@
             </a>
         </div>
 
+        <!-- Фильтры -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="id_search" class="form-label">{% trans "Поиск" %}</label>
+                        <input type="text" class="form-control" id="id_search" name="search" 
+                               value="{{ search_query }}" placeholder="{% trans 'По названию, email или контактному лицу' %}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="id_country" class="form-label">{% trans "Страна" %}</label>
+                        <select class="form-select" id="id_country" name="country">
+                            <option value="">{% trans "Все страны" %}</option>
+                            {% for country in countries %}
+                            <option value="{{ country.id }}" {% if selected_country == country.id|stringformat:"s" %}selected{% endif %}>
+                                {{ country.name }} ({{ country.code }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="id_status" class="form-label">{% trans "Статус" %}</label>
+                        <select class="form-select" id="id_status" name="status">
+                            <option value="">{% trans "Все" %}</option>
+                            <option value="active" {% if selected_status == "active" %}selected{% endif %}>{% trans "Активна" %}</option>
+                            <option value="inactive" {% if selected_status == "inactive" %}selected{% endif %}>{% trans "Неактивна" %}</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">{% trans "Фильтровать" %}</button>
+                        <a href="{% url 'factory_list' %}" class="btn btn-outline-secondary">{% trans "Сбросить" %}</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         {% if factories %}
             <div class="card">
                 <div class="card-body">
@@ -73,10 +109,10 @@
                     <ul class="pagination justify-content-center">
                         {% if page_obj.has_previous %}
                             <li class="page-item">
-                                <a class="page-link" href="?page=1">{% trans "Первая" %}</a>
+                                <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_country %}&country={{ selected_country }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">{% trans "Первая" %}</a>
                             </li>
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">{% trans "Предыдущая" %}</a>
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_country %}&country={{ selected_country }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">{% trans "Предыдущая" %}</a>
                             </li>
                         {% endif %}
 
@@ -88,10 +124,10 @@
 
                         {% if page_obj.has_next %}
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">{% trans "Следующая" %}</a>
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_country %}&country={{ selected_country }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">{% trans "Следующая" %}</a>
                             </li>
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">{% trans "Последняя" %}</a>
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_country %}&country={{ selected_country }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">{% trans "Последняя" %}</a>
                             </li>
                         {% endif %}
                     </ul>

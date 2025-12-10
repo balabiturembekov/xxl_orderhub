@@ -130,6 +130,8 @@ class FactoryListView(ListView):
     - Pagination
     - Order by name
     - Country filtering
+    - Search by name, email, contact person
+    - Status filtering (active/inactive)
     - Delete confirmation
     """
     model = Factory
@@ -138,13 +140,51 @@ class FactoryListView(ListView):
     paginate_by = 20
     
     def get_queryset(self):
-        """Get all factories with country information."""
-        return Factory.objects.select_related('country').order_by('name')
+        """Get filtered factories with country information."""
+        from django.db.models import Q
+        from ..constants import ViewConstants
+        
+        queryset = Factory.objects.select_related('country')
+        
+        # Поиск по названию, email, контактному лицу
+        search_query = self.request.GET.get('search', '').strip()
+        if search_query:
+            if len(search_query) > ViewConstants.SEARCH_MAX_LENGTH:
+                search_query = search_query[:ViewConstants.SEARCH_MAX_LENGTH]
+            
+            if len(search_query) >= ViewConstants.SEARCH_MIN_LENGTH:
+                queryset = queryset.filter(
+                    Q(name__icontains=search_query) |
+                    Q(email__icontains=search_query) |
+                    Q(contact_person__icontains=search_query)
+                )
+        
+        # Фильтрация по стране
+        country_filter = self.request.GET.get('country')
+        if country_filter:
+            try:
+                country_id = int(country_filter)
+                if country_id > 0:
+                    queryset = queryset.filter(country_id=country_id)
+            except (ValueError, TypeError):
+                pass  # Игнорируем невалидные значения
+        
+        # Фильтрация по статусу
+        status_filter = self.request.GET.get('status')
+        if status_filter == 'active':
+            queryset = queryset.filter(is_active=True)
+        elif status_filter == 'inactive':
+            queryset = queryset.filter(is_active=False)
+        
+        return queryset.order_by('name')
     
     def get_context_data(self, **kwargs):
-        """Add countries to context for filtering."""
+        """Add filter options to context."""
         context = super().get_context_data(**kwargs)
         context['countries'] = Country.objects.all().order_by('name')
+        context['search_query'] = self.request.GET.get('search', '')
+        context['selected_country'] = self.request.GET.get('country', '')
+        context['selected_status'] = self.request.GET.get('status', '')
         return context
 
 
