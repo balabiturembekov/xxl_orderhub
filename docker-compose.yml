@@ -2,7 +2,7 @@ services:
   # PostgreSQL Database
   db:
     image: postgres:15-alpine
-    restart: unless-stopped
+    restart: always
     environment:
       POSTGRES_DB: xxl_orderhub
       POSTGRES_USER: postgres
@@ -20,7 +20,7 @@ services:
   # Redis Cache & Message Broker
   redis:
     image: redis:7-alpine
-    restart: unless-stopped
+    restart: always
     volumes:
       - redis_data:/data
     healthcheck:
@@ -33,7 +33,7 @@ services:
 
   # Django Web Application
   web:
-    restart: unless-stopped
+    restart: always
     build: .
     env_file:
       - docker.env.local
@@ -57,6 +57,7 @@ services:
 
   # Celery Worker
   worker:
+    restart: on-failure
     build: .
     env_file:
       - docker.env.local
@@ -74,7 +75,7 @@ services:
 
   # Celery Beat Scheduler
   beat:
-    restart: unless-stopped
+    restart: always
     build: .
     env_file:
       - docker.env.local
@@ -95,7 +96,7 @@ services:
 
   # Flower - Celery Monitoring
   flower:
-    restart: unless-stopped
+    restart: always
     build: .
     env_file:
       - docker.env.local
@@ -110,7 +111,7 @@ services:
 
   # Nginx Reverse Proxy
   nginx:
-    restart: unless-stopped
+    restart: always
     image: nginx:alpine
     container_name: xxl_orderhub_nginx
     ports:
