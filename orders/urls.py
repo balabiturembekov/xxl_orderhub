@@ -24,7 +24,7 @@ from .views import (
     ProfileView, edit_profile, change_email, profile_settings,
     # Payment views
     InvoiceDetailView, InvoiceListView, PaymentCreateView, PaymentUpdateView,
-    upload_invoice_with_payment, delete_payment, payment_analytics,
+    upload_invoice_with_payment, delete_payment, payment_analytics, invoice_balance_edit,
     CBMCreateView, CBMUpdateView, delete_cbm,
     # Shipment views
     ShipmentListView, ShipmentDetailView, ShipmentCreateView,
@@ -120,6 +120,7 @@ urlpatterns = [
     # Управление инвойсами и платежами
     path("invoices/", InvoiceListView.as_view(), name="invoice_list"),
     path("invoices/<int:pk>/", InvoiceDetailView.as_view(), name="invoice_detail"),
+    path("invoices/<int:pk>/edit-balance/", invoice_balance_edit, name="invoice_balance_edit"),
     path("invoices/<int:invoice_id>/payments/create/", PaymentCreateView.as_view(), name="payment_create"),
     path("payments/<int:pk>/edit/", PaymentUpdateView.as_view(), name="payment_update"),
     path("payments/<int:payment_id>/delete/", delete_payment, name="payment_delete"),

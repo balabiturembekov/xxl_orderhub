@@ -41,6 +41,9 @@
                                     <p><strong>{% trans "Номер инвойса" %}:</strong> {{ invoice.invoice_number }}</p>
                                     <p><strong>{% trans "Общая сумма" %}:</strong> 
                                         <span class="text-primary font-weight-bold">{{ invoice.balance }} €</span>
+                                        <a href="{% url 'invoice_balance_edit' invoice.id %}" class="btn btn-sm btn-outline-primary ms-2" title="{% trans 'Редактировать сумму' %}">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
                                     </p>
                                     <p><strong>{% trans "Статус оплаты" %}:</strong> 
                                         <span class="badge bg-{% if invoice.status == 'paid' %}success{% elif invoice.status == 'partial' %}warning{% elif invoice.status == 'overdue' %}danger{% else %}secondary{% endif %} text-white">

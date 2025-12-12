@@ -24,7 +24,7 @@ from django.db.models import Q, Sum, Count, Avg
 from django.utils.translation import gettext as _
 
 from ..models import Order, Invoice, InvoicePayment, OrderAuditLog, OrderConfirmation, OrderCBM
-from ..forms import InvoiceForm, InvoicePaymentForm, InvoiceWithPaymentForm, OrderCBMForm
+from ..forms import InvoiceForm, InvoicePaymentForm, InvoiceWithPaymentForm, OrderCBMForm, InvoiceBalanceEditForm
 
 
 @login_required
@@ -317,6 +317,93 @@ class InvoiceDetailView(DetailView):
         })
         
         return context
+
+
+@login_required
+def invoice_balance_edit(request, pk):
+    """
+    Редактирование общей суммы инвойса.
+    """
+    invoice = get_object_or_404(Invoice, pk=pk)
+    
+    if request.method == 'POST':
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-127: Передаем invoice в форму для валидации
+        form = InvoiceBalanceEditForm(request.POST, invoice=invoice)
+        if form.is_valid():
+            try:
+                # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-124 и BUG-128: Используем транзакцию и блокировку
+                with transaction.atomic():
+                    # Блокируем инвойс для предотвращения race condition
+                    invoice = Invoice.objects.select_for_update().get(pk=invoice.pk)
+                    
+                    old_balance = invoice.balance
+                    new_balance = form.cleaned_data['balance']
+                    
+                    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-123: Дополнительная проверка после блокировки
+                    # (на случай если total_paid изменился между валидацией формы и блокировкой)
+                    total_paid = invoice.total_paid or 0
+                    if new_balance < total_paid:
+                        messages.error(
+                            request,
+                            f'Общая сумма инвойса ({new_balance} €) не может быть меньше уже оплаченной суммы ({total_paid} €).'
+                        )
+                        form = InvoiceBalanceEditForm(initial={'balance': invoice.balance}, invoice=invoice)
+                        context = {
+                            'invoice': invoice,
+                            'form': form,
+                            'title': 'Редактирование общей суммы инвойса'
+                        }
+                        return render(request, 'orders/invoice_balance_edit.html', context)
+                    
+                    # Обновляем balance
+                    invoice.balance = new_balance
+                    # Сохраняем - метод save() автоматически пересчитает remaining_amount и статус
+                    invoice.save()
+                    
+                    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-125: Проверяем наличие order перед созданием аудита
+                    if invoice.order:
+                        # Создаем запись аудита
+                        from ..models import OrderAuditLog
+                        OrderAuditLog.log_action(
+                            order=invoice.order,
+                            user=request.user,
+                            action='invoice_balance_updated',
+                            field_name='balance',
+                            old_value=str(old_balance),
+                            new_value=str(new_balance),
+                            comments=f'Общая сумма инвойса изменена с {old_balance} € на {new_balance} €'
+                        )
+                    
+                    messages.success(
+                        request,
+                        f'Общая сумма инвойса успешно обновлена: {old_balance} € → {new_balance} €'
+                    )
+                    
+                    return redirect('invoice_detail', pk=invoice.id)
+            except Exception as e:
+                # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-126: Обработка ошибок при сохранении
+                import logging
+                logger = logging.getLogger('orders')
+                logger.error(
+                    f'Ошибка при обновлении суммы инвойса {invoice.id}: {str(e)}',
+                    exc_info=True
+                )
+                messages.error(
+                    request,
+                    f'Ошибка при обновлении суммы инвойса: {str(e)}'
+                )
+    else:
+        # Предзаполняем форму текущим значением
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-127: Передаем invoice в форму
+        form = InvoiceBalanceEditForm(initial={'balance': invoice.balance}, invoice=invoice)
+    
+    context = {
+        'invoice': invoice,
+        'form': form,
+        'title': 'Редактирование общей суммы инвойса'
+    }
+    
+    return render(request, 'orders/invoice_balance_edit.html', context)
 
 
 @method_decorator(login_required, name='dispatch')

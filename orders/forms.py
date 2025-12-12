@@ -624,6 +624,46 @@ class OrderCBMForm(forms.ModelForm):
         return date
 
 
+class InvoiceBalanceEditForm(forms.Form):
+    """
+    Форма для редактирования общей суммы инвойса.
+    """
+    balance = forms.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        label="Общая сумма к оплате",
+        help_text="Полная сумма по инвойсу в валюте заказа",
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'step': '0.01',
+            'min': '0',
+            'placeholder': '0.00'
+        })
+    )
+    
+    def __init__(self, *args, **kwargs):
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-127: Сохраняем invoice для валидации
+        self.invoice = kwargs.pop('invoice', None)
+        super().__init__(*args, **kwargs)
+    
+    def clean_balance(self):
+        balance = self.cleaned_data.get('balance')
+        if balance is not None and balance <= 0:
+            raise forms.ValidationError("Сумма инвойса должна быть больше нуля.")
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-123: Проверяем что новая сумма >= total_paid
+        if self.invoice and self.invoice.pk:
+            # Обновляем invoice из БД для получения актуального total_paid
+            self.invoice.refresh_from_db()
+            total_paid = self.invoice.total_paid or 0
+            if balance < total_paid:
+                raise forms.ValidationError(
+                    f"Общая сумма инвойса ({balance} €) не может быть меньше уже оплаченной суммы ({total_paid} €)."
+                )
+        
+        return balance
+
+
 class InvoiceWithPaymentForm(forms.Form):
     """
     Комбинированная форма для создания инвойса с первым платежом.
