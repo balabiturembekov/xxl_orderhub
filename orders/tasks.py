@@ -3,6 +3,9 @@ from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from django.conf import settings
 from django.utils import timezone
+from django.utils.html import escape
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 from django.db import models
 from datetime import timedelta
 from email.header import Header
@@ -539,3 +542,623 @@ def check_overdue_payments():
         notifications_sent += 1
 
     return f"Sent {notifications_sent} notifications about overdue payments"
+
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def check_missing_invoices_for_factories(self):
+    """
+    Проверка заказов без инвойсов и отправка напоминаний фабрикам.
+    
+    Проверяет заказы, которые были отправлены фабрике более 5 дней назад,
+    но инвойс еще не загружен. Отправляет напоминание на email фабрики.
+    """
+    try:
+        now = timezone.now()
+        reminders_sent = 0
+        
+        # Получаем заказы, которые были отправлены более 5 дней назад
+        # и у которых нет инвойса (нет invoice_file и нет Invoice объекта)
+        cutoff_date = now - timedelta(days=TimeConstants.INVOICE_REMINDER_DAYS)
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-76: Проверяем что sent_at не None
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-77: Фильтруем только активные фабрики
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-82: Используем prefetch_related для оптимизации запросов
+        # Используем Exists для эффективной проверки наличия Invoice
+        from django.db.models import Exists, OuterRef
+        
+        # Подзапрос для проверки наличия Invoice
+        invoice_exists = Invoice.objects.filter(order_id=OuterRef('pk'))
+        
+        orders_without_invoice = Order.objects.filter(
+            status='sent',
+            sent_at__isnull=False,  # BUG-76: Проверяем что sent_at не None
+            sent_at__lte=cutoff_date,
+            invoice_file__isnull=True,
+            cancelled_by_client=False,
+            factory__is_active=True,  # BUG-77: Только активные фабрики
+        ).select_related('factory', 'factory__country', 'employee').annotate(
+            has_invoice=Exists(invoice_exists)
+        ).filter(has_invoice=False)
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-75 и BUG-82: Теперь все заказы без Invoice уже отфильтрованы
+        orders_to_remind = list(orders_without_invoice)
+        
+        for order in orders_to_remind:
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверки уже выполнены в фильтре, но оставляем для безопасности
+            if not order.factory:
+                continue
+            
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-77: Дополнительная проверка is_active
+            if not order.factory.is_active:
+                import logging
+                logger = logging.getLogger('orders')
+                logger.warning(
+                    f'Factory {order.factory.name} (ID: {order.factory.id}) is not active. '
+                    f'Skipping reminder for order {order.id}.'
+                )
+                continue
+            
+            if not order.factory.email:
+                import logging
+                logger = logging.getLogger('orders')
+                logger.warning(
+                    f'Factory {order.factory.name} (ID: {order.factory.id}) has no email address. '
+                    f'Cannot send reminder for order {order.id}.'
+                )
+                continue
+            
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-78: Проверяем наличие employee
+            if not order.employee:
+                import logging
+                logger = logging.getLogger('orders')
+                logger.warning(
+                    f'Order {order.id} has no employee assigned. '
+                    f'Cannot send reminder.'
+                )
+                continue
+            
+            # Проверяем, не отправляли ли мы уже напоминание недавно
+            if order.last_factory_reminder_sent:
+                days_since_last_reminder = (
+                    now - order.last_factory_reminder_sent
+                ).days
+                if days_since_last_reminder < TimeConstants.FACTORY_REMINDER_FREQUENCY:
+                    continue
+            
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-79 и BUG-80: Используем транзакцию и повторную проверку Invoice
+            # для предотвращения race condition и дублирования напоминаний
+            from django.db import transaction
+            
+            try:
+                with transaction.atomic():
+                    # Блокируем заказ для обновления и повторно проверяем все условия
+                    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-97: Используем select_related для factory чтобы избежать дополнительных запросов
+                    try:
+                        order = Order.objects.select_for_update().select_related('factory').get(pk=order.pk)
+                    except Order.DoesNotExist:
+                        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-97: Заказ был удален между проверкой и блокировкой
+                        import logging
+                        logger = logging.getLogger('orders')
+                        logger.warning(f'Order {order.pk} was deleted before reminder could be sent. Skipping.')
+                        continue
+                    
+                    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-93: Проверяем cancelled_by_client после блокировки
+                    if order.cancelled_by_client:
+                        import logging
+                        logger = logging.getLogger('orders')
+                        logger.info(
+                            f'Order {order.id} was cancelled by client before reminder could be sent. '
+                            f'Skipping reminder.'
+                        )
+                        continue
+                    
+                    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-95: Проверяем status после блокировки
+                    if order.status != 'sent':
+                        import logging
+                        logger = logging.getLogger('orders')
+                        logger.info(
+                            f'Order {order.id} status changed to {order.status} before reminder could be sent. '
+                            f'Skipping reminder.'
+                        )
+                        continue
+                    
+                    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-96: Проверяем sent_at после блокировки
+                    if not order.sent_at or order.sent_at > cutoff_date:
+                        import logging
+                        logger = logging.getLogger('orders')
+                        logger.info(
+                            f'Order {order.id} sent_at changed or is None before reminder could be sent. '
+                            f'Skipping reminder.'
+                        )
+                        continue
+                    
+                    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-94: Проверяем factory__is_active после блокировки
+                    if not order.factory or not order.factory.is_active:
+                        import logging
+                        logger = logging.getLogger('orders')
+                        logger.info(
+                            f'Order {order.id} factory is not active or missing before reminder could be sent. '
+                            f'Skipping reminder.'
+                        )
+                        continue
+                    
+                    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-99: Проверяем invoice_file после блокировки
+                    if order.invoice_file:
+                        import logging
+                        logger = logging.getLogger('orders')
+                        logger.info(
+                            f'Invoice file was uploaded for order {order.id} before reminder could be sent. '
+                            f'Skipping reminder.'
+                        )
+                        continue
+                    
+                    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-88: Используем exists() вместо обращения к order.invoice
+                    # для избежания дополнительного запроса к БД и исключения DoesNotExist
+                    if Invoice.objects.filter(order_id=order.pk).exists():
+                        # Если Invoice существует, пропускаем этот заказ
+                        import logging
+                        logger = logging.getLogger('orders')
+                        logger.info(
+                            f'Invoice was created for order {order.id} before reminder could be sent. '
+                            f'Skipping reminder.'
+                        )
+                        continue
+                    
+                    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-100: Проверяем email фабрики после блокировки
+                    if not order.factory.email:
+                        import logging
+                        logger = logging.getLogger('orders')
+                        logger.warning(
+                            f'Factory {order.factory.name} (ID: {order.factory.id}) has no email address. '
+                            f'Cannot send reminder for order {order.id}.'
+                        )
+                        continue
+                    
+                    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-101: Проверяем employee после блокировки
+                    if not order.employee:
+                        import logging
+                        logger = logging.getLogger('orders')
+                        logger.warning(
+                            f'Order {order.id} has no employee assigned. '
+                            f'Cannot send reminder.'
+                        )
+                        continue
+                    
+                    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-80 и BUG-90: Проверяем, не было ли уже отправлено напоминание
+                    # между проверкой и блокировкой, и проверяем на отрицательное значение
+                    if order.last_factory_reminder_sent:
+                        days_since_last_reminder = (
+                            now - order.last_factory_reminder_sent
+                        ).days
+                        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-90: Проверяем на отрицательное значение
+                        # (если last_factory_reminder_sent в будущем из-за проблем с часовыми поясами)
+                        if days_since_last_reminder < 0:
+                            import logging
+                            logger = logging.getLogger('orders')
+                            logger.warning(
+                                f'Order {order.id} has last_factory_reminder_sent in the future. '
+                                f'This may indicate a timezone issue. Resetting reminder check.'
+                            )
+                            # Если дата в будущем, сбрасываем проверку и продолжаем
+                        elif days_since_last_reminder < TimeConstants.FACTORY_REMINDER_FREQUENCY:
+                            continue
+                    
+                    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-91: Обработка исключений при отправке email
+                    try:
+                        # Отправляем напоминание фабрике
+                        send_factory_invoice_reminder(order)
+                    except Exception as email_error:
+                        import logging
+                        logger = logging.getLogger('orders')
+                        logger.error(
+                            f'Ошибка отправки email напоминания для заказа {order.id}: {str(email_error)}',
+                            exc_info=True
+                        )
+                        # Если отправка не удалась, не обновляем счетчики и не продолжаем транзакцию
+                        raise
+                    
+                    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-92: Проверка на переполнение factory_reminder_count
+                    # PositiveIntegerField имеет максимальное значение 2147483647
+                    if order.factory_reminder_count >= 2147483647:
+                        import logging
+                        logger = logging.getLogger('orders')
+                        logger.warning(
+                            f'Order {order.id} has reached maximum factory_reminder_count. '
+                            f'Not incrementing further.'
+                        )
+                    else:
+                        order.factory_reminder_count += 1
+                    
+                    # Обновляем поля напоминания в той же транзакции
+                    order.last_factory_reminder_sent = now
+                    order.save(update_fields=['last_factory_reminder_sent', 'factory_reminder_count'])
+                    
+                    reminders_sent += 1
+                
+            except Exception as e:
+                import logging
+                logger = logging.getLogger('orders')
+                logger.error(
+                    f'Ошибка при отправке напоминания фабрике для заказа {order.id}: {str(e)}',
+                    exc_info=True
+                )
+                # Продолжаем обработку других заказов
+                continue
+        
+        return f"Sent {reminders_sent} invoice reminders to factories"
+    
+    except Exception as e:
+        import logging
+        logger = logging.getLogger('orders')
+        logger.error(
+            f'Ошибка при проверке заказов без инвойсов: {str(e)}',
+            exc_info=True
+        )
+        
+        # Retry при временных ошибках
+        if self.request.retries < self.max_retries:
+            raise self.retry(countdown=60 * (2 ** self.request.retries))
+        
+        return f"Error checking missing invoices after {self.max_retries} attempts: {str(e)}"
+
+
+def send_factory_invoice_reminder(order):
+    """
+    Отправка email напоминания фабрике о необходимости загрузить инвойс.
+    
+    Использует шаблоны из базы данных (EmailTemplate с типом 'invoice_request'),
+    если они доступны. В противном случае использует встроенные шаблоны как fallback.
+    
+    Args:
+        order: Order instance
+        
+    Raises:
+        ValueError: Если фабрика или email не указаны
+        Exception: При ошибке отправки email
+    """
+    if not order.factory:
+        raise ValueError('Заказ не имеет привязанной фабрики!')
+    
+    if not order.factory.email:
+        raise ValueError('У фабрики не указан email адрес!')
+    
+    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-87: Валидация email адреса
+    try:
+        validate_email(order.factory.email)
+    except ValidationError:
+        raise ValueError(f'Невалидный email адрес фабрики: {order.factory.email}')
+    
+    # Определяем язык email на основе страны фабрики
+    from .email_utils import get_language_by_country_code, get_email_template_from_db
+    
+    country_code = order.factory.country.code if (
+        order.factory and order.factory.country
+    ) else None
+    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-85: Согласованность fallback языка
+    # get_language_by_country_code возвращает 'ru' по умолчанию, используем тот же fallback
+    if not country_code:
+        language_code = 'ru'  # По умолчанию русский (как в get_language_by_country_code)
+    else:
+        language_code = get_language_by_country_code(country_code)
+    
+    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-81: Проверяем что sent_at не None перед использованием
+    if not order.sent_at:
+        raise ValueError('Заказ не имеет даты отправки (sent_at). Невозможно отправить напоминание.')
+    
+    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-89: Явная проверка days_since_sent на None
+    # days_since_sent может вернуть None только если sent_at is None, что мы уже проверили
+    # Но для безопасности явно вычисляем значение
+    if order.sent_at:
+        days_since_sent = (timezone.now() - order.sent_at).days
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем на отрицательное значение (если sent_at в будущем)
+        if days_since_sent < 0:
+            days_since_sent = 0
+    else:
+        # Это не должно произойти, так как мы проверили выше, но для безопасности
+        days_since_sent = 0
+    
+    # Получаем шаблон из базы данных
+    template = get_email_template_from_db('invoice_request', language_code)
+    template_used = None  # Будет установлено в 'database' или 'built-in'
+    
+    if template:
+        # Используем шаблон из базы данных
+        import logging
+        logger = logging.getLogger('orders')
+        logger.info(
+            f'Using database template: {template.name} (ID: {template.id}) '
+            f'for invoice reminder to factory {order.factory.email} (order {order.id})'
+        )
+        
+        # Формируем контекст для шаблона
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-78: Безопасный доступ к employee.get_full_name()
+        factory_name = order.factory.name if order.factory else "Unknown Factory"
+        if order.employee:
+            employee_name = order.employee.get_full_name() or order.employee.username
+        else:
+            employee_name = "Unknown Employee"
+        
+        context = {
+            'order': order,
+            'factory': order.factory if order.factory else None,
+            'employee': order.employee,
+            'country': order.factory.country if (order.factory and order.factory.country) else None,
+            'days_since_sent': days_since_sent,
+            'factory_name': factory_name,
+            'employee_name': employee_name,
+        }
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-103: Проверяем что шаблон все еще активен перед использованием
+        # Шаблон мог быть деактивирован между получением и использованием
+        from .models import EmailTemplate
+        try:
+            # Перезагружаем шаблон из БД для проверки актуального состояния
+            template_check = EmailTemplate.objects.get(pk=template.pk)
+            if not template_check.is_active:
+                import logging
+                logger = logging.getLogger('orders')
+                logger.warning(
+                    f'Template {template.name} (ID: {template.id}) was deactivated before use. '
+                    f'Falling back to built-in templates for order {order.id}'
+                )
+                template = None
+                template_rendered = False
+        except EmailTemplate.DoesNotExist:
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-102: Шаблон был удален между получением и использованием
+            import logging
+            logger = logging.getLogger('orders')
+            logger.warning(
+                f'Template {template.name} (ID: {template.id}) was deleted before use. '
+                f'Falling back to built-in templates for order {order.id}'
+            )
+            template = None
+            template_rendered = False
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-84: Обработка ошибок при рендеринге шаблона
+        template_rendered = False
+        if template:
+            try:
+                # Рендерим шаблон
+                rendered = template.render_template(context)
+                
+                # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-104: Проверяем что rendered содержит все необходимые ключи
+                required_keys = ['subject', 'html_content', 'text_content']
+                missing_keys = [key for key in required_keys if key not in rendered]
+                if missing_keys:
+                    raise ValueError(f'Template rendered result is missing required keys: {missing_keys}')
+                
+                subject = rendered['subject']
+                html_message = rendered['html_content']
+                text_message = rendered['text_content']
+                
+                # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-102: Обработка ошибок при mark_as_used
+                try:
+                    # Отмечаем шаблон как использованный
+                    template.mark_as_used()
+                    logger.info(f'Template {template.name} marked as used')
+                except Exception as mark_error:
+                    # Если не удалось отметить как использованный, логируем но продолжаем
+                    logger.warning(
+                        f'Failed to mark template {template.name} (ID: {template.id}) as used: {str(mark_error)}'
+                    )
+                
+                template_rendered = True
+                template_used = 'database'
+            except (ValueError, Exception) as e:
+                # Если ошибка рендеринга, используем fallback шаблоны
+                logger.error(
+                    f'Error rendering template {template.name} (ID: {template.id}): {str(e)}. '
+                    f'Falling back to built-in templates for order {order.id}',
+                    exc_info=True
+                )
+                template_rendered = False
+    
+    if not template or not template_rendered:
+        # Fallback к встроенным шаблонам
+        import logging
+        logger = logging.getLogger('orders')
+        if not template:
+            logger.warning(
+                f'No database template found for invoice_request (language: {language_code}), '
+                f'using built-in templates for order {order.id}'
+            )
+        else:
+            logger.warning(
+                f'Database template found but rendering failed, '
+                f'using built-in templates for order {order.id}'
+            )
+        template_used = 'built-in'
+        
+        # Формируем subject и сообщение
+        from email.header import Header
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-106: Проверка на None для order.title
+        order_title = order.title if order.title else "Без названия"
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-86: Экранирование HTML для безопасности
+        # Экранируем данные перед вставкой в HTML шаблоны
+        safe_order_title = escape(order_title)
+        safe_factory_name = escape(order.factory.name if order.factory else "Unknown Factory")
+        if order.employee:
+            safe_employee_name = escape(order.employee.get_full_name() or order.employee.username)
+        else:
+            safe_employee_name = "Unknown Employee"
+        
+        # Базовый subject на разных языках (subject не требует экранирования, т.к. это plain text)
+        subject_templates = {
+            'ru': f'Напоминание: Инвойс для заказа "{order_title}"',
+            'en': f'Reminder: Invoice for order "{order_title}"',
+            'de': f'Erinnerung: Rechnung für Bestellung "{order_title}"',
+            'tr': f'Hatırlatma: "{order_title}" siparişi için fatura',
+            'it': f'Promemoria: Fattura per ordine "{order_title}"',
+        }
+        subject = subject_templates.get(language_code, subject_templates['en'])
+        
+        # Формируем HTML сообщение
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-83: Безопасный доступ к employee
+        factory_name = safe_factory_name
+        employee_name = safe_employee_name
+        
+        # Базовые шаблоны сообщений на разных языках
+        html_templates = {
+            'ru': f"""
+            <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <h2 style="color: #2c3e50;">Напоминание о загрузке инвойса</h2>
+                <p>Уважаемая фабрика <strong>{factory_name}</strong>,</p>
+                <p>Напоминаем вам, что заказ <strong>"{safe_order_title}"</strong> был отправлен вам {days_since_sent} дней назад, но инвойс еще не был загружен в систему.</p>
+                <p>Пожалуйста, загрузите инвойс как можно скорее.</p>
+                <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                <p><strong>Детали заказа:</strong></p>
+                <ul>
+                    <li><strong>Название заказа:</strong> {safe_order_title}</li>
+                    <li><strong>Дата отправки:</strong> {order.sent_at.strftime('%d.%m.%Y %H:%M') if order.sent_at else 'Не указана'}</li>
+                    <li><strong>Количество дней с момента отправки:</strong> {days_since_sent}</li>
+                    <li><strong>Ответственный сотрудник:</strong> {employee_name}</li>
+                </ul>
+                <p>С уважением,<br>XXL OrderHub System</p>
+            </body>
+            </html>
+            """,
+            'en': f"""
+            <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <h2 style="color: #2c3e50;">Invoice Upload Reminder</h2>
+                <p>Dear Factory <strong>{factory_name}</strong>,</p>
+                <p>We remind you that order <strong>"{safe_order_title}"</strong> was sent to you {days_since_sent} days ago, but the invoice has not yet been uploaded to the system.</p>
+                <p>Please upload the invoice as soon as possible.</p>
+                <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                <p><strong>Order Details:</strong></p>
+                <ul>
+                    <li><strong>Order Title:</strong> {safe_order_title}</li>
+                    <li><strong>Sent Date:</strong> {order.sent_at.strftime('%d.%m.%Y %H:%M') if order.sent_at else 'Not specified'}</li>
+                    <li><strong>Days since sent:</strong> {days_since_sent}</li>
+                    <li><strong>Responsible Employee:</strong> {employee_name}</li>
+                </ul>
+                <p>Best regards,<br>XXL OrderHub System</p>
+            </body>
+            </html>
+            """,
+            'de': f"""
+            <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <h2 style="color: #2c3e50;">Erinnerung zur Rechnungs-Upload</h2>
+                <p>Liebe Fabrik <strong>{factory_name}</strong>,</p>
+                <p>Wir erinnern Sie daran, dass die Bestellung <strong>"{safe_order_title}"</strong> vor {days_since_sent} Tagen an Sie gesendet wurde, aber die Rechnung noch nicht in das System hochgeladen wurde.</p>
+                <p>Bitte laden Sie die Rechnung so bald wie möglich hoch.</p>
+                <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                <p><strong>Bestelldetails:</strong></p>
+                <ul>
+                    <li><strong>Bestellungstitel:</strong> {safe_order_title}</li>
+                    <li><strong>Versanddatum:</strong> {order.sent_at.strftime('%d.%m.%Y %H:%M') if order.sent_at else 'Nicht angegeben'}</li>
+                    <li><strong>Tage seit Versand:</strong> {days_since_sent}</li>
+                    <li><strong>Verantwortlicher Mitarbeiter:</strong> {employee_name}</li>
+                </ul>
+                <p>Mit freundlichen Grüßen,<br>XXL OrderHub System</p>
+            </body>
+            </html>
+            """,
+            'tr': f"""
+            <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <h2 style="color: #2c3e50;">Fatura Yükleme Hatırlatması</h2>
+                <p>Sayın Fabrika <strong>{factory_name}</strong>,</p>
+                <p>Size <strong>"{safe_order_title}"</strong> siparişinin {days_since_sent} gün önce gönderildiğini, ancak faturanın henüz sisteme yüklenmediğini hatırlatıyoruz.</p>
+                <p>Lütfen faturanızı en kısa sürede yükleyin.</p>
+                <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                <p><strong>Sipariş Detayları:</strong></p>
+                <ul>
+                    <li><strong>Sipariş Başlığı:</strong> {safe_order_title}</li>
+                    <li><strong>Gönderim Tarihi:</strong> {order.sent_at.strftime('%d.%m.%Y %H:%M') if order.sent_at else 'Belirtilmemiş'}</li>
+                    <li><strong>Gönderimden bu yana geçen günler:</strong> {days_since_sent}</li>
+                    <li><strong>Sorumlu Çalışan:</strong> {employee_name}</li>
+                </ul>
+                <p>Saygılarımızla,<br>XXL OrderHub System</p>
+            </body>
+            </html>
+            """,
+        }
+        
+        html_message = html_templates.get(language_code, html_templates['en'])
+        
+        # Формируем текстовую версию (упрощенную)
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-106: Используем order_title вместо order.title
+        text_message = f"""
+Invoice Upload Reminder
+
+Dear Factory {factory_name},
+
+We remind you that order "{order_title}" was sent to you {days_since_sent} days ago, but the invoice has not yet been uploaded to the system.
+
+Please upload the invoice as soon as possible.
+
+Order Details:
+- Order Title: {order_title}
+- Sent Date: {order.sent_at.strftime('%d.%m.%Y %H:%M') if order.sent_at else 'Not specified'}
+- Days since sent: {days_since_sent}
+- Responsible Employee: {employee_name}
+
+Best regards,
+XXL OrderHub System
+        """.strip()
+    
+    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-105: Убеждаемся что template_used установлен
+    if template_used is None:
+        template_used = 'unknown'
+        import logging
+        logger = logging.getLogger('orders')
+        logger.warning(
+            f'template_used was not set for order {order.id}. This should not happen.'
+        )
+    
+    # Кодируем subject для не-ASCII символов
+    from email.header import Header
+    try:
+        subject.encode('ascii')
+        encoded_subject = subject
+    except UnicodeEncodeError:
+        encoded_subject = str(Header(subject, 'utf-8'))
+    except (AttributeError, UnicodeDecodeError):
+        encoded_subject = subject
+    
+    # Отправляем email
+    email = EmailMessage(
+        subject=encoded_subject,
+        body=html_message,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[order.factory.email],
+    )
+    email.content_subtype = "html"
+    email.encoding = 'utf-8'
+    
+    # Устанавливаем дополнительные заголовки для правильной кодировки
+    email.extra_headers = email.extra_headers or {}
+    email.extra_headers["Content-Type"] = "text/html; charset=UTF-8"
+    email.extra_headers["Content-Transfer-Encoding"] = "8bit"
+    email.extra_headers["MIME-Version"] = "1.0"
+    
+    # Добавляем текстовую альтернативу для почтовых клиентов без поддержки HTML
+    if text_message:
+        email.attach_alternative(text_message, "text/plain; charset=UTF-8")
+    
+    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-91: Обработка исключений при отправке email
+    try:
+        email.send(fail_silently=False)
+    except Exception as email_send_error:
+        import logging
+        logger = logging.getLogger('orders')
+        logger.error(
+            f'Ошибка отправки email напоминания для заказа {order.id} '
+            f'на адрес {order.factory.email}: {str(email_send_error)}',
+            exc_info=True
+        )
+        raise ValueError(f'Не удалось отправить email: {str(email_send_error)}')
+    
+    # Логируем успешную отправку
+    import logging
+    logger = logging.getLogger('orders')
+    logger.info(
+        f'Invoice reminder email sent to factory {order.factory.email} '
+        f'for order {order.id} (days since sent: {days_since_sent}, '
+        f'template: {template_used or "unknown"})'
+    )

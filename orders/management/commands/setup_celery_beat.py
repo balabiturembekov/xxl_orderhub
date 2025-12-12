@@ -127,6 +127,30 @@ class Command(BaseCommand):
         else:
             self.stdout.write(self.style.WARNING('⚠ Task already exists: Check Overdue Payments'))
         
+        # 6. Проверка заказов без инвойсов и напоминания фабрикам - каждый день в 11:00
+        schedule_invoice_reminder, created = CrontabSchedule.objects.get_or_create(
+            minute='0',
+            hour='11',
+            day_of_week='*',
+            day_of_month='*',
+            month_of_year='*',
+        )
+        
+        task_invoice_reminder, created = PeriodicTask.objects.get_or_create(
+            name='Check Missing Invoices for Factories',
+            defaults={
+                'task': 'orders.tasks.check_missing_invoices_for_factories',
+                'crontab': schedule_invoice_reminder,
+                'enabled': True,
+                'description': 'Проверка заказов без инвойсов после 5 дней и отправка напоминаний фабрикам',
+            }
+        )
+        
+        if created:
+            self.stdout.write(self.style.SUCCESS('✓ Created task: Check Missing Invoices for Factories'))
+        else:
+            self.stdout.write(self.style.WARNING('⚠ Task already exists: Check Missing Invoices for Factories'))
+        
         self.stdout.write(self.style.SUCCESS('Successfully set up Celery Beat periodic tasks!'))
         
         # Показываем список всех задач
