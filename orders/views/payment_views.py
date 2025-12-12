@@ -900,7 +900,9 @@ class InvoiceListView(ListView):
 def payment_analytics(request):
     """
     Аналитика по платежам пользователя.
+    Все пользователи видят все инвойсы.
     """
+    # Все пользователи видят все инвойсы (как и все заказы)
     user_invoices = Invoice.objects.all()
     
     # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-48: Используем один запрос aggregate() вместо множественных
@@ -910,9 +912,11 @@ def payment_analytics(request):
         total_paid=Sum('total_paid'),
     )
     
-    total_invoices = stats['total_invoices'] or 0
-    total_amount = stats['total_amount'] or 0
-    total_paid = stats['total_paid'] or 0
+    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-113: Обработка None значений в агрегатах
+    from decimal import Decimal
+    total_invoices = stats.get('total_invoices') or 0
+    total_amount = stats.get('total_amount') if stats.get('total_amount') is not None else Decimal('0')
+    total_paid = stats.get('total_paid') if stats.get('total_paid') is not None else Decimal('0')
     remaining_amount = total_amount - total_paid
     
     # Статистика по статусам
@@ -932,7 +936,13 @@ def payment_analytics(request):
     
     status_stats = []
     for stat in status_stats_raw:
-        stat['status_name'] = status_names.get(stat['status'], stat['status'])
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-118: Безопасная обработка None значений в status_stats
+        status_key = stat.get('status', 'unknown')
+        stat['status_name'] = status_names.get(status_key, status_key)
+        # Обрабатываем None значения в агрегатах
+        stat['count'] = stat.get('count', 0)
+        stat['total_balance'] = stat.get('total_balance') if stat.get('total_balance') is not None else Decimal('0')
+        stat['total_paid'] = stat.get('total_paid') if stat.get('total_paid') is not None else Decimal('0')
         status_stats.append(stat)
     
     # Статистика по типам платежей
@@ -952,11 +962,18 @@ def payment_analytics(request):
     
     payment_stats = []
     for stat in payment_stats_raw:
-        stat['payment_type_name'] = payment_type_names.get(stat['payment_type'], stat['payment_type'])
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-119: Безопасная обработка None значений в payment_stats
+        payment_type_key = stat.get('payment_type', 'unknown')
+        stat['payment_type_name'] = payment_type_names.get(payment_type_key, payment_type_key)
+        # Обрабатываем None значения в агрегатах
+        stat['count'] = stat.get('count', 0)
+        stat['total_amount'] = stat.get('total_amount') if stat.get('total_amount') is not None else Decimal('0')
         payment_stats.append(stat)
     
     # Просроченные инвойсы
+    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-121: Проверяем что due_date не None
     overdue_invoices = user_invoices.filter(
+        due_date__isnull=False,  # Проверяем что due_date не None
         due_date__lt=timezone.now().date(),
         status__in=['pending', 'partial']
     )
@@ -969,7 +986,8 @@ def payment_analytics(request):
         'status_stats': status_stats,
         'payment_stats': payment_stats,
         'overdue_invoices': overdue_invoices,
-        'payment_progress': (total_paid / total_amount * 100) if total_amount > 0 else 0,
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-113: Безопасное деление с проверкой на ноль
+        'payment_progress': (float(total_paid / total_amount * 100)) if total_amount > 0 else 0,
     }
     
     return render(request, 'orders/payment_analytics.html', context)

@@ -318,19 +318,21 @@ class CBMAnalyticsView(TemplateView):
         total_cbm_all = Decimal('0')
         
         for stat in country_cbm_stats:
-            total_cbm = stat['total_cbm'] or Decimal('0')
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-114: Безопасная обработка None в total_cbm
+            total_cbm = stat.get('total_cbm') if stat.get('total_cbm') is not None else Decimal('0')
             total_cbm_all += total_cbm
             
             # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасный доступ к country code и name
             country_code = stat.get('order__factory__country__code') or 'UNKNOWN'
             country_name = stat.get('order__factory__country__name') or 'Не указана'
             
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-117: Безопасный доступ к stat значениям
             country_stats.append({
                 'country_code': country_code,
                 'country_name': country_name,
                 'total_cbm': total_cbm,
-                'total_orders': stat['total_orders'],
-                'total_records': stat['total_records'],
+                'total_orders': stat.get('total_orders', 0),
+                'total_records': stat.get('total_records', 0),
             })
         
         # Дополнительная статистика
@@ -339,9 +341,11 @@ class CBMAnalyticsView(TemplateView):
         
         # Средний CBM на заказ по странам и процент от общего
         for stat in country_stats:
-            if stat['total_orders'] > 0:
+            # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-122: Безопасный доступ к total_orders
+            total_orders = stat.get('total_orders', 0)
+            if total_orders > 0:
                 stat['avg_cbm_per_order'] = round(
-                    float(stat['total_cbm'] / stat['total_orders']), 3
+                    float(stat['total_cbm'] / total_orders), 3
                 )
             else:
                 stat['avg_cbm_per_order'] = 0

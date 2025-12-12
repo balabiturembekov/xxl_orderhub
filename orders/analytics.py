@@ -78,7 +78,23 @@ class AnalyticsService:
             completed_orders=Count('id', filter=Q(status='completed')),
         ).order_by('-total_orders')
         
-        return list(factory_stats)
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-115: Безопасная обработка None значений в factory_stats
+        result = []
+        for stat in factory_stats:
+            # Обрабатываем None значения для factory__name и factory__country__name
+            factory_name = stat.get('factory__name') or 'Unknown Factory'
+            country_name = stat.get('factory__country__name') or 'Unknown Country'
+            
+            result.append({
+                'factory__name': factory_name,
+                'factory__country__name': country_name,
+                'total_orders': stat.get('total_orders', 0),
+                'uploaded_orders': stat.get('uploaded_orders', 0),
+                'sent_orders': stat.get('sent_orders', 0),
+                'completed_orders': stat.get('completed_orders', 0),
+            })
+        
+        return result
     
     def get_country_stats(self):
         """Статистика по странам"""
@@ -89,7 +105,18 @@ class AnalyticsService:
             total_factories=Count('factory', distinct=True),
         ).order_by('-total_orders')
         
-        return list(country_stats)
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-116: Безопасная обработка None значений в country_stats
+        result = []
+        for stat in country_stats:
+            country_name = stat.get('factory__country__name') or 'Unknown Country'
+            
+            result.append({
+                'factory__country__name': country_name,
+                'total_orders': stat.get('total_orders', 0),
+                'total_factories': stat.get('total_factories', 0),
+            })
+        
+        return result
     
     def get_employee_stats(self):
         """Статистика по сотрудникам"""
@@ -150,12 +177,15 @@ class AnalyticsService:
     def get_overdue_orders(self):
         """Просроченные заказы"""
         now = timezone.now()
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-120: Проверяем что uploaded_at и sent_at не None
         overdue_orders = self.orders_queryset.filter(
             Q(
                 status='uploaded',
+                uploaded_at__isnull=False,  # Проверяем что uploaded_at не None
                 uploaded_at__lte=now - timedelta(days=TimeConstants.LOG_RETENTION_DAYS)
             ) | Q(
                 status='sent',
+                sent_at__isnull=False,  # Проверяем что sent_at не None
                 sent_at__lte=now - timedelta(days=TimeConstants.LOG_RETENTION_DAYS)
             )
         ).select_related('factory', 'employee')
