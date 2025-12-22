@@ -254,6 +254,9 @@ EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
 EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@xxlorderhub.com")
+# КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Настройки для предотвращения "too many connections"
+EMAIL_TIMEOUT = 30  # Таймаут подключения к SMTP серверу
+EMAIL_USE_LOCALTIME = False
 
 # Email encoding settings
 EMAIL_CHARSET = "utf-8"

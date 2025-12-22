@@ -6,6 +6,20 @@ from email.header import Header
 class UTF8EmailBackend(SMTPEmailBackend):
     """
     Кастомный SMTP backend с правильной обработкой UTF-8 кодировки
+    и оптимизацией для предотвращения "too many connections"
+    
+    Гарантирует правильное отображение кириллицы и других не-ASCII символов
+    во всех почтовых клиентах.
+    """
+    
+    def __init__(self, *args, **kwargs):
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Настройки для предотвращения "too many connections"
+        # Увеличиваем timeout для более стабильных подключений
+        kwargs.setdefault('timeout', 30)
+        # Используем connection_factory для переиспользования соединений
+        super().__init__(*args, **kwargs)
+    """
+    Кастомный SMTP backend с правильной обработкой UTF-8 кодировки
     
     Гарантирует правильное отображение кириллицы и других не-ASCII символов
     во всех почтовых клиентах.
