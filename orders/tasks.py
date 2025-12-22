@@ -9,6 +9,8 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from datetime import timedelta
 from email.header import Header
+import time
+import threading
 from .models import (
     Order,
     Notification,
@@ -18,8 +20,14 @@ from .models import (
 )
 from .constants import TimeConstants
 
+# КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Rate limiting для отправки email
+# Предотвращает ошибку "too many connections" от SMTP сервера
+_email_send_lock = threading.Lock()
+_last_email_send_time = [0]  # Используем список для изменения из разных потоков
+EMAIL_SEND_DELAY = 0.5  # Задержка между отправками email в секундах
 
-@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=60, rate_limit='10/m')
 def send_notification_email(self, notification_id):
     """Отправка email уведомления с retry механизмом"""
     try:
@@ -131,6 +139,15 @@ def send_notification_email(self, notification_id):
         # Явно указываем кодировку для MIME
         email.extra_headers["MIME-Version"] = "1.0"
 
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Rate limiting для предотвращения "too many connections"
+        with _email_send_lock:
+            current_time = time.time()
+            time_since_last_send = current_time - _last_email_send_time[0]
+            if time_since_last_send < EMAIL_SEND_DELAY:
+                sleep_time = EMAIL_SEND_DELAY - time_since_last_send
+                time.sleep(sleep_time)
+            _last_email_send_time[0] = time.time()
+        
         email.send(fail_silently=False)
 
         # Отмечаем уведомление как отправленное
@@ -145,15 +162,25 @@ def send_notification_email(self, notification_id):
         import logging
 
         logger = logging.getLogger("orders")
+        error_str = str(e)
         logger.error(
-            f"Ошибка при отправке email для уведомления {notification_id}: {str(e)}"
+            f"Ошибка при отправке email для уведомления {notification_id}: {error_str}"
         )
 
-        # Retry при временных ошибках
-        if self.request.retries < self.max_retries:
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Специальная обработка ошибки "too many connections"
+        # Увеличиваем задержку перед retry для таких ошибок
+        if "too many connections" in error_str.lower() or "421" in error_str:
+            retry_delay = 120 * (2 ** self.request.retries)  # Увеличенная задержка
+            logger.warning(
+                f"Обнаружена ошибка 'too many connections'. Retry через {retry_delay} секунд"
+            )
+            if self.request.retries < self.max_retries:
+                raise self.retry(countdown=retry_delay)
+        elif self.request.retries < self.max_retries:
+            # Обычный retry для других ошибок
             raise self.retry(countdown=60 * (2**self.request.retries))
 
-        return f"Error sending email after {self.max_retries} attempts: {str(e)}"
+        return f"Error sending email after {self.max_retries} attempts: {error_str}"
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
@@ -1142,18 +1169,37 @@ XXL OrderHub System
     if text_message:
         email.attach_alternative(text_message, "text/plain; charset=UTF-8")
     
+    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Rate limiting для предотвращения "too many connections"
+    with _email_send_lock:
+        current_time = time.time()
+        time_since_last_send = current_time - _last_email_send_time[0]
+        if time_since_last_send < EMAIL_SEND_DELAY:
+            sleep_time = EMAIL_SEND_DELAY - time_since_last_send
+            time.sleep(sleep_time)
+        _last_email_send_time[0] = time.time()
+    
     # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ BUG-91: Обработка исключений при отправке email
     try:
         email.send(fail_silently=False)
     except Exception as email_send_error:
         import logging
         logger = logging.getLogger('orders')
+        error_str = str(email_send_error)
         logger.error(
             f'Ошибка отправки email напоминания для заказа {order.id} '
-            f'на адрес {order.factory.email}: {str(email_send_error)}',
+            f'на адрес {order.factory.email}: {error_str}',
             exc_info=True
         )
-        raise ValueError(f'Не удалось отправить email: {str(email_send_error)}')
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Специальная обработка ошибки "too many connections"
+        if "too many connections" in error_str.lower() or "421" in error_str:
+            logger.warning(
+                f'Обнаружена ошибка "too many connections" при отправке email для заказа {order.id}. '
+                f'Повторная попытка будет выполнена позже через Celery Beat.'
+            )
+            # Не поднимаем исключение, чтобы не блокировать обработку других заказов
+            # Задача check_missing_invoices_for_factories повторится позже
+            return
+        raise ValueError(f'Не удалось отправить email: {error_str}')
     
     # Логируем успешную отправку
     import logging
