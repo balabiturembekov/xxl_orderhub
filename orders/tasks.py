@@ -1,5 +1,5 @@
 from celery import shared_task
-from django.core.mail import EmailMessage
+from django.core.mail import EmailMessage, EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.conf import settings
 from django.utils import timezone
@@ -98,8 +98,8 @@ def send_notification_email(self, notification_id):
         # Отправляем email с правильной кодировкой UTF-8
         # Используем альтернативный формат для HTML и текстовой версии
         if html_message:
-            # Если есть HTML версия, используем её как основную и добавляем текстовую альтернативу
-            email = EmailMessage(
+            # Если есть HTML версия, используем EmailMultiAlternatives для поддержки attach_alternative
+            email = EmailMultiAlternatives(
                 subject=encoded_subject,
                 body=html_message,
                 from_email=settings.DEFAULT_FROM_EMAIL,
@@ -1122,7 +1122,8 @@ XXL OrderHub System
         encoded_subject = subject
     
     # Отправляем email
-    email = EmailMessage(
+    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Используем EmailMultiAlternatives для поддержки attach_alternative
+    email = EmailMultiAlternatives(
         subject=encoded_subject,
         body=html_message,
         from_email=settings.DEFAULT_FROM_EMAIL,

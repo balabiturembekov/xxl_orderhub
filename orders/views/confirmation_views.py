@@ -923,17 +923,24 @@ def _execute_send_order(confirmation: OrderConfirmation, user, comments: str) ->
             except (ValueError, AttributeError) as e:
                 logger.warning(f'Не удалось получить путь к файлу для заказа {order.id}: {e}')
         
-        email.send()
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Используем fail_silently=False для явной обработки ошибок
+        email.send(fail_silently=False)
         
         # Log successful email sending
         logger = logging.getLogger('orders')
         # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасный доступ к factory.email (уже проверено выше)
         factory_email = order.factory.email if order.factory else "unknown"
-        logger.info(f'Email successfully sent to {factory_email} for order {order.id} using template: {template.name if template else "static"}')
+        logger.info(
+            f'Email successfully sent to {factory_email} for order {order.id} '
+            f'using template: {template.name if template else "static"}'
+        )
         
     except Exception as e:
         logger = logging.getLogger('orders')
-        logger.error(f"Ошибка отправки email для заказа {order.id}: {e}")
+        logger.error(
+            f"Ошибка отправки email для заказа {order.id} на адрес {order.factory.email if order.factory else 'unknown'}: {e}",
+            exc_info=True
+        )
         raise ValueError(f'Ошибка при отправке email: {str(e)}')
     
     # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Обновление статуса заказа и создание audit log

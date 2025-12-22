@@ -36,7 +36,7 @@ services:
     restart: always
     build: .
     env_file:
-      - docker.env.local
+      - docker.env
     volumes:
       - ./media:/app/media
       - ./logs:/app/logs
@@ -60,7 +60,7 @@ services:
     restart: on-failure
     build: .
     env_file:
-      - docker.env.local
+      - docker.env
     volumes:
       - ./media:/app/media
       - ./logs:/app/logs
@@ -78,7 +78,7 @@ services:
     restart: always
     build: .
     env_file:
-      - docker.env.local
+      - docker.env
     volumes:
       - ./media:/app/media
       - ./logs:/app/logs
@@ -99,7 +99,7 @@ services:
     restart: always
     build: .
     env_file:
-      - docker.env.local
+      - docker.env
     volumes:
       - ./logs:/app/logs
     depends_on:
