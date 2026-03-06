@@ -24,3 +24,4 @@ from .payment_views import *
 from .api_views import *
 from .shipment_views import *
 from .efactura_views import *
+from .public_views import PublicInvoiceList

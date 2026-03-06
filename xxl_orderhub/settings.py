@@ -27,7 +27,7 @@ except ImportError:
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Application version
-VERSION = '1.2.0'
+VERSION = "1.2.0"
 
 
 # Quick-start development settings - unsuitable for production
@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "django_celery_beat",
     "widget_tweaks",
     "orders",
+    "rest_framework",
 ]
 
 MIDDLEWARE = [
