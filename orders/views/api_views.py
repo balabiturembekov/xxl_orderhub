@@ -15,7 +15,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
-from django.db.models import Q
+from django.db.models import Prefetch, Q
 import json
 
 from ..models import Order, Factory, Country
@@ -94,6 +94,94 @@ def get_countries(request):
     ]
     
     return JsonResponse({'countries': countries_data})
+
+
+@login_required
+@require_http_methods(["GET"])
+def get_factories_with_invoices(request):
+    """
+    Get factories with all related invoices grouped by factory.
+
+    Query Parameters:
+        country_id: Optional country ID filter
+
+    Returns:
+        JsonResponse with factories and nested invoices
+    """
+    country_id = request.GET.get("country_id")
+
+    invoice_orders = Order.objects.filter(invoice__isnull=False).select_related(
+        "invoice", "employee"
+    ).order_by("-invoice__created_at")
+
+    factories = Factory.objects.filter(order__invoice__isnull=False).select_related(
+        "country"
+    ).prefetch_related(
+        Prefetch("order_set", queryset=invoice_orders, to_attr="invoice_orders")
+    ).distinct().order_by("name")
+
+    if country_id:
+        try:
+            factories = factories.filter(country_id=int(country_id))
+        except (TypeError, ValueError):
+            return JsonResponse(
+                {"success": False, "message": "Некорректный country_id"},
+                status=400,
+            )
+
+    factories_data = []
+    for factory in factories:
+        invoices = []
+        for order in getattr(factory, "invoice_orders", []):
+            invoice = getattr(order, "invoice", None)
+            if not invoice:
+                continue
+            invoices.append(
+                {
+                    "id": invoice.id,
+                    "invoice_number": invoice.invoice_number,
+                    "status": invoice.status,
+                    "status_display": invoice.get_status_display(),
+                    "balance": str(invoice.balance),
+                    "total_paid": str(invoice.total_paid),
+                    "remaining_amount": str(invoice.remaining_amount),
+                    "due_date": invoice.due_date.isoformat() if invoice.due_date else None,
+                    "created_at": invoice.created_at.isoformat() if invoice.created_at else None,
+                    "updated_at": invoice.updated_at.isoformat() if invoice.updated_at else None,
+                    "notes": invoice.notes,
+                    "order": {
+                        "id": order.id,
+                        "title": order.title,
+                        "status": order.status,
+                        "status_display": order.get_status_display(),
+                    },
+                    "employee": {
+                        "id": order.employee.id if order.employee else None,
+                        "username": order.employee.username if order.employee else None,
+                        "full_name": order.employee.get_full_name() if order.employee else "",
+                    },
+                }
+            )
+
+        factories_data.append(
+            {
+                "id": factory.id,
+                "name": factory.name,
+                "email": factory.email,
+                "contact_person": factory.contact_person,
+                "phone": factory.phone,
+                "address": factory.address,
+                "country": {
+                    "id": factory.country.id if factory.country else None,
+                    "name": factory.country.name if factory.country else None,
+                    "code": factory.country.code if factory.country else None,
+                },
+                "invoices_count": len(invoices),
+                "invoices": invoices,
+            }
+        )
+
+    return JsonResponse({"factories": factories_data})
 
 
 from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie

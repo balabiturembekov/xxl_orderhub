@@ -92,6 +92,7 @@ from .views.email_template_views import (
 )
 from .views.api_views import (
     get_factories,
+    get_factories_with_invoices,
     get_countries,
     create_country_ajax,
     create_factory_ajax,
@@ -166,6 +167,11 @@ urlpatterns = [
     ),
     # AJAX endpoints
     path("api/factories/", get_factories, name="get_factories"),
+    path(
+        "api/factories/invoices/",
+        get_factories_with_invoices,
+        name="get_factories_with_invoices",
+    ),
     # Уведомления
     path("notifications/", NotificationListView.as_view(), name="notification_list"),
     path(
