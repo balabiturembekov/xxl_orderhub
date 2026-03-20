@@ -96,7 +96,6 @@ def get_countries(request):
     return JsonResponse({'countries': countries_data})
 
 
-@login_required
 @require_http_methods(["GET"])
 def get_factories_with_invoices(request):
     """
